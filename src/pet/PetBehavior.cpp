@@ -71,13 +71,18 @@ void PetBehavior::update(PetMode mode, uint32_t now)
         return;
     }
 
-    if (mode != _lastMode)
+    const bool modeChanged = mode != _lastMode;
+    if (modeChanged)
+    {
+        // Charge elapsed time to the mode that was active during that interval.
+        updateEnergy(_lastMode, now);
+        // Fractional time from one mode must not leak into another mode's rate.
         _energyRemainderMs = 0;
+        _lastEnergyTickAt = now;
+    }
 
     updateEnergy(mode, now);
     updateMood(mode);
-
-    const bool modeChanged = mode != _lastMode;
     const bool messageDue =
         static_cast<uint32_t>(now - _lastMessageAt) >= Config::PET_MESSAGE_INTERVAL_MS;
 

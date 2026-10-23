@@ -55,11 +55,14 @@ namespace
                         (blinkPhase >= 4 && blinkPhase < 6);
         pose.action = PetAction::Stand;
         const int16_t waypoints[] = {112, 208, 145, 232, 92, 176};
-        const uint8_t waypoint = (frame / 40) % 6;
+        const uint8_t waypoint = (frame / 60) % 6;
         const int16_t fromX = waypoints[(waypoint + 5) % 6];
         const int16_t toX = waypoints[waypoint];
-        const uint8_t within = frame % 40;
-        pose.travelX = static_cast<int16_t>(fromX + (static_cast<int32_t>(toX - fromX) * within) / 40);
+        const uint8_t within = frame % 60;
+        // Walk for 35 frames, then pause at the destination for 25 frames.
+        pose.travelX = within < 35
+            ? static_cast<int16_t>(fromX + (static_cast<int32_t>(toX - fromX) * within) / 35)
+            : toX;
         pose.gazeX = (toX > fromX) ? 2 : ((toX < fromX) ? -2 : 0);
 
         if (mode == PetMode::Nap)
@@ -102,6 +105,12 @@ namespace
         {
             pose.bob = (phase % 12 < 6) ? 0 : 1;
             pose.tailSwing = (phase % 12 < 6) ? -2 : 2;
+        }
+
+        if (pose.action == PetAction::Sit)
+        {
+            pose.travelX = waypoints[(frame / 60) % 6];
+            pose.gazeX = 0;
         }
 
         const uint8_t earPhase = (frame / 5) % 12;

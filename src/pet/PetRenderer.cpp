@@ -79,12 +79,43 @@ namespace
 
         if (resting)
         {
+            // Dedicated seated/resting animation:
+            // 1) slow breathing raises and lowers the body,
+            // 2) the tail sways gently,
+            // 3) the pet occasionally looks around and blinks.
+            // Keep travelX fixed so the seated sprite never drifts off-screen.
             pose.travelX = 160;
-            pose.bob = ((frame / 12U) & 1U) ? 1 : 0;
-            pose.gazeX = 0;
+            pose.action = PetAction::Sit;
+            pose.moving = false;
+
+            const uint32_t breathPhase = frame % 48U;
+            pose.bob = (breathPhase < 12U) ? 0
+                     : (breathPhase < 24U) ? -1
+                     : (breathPhase < 36U) ? -2
+                     : -1;
+
+            const uint32_t tailPhase = (frame / 8U) % 8U;
+            constexpr int8_t tailCycle[8] = {-3, -2, -1, 0, 1, 2, 3, 1};
+            pose.tailSwing = tailCycle[tailPhase];
+
+            // Mostly relaxed gaze, with a short glance left/right between breaths.
+            const uint32_t lookPhase = (frame / 24U) % 6U;
+            pose.gazeX = (lookPhase == 2U) ? -3
+                       : (lookPhase == 5U) ? 3
+                       : 0;
+
+            // Brief blinks, separated by a longer relaxed interval.
+            const uint32_t blinkPhase = frame % 97U;
+            pose.blinking = (blinkPhase < 3U) ||
+                            (blinkPhase >= 5U && blinkPhase < 7U);
             pose.legSwing = 0;
-            pose.tailSwing = ((frame / 16U) & 1U) ? 1 : -1;
-            pose.blinking = ((frame % 47U) < 3U);
+
+            // Small asymmetrical ear flicks; avoid constant jitter.
+            const uint32_t earPhase = frame % 83U;
+            if (earPhase >= 4U && earPhase < 7U)
+                pose.leftEarX = -2;
+            if (earPhase >= 31U && earPhase < 34U)
+                pose.rightEarX = 2;
         }
         else
         {

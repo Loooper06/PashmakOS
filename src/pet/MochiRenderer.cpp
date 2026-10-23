@@ -28,13 +28,13 @@ void drawMochiBody(Display &d, PetBodyPose pose, int8_t legSwing, int8_t tailSwi
         d.fillEllipse(173 - legSwing, 177, 9, 4, cream);
     } else {
         const int16_t swing = pose == PetBodyPose::Walk || pose == PetBodyPose::Hop ? legSwing : 0;
-        d.fillEllipse(134, 158, 10, 15, furDark);
+        d.fillEllipse(134 + (pose == PetBodyPose::Walk ? -legSwing : 0), 158 + (pose == PetBodyPose::Walk ? 2 : 0), 10, 15, furDark);
         d.fillEllipse(134, 157, 7, 13, fur);
-        d.fillEllipse(186, 158, 10, 15, furDark);
+        d.fillEllipse(186 + (pose == PetBodyPose::Walk ? legSwing : 0), 158 + (pose == PetBodyPose::Walk ? -2 : 0), 10, 15, furDark);
         d.fillEllipse(186, 157, 7, 13, fur);
-        d.fillEllipse(146 + swing, 178, 11, 7, furDark);
+        d.fillEllipse(146 + swing, 178 + (pose == PetBodyPose::Walk ? swing / 2 : 0), 11, 7, furDark);
         d.fillEllipse(146 + swing, 176, 9, 6, cream);
-        d.fillEllipse(174 - swing, 178, 11, 7, furDark);
+        d.fillEllipse(174 - swing, 178 - (pose == PetBodyPose::Walk ? swing / 2 : 0), 11, 7, furDark);
         d.fillEllipse(174 - swing, 176, 9, 6, cream);
     }
     d.fillEllipse(160, lying ? 166 : 162, 13, lying ? 8 : 16, cream);

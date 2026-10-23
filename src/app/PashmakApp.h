@@ -21,12 +21,23 @@ public:
         uint16_t reserved = 0;
     };
 
+    struct StatsSummary
+    {
+        uint64_t workMs = 0;
+        uint64_t playMs = 0;
+        uint64_t napMs = 0;
+        uint32_t completedWorkSessions = 0;
+        uint8_t daysIncluded = 0;
+    };
+
     PashmakApp();
     void begin();
     void update();
 
     uint8_t dailyHistoryCount() const;
     bool getDailyStats(uint8_t index, DailyStats &out) const;
+    StatsSummary summarizeRecentDays(uint8_t days) const;
+    StatsSummary summarizeMonth(uint16_t year, uint8_t month) const;
 
 private:
     static constexpr uint8_t DAILY_HISTORY_DAYS = 14;

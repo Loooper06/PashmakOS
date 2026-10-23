@@ -195,7 +195,7 @@ void PashmakApp::loadDailyHistory()
     for (uint8_t i = 0; i < _dailyHistoryCount; ++i)
         _dailyHistory[i] = stored.records[i];
 
-    Serial.printf("[HISTORY] Loaded %u daily records.\\n", _dailyHistoryCount);
+    Serial.printf("[HISTORY] Loaded %u daily records.\n", _dailyHistoryCount);
 }
 
 void PashmakApp::syncDailyHistory(uint32_t now)
@@ -237,7 +237,7 @@ void PashmakApp::syncDailyHistory(uint32_t now)
     _dailyHistory[_currentDailyIndex] = DailyStats{};
     _dailyHistory[_currentDailyIndex].dateKey = today;
     persistDailyHistory(millis(), true);
-    Serial.printf("[HISTORY] Started daily record %ld.\\n", static_cast<long>(today));
+    Serial.printf("[HISTORY] Started daily record %ld.\n", static_cast<long>(today));
 }
 
 void PashmakApp::recordDailyElapsed(uint32_t elapsedMs)
@@ -283,7 +283,7 @@ void PashmakApp::persistDailyHistory(uint32_t now, bool force)
     if (written == sizeof(stored))
     {
         _lastHistoryPersistAt = now;
-        Serial.printf("[HISTORY] Saved %u daily records.\\n", _dailyHistoryCount);
+        Serial.printf("[HISTORY] Saved %u daily records.\n", _dailyHistoryCount);
     }
     else
     {

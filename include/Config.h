@@ -13,7 +13,11 @@ namespace Config
     constexpr uint8_t TFT_PIN_RST = 26;
     constexpr int8_t TFT_PIN_BL = 21;
 
-    // Buttons
+    // DS3231 I2C. GPIO21 is reserved for TFT backlight in this build.
+    constexpr uint8_t RTC_PIN_SDA = 16;
+    constexpr uint8_t RTC_PIN_SCL = 17;
+
+    // Legacy button pin assignments (not used for mode switching).
     constexpr uint8_t BTN_MODE = 32;
     constexpr uint8_t BTN_NAP = 33;
     constexpr uint8_t BTN_PLAY = 25;
@@ -27,4 +31,9 @@ namespace Config
     // Application
     constexpr uint32_t FRAME_INTERVAL_MS = 100;
     constexpr uint32_t BUTTON_DEBOUNCE_MS = 35;
+
+    // Reminder scheduling
+    constexpr uint32_t RTC_POLL_INTERVAL_MS = 1000;
+    constexpr uint32_t WATER_REMINDER_INTERVAL_SECONDS = 60UL * 60UL;
+    constexpr uint32_t MOVEMENT_REMINDER_INTERVAL_SECONDS = 45UL * 60UL;
 }

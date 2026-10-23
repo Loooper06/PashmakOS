@@ -110,6 +110,7 @@ private:
     void setMode(PetMode mode, uint32_t now);
     void updateAutomaticMode(uint32_t now);
     void updateRtcReminder(uint32_t now);
+    void handleSerialCommands();
     void persistStats(uint32_t now, bool force = false);
     void loadDailyHistory();
     void syncDailyHistory(uint32_t now);

@@ -268,7 +268,7 @@ void PetRenderer::drawDog(Display &d, PetMode mode, uint32_t frame)
     d.endDogFrame();
 }
 
-void PetRenderer::drawFooter(Display &d, PetMode mode)
+void PetRenderer::drawFooter(Display &d, PetMode mode, const char *dateTime)
 {
     d.fillRect(0, FOOTER_Y, SCREEN_W, FOOTER_H, PANEL);
 
@@ -286,10 +286,12 @@ void PetRenderer::drawFooter(Display &d, PetMode mode)
     }
 
     d.drawText("Auto Behavior", 121, 215, 1, WHITE);
-    d.drawText("PashmakOS v0.1", 115, 228, 1, WHITE);
+    d.drawText("PashmakOS v0.1", 8, 228, 1, WHITE);
+    if (dateTime != nullptr)
+        d.drawText(dateTime, 190, 228, 1, WHITE);
 }
 
-void PetRenderer::draw(Display &d, PetMode mode, uint32_t frame, const char *message)
+void PetRenderer::draw(Display &d, PetMode mode, uint32_t frame, const char *message, const char *dateTime)
 {
     if (!_initialized)
     {
@@ -298,9 +300,15 @@ void PetRenderer::draw(Display &d, PetMode mode, uint32_t frame, const char *mes
         _initialized = true;
     }
 
-    if (!_footerInitialized || mode != _lastMode)
+    const bool dateTimeChanged = dateTime != nullptr && strcmp(_lastDateTime, dateTime) != 0;
+    if (!_footerInitialized || mode != _lastMode || dateTimeChanged)
     {
-        drawFooter(d, mode);
+        drawFooter(d, mode, dateTime);
+        if (dateTime != nullptr)
+        {
+            strncpy(_lastDateTime, dateTime, sizeof(_lastDateTime) - 1);
+            _lastDateTime[sizeof(_lastDateTime) - 1] = '\0';
+        }
         _lastMode = mode;
         _footerInitialized = true;
     }

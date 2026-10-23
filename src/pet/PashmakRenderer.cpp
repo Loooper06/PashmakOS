@@ -29,13 +29,13 @@ void drawPashmakBody(Display &d, PetBodyPose pose, int8_t legSwing, int8_t tailS
         d.fillEllipse(171 - legSwing, 177, 10, 4, furLight);
     } else {
         const int16_t swing = pose == PetBodyPose::Walk || pose == PetBodyPose::Hop ? legSwing : 0;
-        d.fillEllipse(137, 158, 9, 17, furDark);
+        d.fillEllipse(137 + (pose == PetBodyPose::Walk ? -legSwing : 0), 158 + (pose == PetBodyPose::Walk ? 2 : 0), 9, 17, furDark);
         d.fillEllipse(137, 157, 6, 14, fur);
-        d.fillEllipse(183, 158, 9, 17, furDark);
+        d.fillEllipse(183 + (pose == PetBodyPose::Walk ? legSwing : 0), 158 + (pose == PetBodyPose::Walk ? -2 : 0), 9, 17, furDark);
         d.fillEllipse(183, 157, 6, 14, fur);
-        d.fillEllipse(148 + swing, 178, 10, 7, furDark);
+        d.fillEllipse(148 + swing, 178 + (pose == PetBodyPose::Walk ? swing / 2 : 0), 10, 7, furDark);
         d.fillEllipse(148 + swing, 176, 8, 6, furLight);
-        d.fillEllipse(172 - swing, 178, 10, 7, furDark);
+        d.fillEllipse(172 - swing, 178 - (pose == PetBodyPose::Walk ? swing / 2 : 0), 10, 7, furDark);
         d.fillEllipse(172 - swing, 176, 8, 6, furLight);
     }
 }

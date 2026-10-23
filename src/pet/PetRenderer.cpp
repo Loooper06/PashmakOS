@@ -51,85 +51,106 @@ namespace
     {
         DogPose pose{};
 
-        // One shared, deterministic movement controller for every pet.
-        // Keep the complete character inside the 320 px sprite at all times.
-        constexpr int16_t LEFT_CENTER = 104;
-        constexpr int16_t RIGHT_CENTER = 216;
-        constexpr uint16_t HALF_TRIP_FRAMES = 64;
-
-        // Ping-pong motion: alternate complete left-to-right and right-to-left
-        // trips. Use a symmetric easing curve and clamp its integer endpoints.
-        const uint32_t leg = (frame / HALF_TRIP_FRAMES) & 1U;
-        const uint32_t phase = frame % HALF_TRIP_FRAMES;
-        const uint32_t t = (phase * 1000UL) / (HALF_TRIP_FRAMES - 1U);
-        const uint32_t eased = (t * t * (3000UL - 2UL * t)) / 1000000UL;
-
-        const int16_t fromX = leg == 0U ? LEFT_CENTER : RIGHT_CENTER;
-        const int16_t toX = leg == 0U ? RIGHT_CENTER : LEFT_CENTER;
-        pose.travelX = static_cast<int16_t>(
-            fromX + (static_cast<int32_t>(toX - fromX) * eased) / 1000);
-        if (phase == HALF_TRIP_FRAMES - 1U)
-            pose.travelX = toX;
+        // Walk between two safe positions, pause in a seated pose at each
+        // endpoint, then reverse. This makes sitting visible even during Work
+        // and Play instead of waiting for the much longer Nap session.
+        constexpr int16_t LEFT_CENTER = 112;
+        constexpr int16_t RIGHT_CENTER = 208;
+        constexpr uint16_t WALK_FRAMES = 52;
+        constexpr uint16_t SIT_FRAMES = 18;
+        constexpr uint16_t CYCLE_FRAMES = 2U * (WALK_FRAMES + SIT_FRAMES);
 
         const bool resting = mode == PetMode::Nap;
-        // Nap uses a visible seated pose rather than lowering the whole head
-        // into the lower edge of the sprite.
-        pose.action = resting ? PetAction::Sit : PetAction::Walk;
-        pose.moving = !resting;
+        pose.travelX = 160;
+        pose.action = PetAction::Sit;
+        pose.moving = false;
 
         if (resting)
         {
-            // Dedicated seated/resting animation:
-            // 1) slow breathing raises and lowers the body,
-            // 2) the tail sways gently,
-            // 3) the pet occasionally looks around and blinks.
-            // Keep travelX fixed so the seated sprite never drifts off-screen.
-            pose.travelX = 160;
-            pose.action = PetAction::Sit;
-            pose.moving = false;
-
+            // Nap is a calm, centered seated pose with slow breathing.
             const uint32_t breathPhase = frame % 48U;
             pose.bob = (breathPhase < 12U) ? 0
                      : (breathPhase < 24U) ? -1
                      : (breathPhase < 36U) ? -2
                      : -1;
-
             const uint32_t tailPhase = (frame / 8U) % 8U;
-            constexpr int8_t tailCycle[8] = {-3, -2, -1, 0, 1, 2, 3, 1};
+            constexpr int8_t tailCycle[8] = {-2, -1, 0, 1, 2, 1, 0, -1};
             pose.tailSwing = tailCycle[tailPhase];
-
-            // Mostly relaxed gaze, with a short glance left/right between breaths.
-            const uint32_t lookPhase = (frame / 24U) % 6U;
-            pose.gazeX = (lookPhase == 2U) ? -3
-                       : (lookPhase == 5U) ? 3
-                       : 0;
-
-            // Brief blinks, separated by a longer relaxed interval.
+            const uint32_t lookPhase = (frame / 30U) % 4U;
+            pose.gazeX = (lookPhase == 1U) ? -3 : (lookPhase == 3U) ? 3 : 0;
             const uint32_t blinkPhase = frame % 97U;
-            pose.blinking = (blinkPhase < 3U) ||
-                            (blinkPhase >= 5U && blinkPhase < 7U);
+            pose.blinking = blinkPhase < 3U;
             pose.legSwing = 0;
-
-            // Small asymmetrical ear flicks; avoid constant jitter.
             const uint32_t earPhase = frame % 83U;
-            if (earPhase >= 4U && earPhase < 7U)
-                pose.leftEarX = -2;
-            if (earPhase >= 31U && earPhase < 34U)
-                pose.rightEarX = 2;
+            if (earPhase >= 4U && earPhase < 7U) pose.leftEarX = -2;
+            if (earPhase >= 31U && earPhase < 34U) pose.rightEarX = 2;
         }
         else
         {
-            // Four-step gait shared by Pashmak, Mochi and Pixel.
-            // The eye direction changes clearly at each turnaround so the
-            // otherwise symmetric character visibly faces its travel direction.
-            const bool headingRight = leg == 0U;
-            const uint8_t gait = (frame / 3U) & 3U;
-            const int8_t gaitSwing = (gait == 0U || gait == 3U) ? -5 : 5;
-            pose.legSwing = gaitSwing;
-            pose.tailSwing = (gait < 2U) ? -4 : 4;
-            pose.bob = (gait == 0U || gait == 2U) ? -1 : 2;
-            pose.gazeX = headingRight ? 6 : -6;
-            pose.blinking = (frame % 53U) < 2U;
+            const uint32_t cycle = frame % CYCLE_FRAMES;
+            const uint32_t forwardEnd = WALK_FRAMES;
+            const uint32_t pauseRightEnd = forwardEnd + SIT_FRAMES;
+            const uint32_t backwardEnd = pauseRightEnd + WALK_FRAMES;
+
+            if (cycle < forwardEnd)
+            {
+                const uint32_t t = (cycle * 1000UL) / (WALK_FRAMES - 1U);
+                const uint32_t eased = (t * t * (3000UL - 2UL * t)) / 1000000UL;
+                pose.travelX = static_cast<int16_t>(
+                    LEFT_CENTER + (static_cast<int32_t>(RIGHT_CENTER - LEFT_CENTER) * eased) / 1000);
+                if (cycle == WALK_FRAMES - 1U) pose.travelX = RIGHT_CENTER;
+                pose.action = PetAction::Walk;
+                pose.moving = true;
+                pose.gazeX = 6;
+            }
+            else if (cycle < pauseRightEnd)
+            {
+                pose.travelX = RIGHT_CENTER;
+                pose.action = PetAction::Sit;
+                pose.moving = false;
+                pose.gazeX = 0;
+            }
+            else if (cycle < backwardEnd)
+            {
+                const uint32_t phase = cycle - pauseRightEnd;
+                const uint32_t t = (phase * 1000UL) / (WALK_FRAMES - 1U);
+                const uint32_t eased = (t * t * (3000UL - 2UL * t)) / 1000000UL;
+                pose.travelX = static_cast<int16_t>(
+                    RIGHT_CENTER - (static_cast<int32_t>(RIGHT_CENTER - LEFT_CENTER) * eased) / 1000);
+                if (phase == WALK_FRAMES - 1U) pose.travelX = LEFT_CENTER;
+                pose.action = PetAction::Walk;
+                pose.moving = true;
+                pose.gazeX = -6;
+            }
+            else
+            {
+                pose.travelX = LEFT_CENTER;
+                pose.action = PetAction::Sit;
+                pose.moving = false;
+                pose.gazeX = 0;
+            }
+
+            if (pose.moving)
+            {
+                const uint8_t gait = (frame / 3U) & 3U;
+                pose.legSwing = (gait == 0U || gait == 3U) ? -5 : 5;
+                pose.tailSwing = (gait < 2U) ? -4 : 4;
+                pose.bob = (gait == 0U || gait == 2U) ? -1 : 2;
+                pose.blinking = (frame % 53U) < 2U;
+            }
+            else
+            {
+                pose.legSwing = 0;
+                pose.bob = ((frame / 12U) & 1U) ? 0 : -1;
+                pose.tailSwing = ((frame / 10U) & 1U) ? 2 : -2;
+                pose.blinking = (frame % 71U) < 3U;
+            }
+
+            if (mode == PetMode::Play && pose.moving)
+            {
+                pose.legSwing = pose.legSwing < 0 ? -7 : 7;
+                pose.tailSwing = pose.tailSwing < 0 ? -6 : 6;
+            }
         }
 
         // Small ear motion, identical across all pet skins.

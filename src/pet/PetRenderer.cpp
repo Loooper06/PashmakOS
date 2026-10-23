@@ -325,7 +325,7 @@ void PetRenderer::draw(Display &d, PetMode mode, uint32_t frame, uint8_t petId, 
     const DogPose pose = getDogPose(mode, frame);
     const bool dogChanged =
         !_dogInitialized ||
-        petId != _lastPetId ||
+        petId != _lastDogPetId ||
         mode != _lastDogMode ||
         pose.bob != _lastDogBob ||
         pose.moving != _lastDogMoving ||
@@ -339,6 +339,7 @@ void PetRenderer::draw(Display &d, PetMode mode, uint32_t frame, uint8_t petId, 
     drawDog(d, mode, frame, petId);
 
     _lastDogMode = mode;
+    _lastDogPetId = petId;
     _lastDogBob = pose.bob;
     _lastDogMoving = pose.moving;
     _lastDogBlinking = pose.blinking;

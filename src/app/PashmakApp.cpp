@@ -40,7 +40,8 @@ void PashmakApp::begin()
         _display,
         _mode,
         _frame,
-        _behavior.state().message);
+        _behavior.state().message,
+        nullptr);
 
     Serial.println("PashmakOS: automatic pet behavior enabled");
 }
@@ -150,7 +151,15 @@ void PashmakApp::update()
                                   ? _reminderMessage
                                   : _behavior.state().message;
 
-        _renderer.draw(_display, _mode, _frame, message);
+        char dateTime[24] = "--:--  ----/--/--";
+        if (_rtc.isAvailable())
+        {
+            const DateTime current = _rtc.now();
+            snprintf(dateTime, sizeof(dateTime), "%02u:%02u  %04u-%02u-%02u",
+                     current.hour(), current.minute(), current.year(),
+                     current.month(), current.day());
+        }
+        _renderer.draw(_display, _mode, _frame, message, dateTime);
         _lastFrame = now;
     }
 }

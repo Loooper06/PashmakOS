@@ -1,4 +1,3 @@
-
 #pragma once
 
 #include <stdint.h>
@@ -10,13 +9,16 @@ enum class PetMood : uint8_t
     Focused,
     Sleepy,
     Curious,
-    Excited
+    Excited,
+    Tired,
+    Exhausted
 };
 
 struct PetBehaviorState
 {
     PetMood mood;
     const char *message;
+    uint8_t energy;
 };
 
 class PetBehavior
@@ -34,10 +36,14 @@ private:
 
     PetMode _lastMode;
     uint32_t _lastMessageAt;
+    uint32_t _lastEnergyTickAt;
+    uint32_t _energyRemainderMs;
     uint8_t _workMessageIndex;
     uint8_t _napMessageIndex;
     uint8_t _playMessageIndex;
     bool _initialized;
 
     void selectMessage(PetMode mode, uint32_t now);
+    void updateEnergy(PetMode mode, uint32_t now);
+    void updateMood(PetMode mode);
 };

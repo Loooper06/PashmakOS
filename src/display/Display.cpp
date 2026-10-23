@@ -2,6 +2,7 @@
 #include "Display.h"
 #include "Config.h"
 #include <fonts/ArabicFont_Cairo12.h>
+#include <fonts/ArabicFont_Cairo16.h>
 
 Display::Display()
     : _dogSprite(&_tft),
@@ -185,7 +186,7 @@ void Display::drawText(
 
     if (isRtl && !_drawingDog)
     {
-        _arabic.setFont(&ArabicFont_Cairo12);
+        _arabic.setFont(size >= 2 ? &ArabicFont_Cairo16 : &ArabicFont_Cairo12);
         _arabic.setAlign(AR_ALIGN_RIGHT);
         _arabic.setDirection(ArabicBidi::DIR_RTL);
         _arabic.setTextColor(color, 0x2127);

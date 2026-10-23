@@ -41,7 +41,7 @@ void Display::begin()
 
 int16_t Display::targetX(int16_t x) const
 {
-    return _drawingDog ? x - DOG_X : x;
+    return _drawingDog ? x + _dogOffsetX : x;
 }
 
 int16_t Display::targetY(int16_t y) const
@@ -52,8 +52,8 @@ int16_t Display::targetY(int16_t y) const
 void Display::setDogPosition(int16_t centerX, int16_t verticalOffset)
 {
     _dogOffsetX = centerX - 160;
-    if (_dogOffsetX < -70) _dogOffsetX = -70;
-    if (_dogOffsetX > 70) _dogOffsetX = 70;
+    if (_dogOffsetX < -68) _dogOffsetX = -68;
+    if (_dogOffsetX > 68) _dogOffsetX = 68;
     _dogOffsetY = verticalOffset;
 }
 
@@ -69,7 +69,7 @@ void Display::beginDogFrame(uint16_t background)
     {
         // Fallback: draw directly to the display.
         _tft.fillRect(
-            DOG_X + _dogOffsetX, DOG_Y + _dogOffsetY,
+            DOG_X, DOG_Y + _dogOffsetY,
             DOG_W, DOG_H,
             background);
     }
@@ -80,20 +80,10 @@ void Display::endDogFrame()
     // Place the reduced sprite at its actual screen position.
     if (_drawingDog)
     {
-        const int16_t nextX = DOG_X + _dogOffsetX;
-        const int16_t nextY = DOG_Y + _dogOffsetY;
-
-        // Erase the previous sprite footprint before drawing at the new
-        // position. Otherwise every move leaves a stale copy on the TFT.
-        if (_hasPushedDog)
-        {
-            _tft.fillRect(_lastPushedX, _lastPushedY, DOG_W, DOG_H, 0x1082);
-        }
-
-        _dogSprite.pushSprite(nextX, nextY);
-        _lastPushedX = nextX;
-        _lastPushedY = nextY;
-        _hasPushedDog = true;
+        // The canvas stays at one screen position. The character is moved
+        // inside the canvas, so no old sprite area needs erasing and no
+        // background flash occurs between frames.
+        _dogSprite.pushSprite(DOG_X, DOG_Y + _dogOffsetY);
     }
 
     _drawingDog = false;

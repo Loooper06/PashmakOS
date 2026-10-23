@@ -32,7 +32,7 @@ footer{margin-top:18px;color:var(--muted);font-size:.82rem}
 </head>
 <body><main>
 <header><div><h1>PashmakOS</h1><div class="muted">Pet activity dashboard</div></div><div><span id="connection" class="status">Connecting…</span> <button id="refresh">Refresh</button></div></header>
-<section class="card section" id="pet-status"><h2>Pet status</h2><div class="grid">
+<section class="card section"><h2>Choose your pet</h2><div id="pet-picker" class="pills"></div><div class="muted">Each pet keeps its own energy, mood and message state.</div></section>\n<section class="card section" id="pet-status"><h2 id="pet-heading">Pet status</h2><div class="grid">
  <article><div class="label">Energy</div><div id="pet-energy" class="metric">—</div><div style="height:8px;background:var(--line);border-radius:99px;overflow:hidden;margin-top:10px"><div id="pet-energy-bar" style="height:100%;width:0%;background:var(--accent);transition:width .25s"></div></div></article>
  <article><div class="label">Mood</div><div id="pet-mood" class="metric">—</div></article>
  <article style="grid-column:span 2"><div class="label">Pet says</div><div id="pet-message" style="font-size:1.05rem;margin-top:8px">Waiting for data…</div></article>
@@ -61,7 +61,7 @@ const dateLabel=n=>{const s=String(n);return s.length===8?s.slice(0,4)+'-'+s.sli
 const monthLabel=n=>{const s=String(n);return s.length===6?s.slice(0,4)+'-'+s.slice(4,6):s};
 function metric(id,value){$(id).textContent=value}
 function row(values){const tr=document.createElement('tr');values.forEach(v=>{const td=document.createElement('td');td.textContent=v;tr.appendChild(td)});return tr}
-function render(data){snapshot=data;const pet=data.pet||{};const energy=Math.max(0,Math.min(100,Number(pet.energy||0)));metric('pet-energy',energy+'%');metric('pet-mood',String(pet.mood||'unknown').replace(/\b\w/g,ch=>ch.toUpperCase()));metric('pet-message',pet.message||'No message yet.');$('pet-energy-bar').style.width=energy+'%';const t=data.totals||{};metric('total-work',duration(t.workMs));metric('total-play',duration(t.playMs));metric('total-nap',duration(t.napMs));metric('total-sessions',Number(t.completedWorkSessions||0).toLocaleString());
+function render(data){snapshot=data;const pets=Array.isArray(data.pets)?data.pets:[];const picker=$('pet-picker');picker.replaceChildren();pets.forEach(p=>{const b=document.createElement('button');b.textContent=p.name+(Number(p.id)===Number(data.activePetId)?' ✓':'');b.setAttribute('aria-pressed',String(Number(p.id)===Number(data.activePetId)));b.addEventListener('click',()=>selectPet(Number(p.id)));picker.appendChild(b)});const active=pets.find(p=>Number(p.id)===Number(data.activePetId));$('pet-heading').textContent='Pet status'+(active?' · '+active.name:'');const pet=data.pet||{};const energy=Math.max(0,Math.min(100,Number(pet.energy||0)));metric('pet-energy',energy+'%');metric('pet-mood',String(pet.mood||'unknown').replace(/\b\w/g,ch=>ch.toUpperCase()));metric('pet-message',pet.message||'No message yet.');$('pet-energy-bar').style.width=energy+'%';const t=data.totals||{};metric('total-work',duration(t.workMs));metric('total-play',duration(t.playMs));metric('total-nap',duration(t.napMs));metric('total-sessions',Number(t.completedWorkSessions||0).toLocaleString());
 const days=(data.dailyHistory||[]).slice(-selectedDays);const recent=days.reduce((a,d)=>{a.workMs+=Number(d.workMs||0);a.playMs+=Number(d.playMs||0);a.napMs+=Number(d.napMs||0);a.completedWorkSessions+=Number(d.completedWorkSessions||0);return a},{workMs:0,playMs:0,napMs:0,completedWorkSessions:0});
 metric('recent-work',duration(recent.workMs));metric('recent-play',duration(recent.playMs));metric('recent-nap',duration(recent.napMs));metric('recent-sessions',recent.completedWorkSessions.toLocaleString());$('recent-note').textContent='Showing '+days.length+' retained day(s).';
 const daily=$('daily');daily.replaceChildren();(data.dailyHistory||[]).slice().reverse().forEach(d=>daily.appendChild(row([dateLabel(d.dateKey),duration(d.workMs),duration(d.playMs),duration(d.napMs),d.completedWorkSessions])));
@@ -69,6 +69,7 @@ if(!daily.children.length)daily.appendChild(row(['No daily records yet','—','�
 const monthly=$('monthly');monthly.replaceChildren();(data.monthlyHistory||[]).slice().reverse().forEach(m=>monthly.appendChild(row([monthLabel(m.monthKey),duration(m.workMs),duration(m.playMs),duration(m.napMs),m.completedWorkSessions])));
 if(!monthly.children.length)monthly.appendChild(row(['No monthly records yet','—','—','—','—']));
 $('connection').textContent='Connected · auto-refresh 10s';}
+async function selectPet(id){try{const response=await fetch('/api/pet/select',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:'id='+encodeURIComponent(id)});if(!response.ok)throw new Error('HTTP '+response.status);await refresh()}catch(e){$('connection').textContent='Pet selection failed';}}
 async function refresh(){try{const response=await fetch('/api/stats',{cache:'no-store'});if(!response.ok)throw new Error('HTTP '+response.status);render(await response.json())}catch(e){$('connection').textContent='Connection lost · retrying';}}
 $('refresh').addEventListener('click',refresh);document.querySelectorAll('[data-days]').forEach(b=>b.addEventListener('click',()=>{selectedDays=Number(b.dataset.days);if(snapshot)render(snapshot)}));refresh();setInterval(refresh,10000);
 </script></body></html>
@@ -92,6 +93,7 @@ void WebDashboard::begin(PashmakApp &app)
 
     _server.on("/", HTTP_GET, [this]() { handleRoot(); });
     _server.on("/api/stats", HTTP_GET, [this]() { handleStats(); });
+    _server.on("/api/pet/select", HTTP_POST, [this]() { handlePetSelection(); });
     _server.onNotFound([this]() { handleNotFound(); });
     _server.begin();
     _started = true;
@@ -121,6 +123,26 @@ void WebDashboard::handleStats()
 
     _server.sendHeader("Cache-Control", "no-store");
     _server.send(200, "application/json; charset=utf-8", _app->statisticsToJson(14));
+}
+
+
+void WebDashboard::handlePetSelection()
+{
+    if (_app == nullptr || !_server.hasArg("id"))
+    {
+        _server.send(400, "application/json", "{\"error\":\"missing pet id\"}");
+        return;
+    }
+
+    const String value = _server.arg("id");
+    if (value.length() != 1 || value[0] < '0' || value[0] > '2' ||
+        !_app->setActivePet(static_cast<uint8_t>(value[0] - '0')))
+    {
+        _server.send(400, "application/json", "{\"error\":\"invalid pet id\"}");
+        return;
+    }
+
+    _server.send(200, "application/json", "{\"ok\":true}");
 }
 
 void WebDashboard::handleNotFound()

@@ -19,6 +19,20 @@ namespace
 
 PashmakApp::PashmakApp() = default;
 
+uint8_t PashmakApp::dailyHistoryCount() const
+{
+    return _dailyHistoryCount;
+}
+
+bool PashmakApp::getDailyStats(uint8_t index, DailyStats &out) const
+{
+    if (index >= _dailyHistoryCount)
+        return false;
+
+    out = _dailyHistory[index];
+    return true;
+}
+
 void PashmakApp::begin()
 {
     Serial.begin(115200);

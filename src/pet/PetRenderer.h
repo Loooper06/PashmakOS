@@ -15,18 +15,20 @@ public:
         Display &display,
         PetMode mode,
         uint32_t frame,
-        const char *message);
+        const char *message,
+        const char *dateTime);
 
 private:
     void drawDog(Display &display, PetMode mode, uint32_t frame);
     void drawHeader(Display &display);
-    void drawFooter(Display &display, PetMode mode);
+    void drawFooter(Display &display, PetMode mode, const char *dateTime);
     void drawMessage(Display &display, const char *message);
 
     bool _initialized;
     bool _footerInitialized;
     const char *_lastMessage;
     bool _messageInitialized;
+    char _lastDateTime[24] = "";
     PetMode _lastMode;
     bool _dogInitialized;
     PetMode _lastDogMode;

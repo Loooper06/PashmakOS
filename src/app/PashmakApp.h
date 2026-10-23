@@ -30,6 +30,15 @@ public:
         uint8_t daysIncluded = 0;
     };
 
+    struct MonthlyStats
+    {
+        int32_t monthKey = 0; // YYYYMM
+        uint64_t workMs = 0;
+        uint64_t playMs = 0;
+        uint64_t napMs = 0;
+        uint32_t completedWorkSessions = 0;
+    };
+
     PashmakApp();
     void begin();
     void update();
@@ -41,6 +50,7 @@ public:
 
 private:
     static constexpr uint8_t DAILY_HISTORY_DAYS = 14;
+    static constexpr uint8_t MONTHLY_HISTORY_MONTHS = 12;
 
     struct DailyHistoryStorage
     {
@@ -48,6 +58,14 @@ private:
         uint8_t count = 0;
         uint8_t reserved[3]{};
         DailyStats records[DAILY_HISTORY_DAYS]{};
+    };
+
+    struct MonthlyHistoryStorage
+    {
+        uint32_t version = 1;
+        uint8_t count = 0;
+        uint8_t reserved[3]{};
+        MonthlyStats records[MONTHLY_HISTORY_MONTHS]{};
     };
 
     Display _display;
@@ -76,6 +94,11 @@ private:
     uint32_t _lastHistoryPersistAt = 0;
     static constexpr uint32_t HISTORY_PERSIST_INTERVAL_MS = 60000UL;
 
+    MonthlyStats _monthlyHistory[MONTHLY_HISTORY_MONTHS]{};
+    uint8_t _monthlyHistoryCount = 0;
+    int8_t _currentMonthlyIndex = -1;
+    uint32_t _lastMonthlyPersistAt = 0;
+
     uint8_t _completedWorkCycles = 0;
     bool _longRestPending = false;
     const char *_reminderMessage = nullptr;
@@ -86,6 +109,12 @@ private:
     void persistStats(uint32_t now, bool force = false);
     void loadDailyHistory();
     void syncDailyHistory(uint32_t now);
+    void loadMonthlyHistory();
+    void syncMonthlyHistory(uint32_t now);
+    void persistMonthlyHistory(uint32_t now, bool force = false);
+    void recordMonthlyElapsed(uint32_t elapsedMs);
+    void recordMonthlyCompletedWorkSession();
+    int8_t findMonthlyRecord(int32_t monthKey) const;
     void persistDailyHistory(uint32_t now, bool force = false);
     void recordDailyElapsed(uint32_t elapsedMs);
     void recordCompletedWorkSession();

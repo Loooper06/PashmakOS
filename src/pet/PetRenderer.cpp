@@ -50,68 +50,68 @@ namespace
     DogPose getDogPose(PetMode mode, uint32_t frame)
     {
         DogPose pose{};
-        // A closed route with explicit segment endpoints. Each segment starts
-        // exactly where the previous segment ended, avoiding a direction flip
-        // at the frame-cycle boundary.
-        const int16_t waypoints[] = {124, 196, 148, 188, 132, 180};
-        constexpr uint8_t WAYPOINT_COUNT = sizeof(waypoints) / sizeof(waypoints[0]);
 
-        const uint16_t cycleLength = mode == PetMode::Nap ? 240 : 200;
-        const uint16_t walkLength = mode == PetMode::Nap ? 48 : 72;
-        const uint32_t cycle = frame % cycleLength;
-        const uint8_t waypoint = (frame / cycleLength) % WAYPOINT_COUNT;
-        const int16_t fromX = waypoints[(waypoint + WAYPOINT_COUNT - 1) % WAYPOINT_COUNT];
-        const int16_t toX = waypoints[waypoint];
+        // One shared, deterministic movement controller for every pet.
+        // Keep the complete character inside the 320 px sprite at all times.
+        constexpr int16_t LEFT_CENTER = 104;
+        constexpr int16_t RIGHT_CENTER = 216;
+        constexpr uint16_t HALF_TRIP_FRAMES = 84;
 
-        // Smoothstep easing avoids abrupt starts/stops and keeps each segment
-        // continuous at the waypoint boundaries.
-        if (cycle < walkLength)
+        // A triangular route has no waypoint table or segment-index wraparound.
+        // The same position is produced for every pet at the same frame.
+        const uint32_t leg = (frame / HALF_TRIP_FRAMES) & 1U;
+        const uint32_t phase = frame % HALF_TRIP_FRAMES;
+        const uint32_t t = (phase * 1000UL) / HALF_TRIP_FRAMES;
+        const uint32_t eased = (t * t * (3000UL - 2UL * t)) / 1000000UL;
+
+        const int16_t fromX = leg == 0 ? LEFT_CENTER : RIGHT_CENTER;
+        const int16_t toX = leg == 0 ? RIGHT_CENTER : LEFT_CENTER;
+        pose.travelX = static_cast<int16_t>(
+            fromX + (static_cast<int32_t>(toX - fromX) * eased) / 1000);
+
+        const bool resting = mode == PetMode::Nap;
+        pose.action = resting ? PetAction::LieDown : PetAction::Walk;
+        pose.moving = !resting;
+
+        if (resting)
         {
-            const uint32_t t = (cycle * 1000UL) / walkLength;
-            const uint32_t eased = (t * t * (3000UL - 2UL * t)) / 1000000UL;
-            pose.travelX = static_cast<int16_t>(
-                fromX + (static_cast<int32_t>(toX - fromX) * eased) / 1000);
-            pose.action = PetAction::Walk;
-            pose.moving = true;
-
-            // A four-beat gait: diagonal pairs alternate instead of the
-            // whole pet simply sliding from one point to another.
-            const uint8_t gait = (frame / 3) % 4;
-            pose.legSwing = (gait == 0 || gait == 3) ? -5 : 5;
-            pose.tailSwing = (gait < 2) ? -4 : 4;
-            pose.bob = (gait == 0 || gait == 2) ? -1 : 2;
-            pose.gazeX = (toX >= fromX) ? 2 : -2;
+            pose.travelX = 160;
+            pose.bob = ((frame / 12U) & 1U) ? 2 : 1;
+            pose.gazeX = 0;
+            pose.legSwing = 0;
+            pose.tailSwing = 0;
+            pose.blinking = true;
         }
         else
         {
-            pose.travelX = toX;
-            pose.action = mode == PetMode::Nap ? PetAction::LieDown : PetAction::Sit;
-            pose.gazeX = 0;
-            pose.bob = mode == PetMode::Nap
-                ? ((frame / 12) % 2 == 0 ? 1 : 2) // gentle breathing
-                : 2;
-            pose.tailSwing = mode == PetMode::Nap ? 0 : ((frame / 10) % 2 ? 1 : -1);
+            // Four-step gait shared by Pashmak, Mochi and Pixel.
+            // Direction is derived from the current trip, not from a
+            // waypoint comparison that can become ambiguous at boundaries.
+            const bool headingRight = leg == 0;
+            const uint8_t gait = (frame / 3U) & 3U;
+            const int8_t gaitSwing = (gait == 0 || gait == 3) ? -5 : 5;
+            pose.legSwing = gaitSwing;
+            pose.tailSwing = (gait < 2U) ? -4 : 4;
+            pose.bob = (gait == 0U || gait == 2U) ? -1 : 2;
+            pose.gazeX = headingRight ? 2 : -2;
+            pose.blinking = (frame % 53U) < 2U;
         }
 
-        // Play keeps a more energetic gait, but still follows the same
-        // continuous route rather than teleporting between fixed positions.
-        if (mode == PetMode::Play && pose.action == PetAction::Walk)
+        // Small ear motion, identical across all pet skins.
+        const uint8_t earPhase = (frame / 5U) % 12U;
+        if (!resting)
         {
-            pose.legSwing = (pose.legSwing < 0) ? -6 : 6;
-            pose.tailSwing = (pose.tailSwing < 0) ? -6 : 6;
+            if (earPhase >= 2U && earPhase < 5U) pose.leftEarX = -2;
+            if (earPhase >= 7U && earPhase < 10U) pose.rightEarX = 2;
         }
 
-        const uint32_t blinkPhase = frame % 53;
-        pose.blinking = mode == PetMode::Nap ||
-                        (blinkPhase < 2) ||
-                        (blinkPhase >= 4 && blinkPhase < 6);
-
-        const uint8_t earPhase = (frame / 5) % 12;
-        if (mode != PetMode::Nap && pose.action != PetAction::LieDown)
+        // Play mode has a more energetic but still synchronized gait.
+        if (mode == PetMode::Play && !resting)
         {
-            if (earPhase >= 2 && earPhase < 5) pose.leftEarX = -2;
-            if (earPhase >= 7 && earPhase < 10) pose.rightEarX = 2;
+            pose.legSwing = pose.legSwing < 0 ? -7 : 7;
+            pose.tailSwing = pose.tailSwing < 0 ? -6 : 6;
         }
+
         return pose;
     }
 }

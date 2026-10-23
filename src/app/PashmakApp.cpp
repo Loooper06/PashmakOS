@@ -103,17 +103,17 @@ void PashmakApp::updateRtcReminder(uint32_t now)
     switch (reminder)
     {
     case ReminderType::DrinkWater:
-        _reminderMessage = "Water break, engineer!";
+        _reminderMessage = "وقت نوشیدن آبه، مهندس!";
         Serial.println("[RTC] Reminder: drink water.");
         break;
 
     case ReminderType::MoveBody:
-        _reminderMessage = "Stand up and stretch!";
+        _reminderMessage = "بلند شو و کمی کش‌وقوس بیا.";
         Serial.println("[RTC] Reminder: stand up and stretch.");
         break;
 
     case ReminderType::Compliment:
-        _reminderMessage = "Looking sharp today!";
+        _reminderMessage = "امروز عالی به نظر می‌رسی!";
         Serial.println("[RTC] Reminder: daily compliment.");
         break;
 

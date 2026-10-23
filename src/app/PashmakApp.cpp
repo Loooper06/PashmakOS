@@ -815,7 +815,7 @@ void PashmakApp::update()
                      current.hour(), current.minute(), current.year(),
                      current.month(), current.day());
         }
-        _renderer.draw(_display, _mode, _frame, _activePetId, message, dateTime);
+        _renderer.draw(_display, _mode, _frame, _activePetId, _behaviors[_activePetId].state().mood, message, dateTime);
         _lastFrame = now;
     }
 }

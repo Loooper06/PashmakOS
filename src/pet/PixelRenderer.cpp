@@ -26,9 +26,9 @@ void drawPixelBody(Display &d, PetBodyPose pose, int8_t legSwing, int8_t tailSwi
     } else {
         d.fillEllipse(160, 158, 20, 27, furDark);
         d.fillEllipse(160, 156, 17, 25, fur);
-        d.fillEllipse(143, 159, 7, 18, furDark);
+        d.fillEllipse(143 + (pose == PetBodyPose::Walk ? -legSwing : 0), 159 + (pose == PetBodyPose::Walk ? 2 : 0), 7, 18, furDark);
         d.fillEllipse(143, 158, 4, 16, fur);
-        d.fillEllipse(177, 159, 7, 18, furDark);
+        d.fillEllipse(177 + (pose == PetBodyPose::Walk ? legSwing : 0), 159 + (pose == PetBodyPose::Walk ? -2 : 0), 7, 18, furDark);
         d.fillEllipse(177, 158, 4, 16, fur);
     }
     const int16_t swing = pose == PetBodyPose::Walk || pose == PetBodyPose::Hop ? legSwing : 0;

@@ -193,8 +193,8 @@ void PetRenderer::drawDog(Display &d, PetMode mode, uint32_t frame, uint8_t petI
     d.fillEllipse(201 + rx, 79, 11, 16, earPink);
     d.fillTriangle(196 + rx, 70, 208 + rx, 65, 210 + rx, 78, earPink);
 
-    d.fillEllipse(116 + lx, 73, 3, 5, cream_DARK);
-    d.fillEllipse(198 + rx, 73, 3, 5, cream_DARK);
+    d.fillEllipse(116 + lx, 73, 3, 5, CREAM_DARK);
+    d.fillEllipse(198 + rx, 73, 3, 5, CREAM_DARK);
     d.fillEllipse(123 + lx, 96, 13, 12, fur);
     d.fillEllipse(197 + rx, 96, 13, 12, fur);
 

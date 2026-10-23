@@ -46,6 +46,8 @@ void PashmakApp::begin()
 
     _behavior.begin(now);
     _rtc.begin();
+    loadDailyHistory();
+    syncDailyHistory(now);
 
     _renderer.draw(
         _display,
@@ -65,6 +67,7 @@ void PashmakApp::setMode(PetMode mode, uint32_t now)
     _mode = mode;
     _modeStartedAt = now;
     persistStats(now, true);
+    persistDailyHistory(now, true);
     Serial.printf("[PET] Mode changed: %s\n", modeName(_mode));
 }
 
@@ -78,6 +81,7 @@ void PashmakApp::updateAutomaticMode(uint32_t now)
         if (modeElapsed >= Config::WORK_SESSION_DURATION_MS)
         {
             ++_completedWorkSessions;
+            recordCompletedWorkSession();
             ++_completedWorkCycles;
 
             if (_completedWorkCycles >= Config::WORK_CYCLES_BEFORE_LONG_REST)
@@ -131,6 +135,162 @@ void PashmakApp::persistStats(uint32_t now, bool force)
                   static_cast<unsigned long>(_completedWorkSessions));
 }
 
+int32_t PashmakApp::makeDateKey(const DateTime &date)
+{
+    return static_cast<int32_t>(date.year()) * 10000 +
+           static_cast<int32_t>(date.month()) * 100 +
+           static_cast<int32_t>(date.day());
+}
+
+int8_t PashmakApp::findDailyRecord(int32_t dateKey) const
+{
+    for (uint8_t i = 0; i < _dailyHistoryCount; ++i)
+    {
+        if (_dailyHistory[i].dateKey == dateKey)
+            return static_cast<int8_t>(i);
+    }
+    return -1;
+}
+
+void PashmakApp::loadDailyHistory()
+{
+    _dailyHistoryCount = 0;
+    _currentDailyIndex = -1;
+    if (!_statsReady)
+        return;
+
+    const size_t expected = sizeof(DailyHistoryStorage);
+    if (_statsPreferences.getBytesLength("dailyHist") != expected)
+    {
+        Serial.println("[HISTORY] No valid saved daily history; starting fresh.");
+        return;
+    }
+
+    DailyHistoryStorage stored{};
+    if (_statsPreferences.getBytes("dailyHist", &stored, expected) != expected ||
+        stored.version != 1 || stored.count > DAILY_HISTORY_DAYS)
+    {
+        Serial.println("[HISTORY] Saved history is invalid; starting fresh.");
+        return;
+    }
+
+    _dailyHistoryCount = stored.count;
+    for (uint8_t i = 0; i < _dailyHistoryCount; ++i)
+    {
+        if (stored.records[i].dateKey < 20000101 ||
+            stored.records[i].dateKey > 20991231)
+        {
+            _dailyHistoryCount = 0;
+            Serial.println("[HISTORY] Invalid date found; history reset.");
+            return;
+        }
+        if (i > 0 && stored.records[i].dateKey <= stored.records[i - 1].dateKey)
+        {
+            _dailyHistoryCount = 0;
+            Serial.println("[HISTORY] History order invalid; history reset.");
+            return;
+        }
+    }
+
+    for (uint8_t i = 0; i < _dailyHistoryCount; ++i)
+        _dailyHistory[i] = stored.records[i];
+
+    Serial.printf("[HISTORY] Loaded %u daily records.\\n", _dailyHistoryCount);
+}
+
+void PashmakApp::syncDailyHistory(uint32_t now)
+{
+    (void)now;
+    if (!_rtc.isAvailable())
+    {
+        _currentDailyIndex = -1;
+        return;
+    }
+
+    const int32_t today = makeDateKey(_rtc.now());
+    int8_t existing = findDailyRecord(today);
+    if (existing >= 0)
+    {
+        _currentDailyIndex = existing;
+        return;
+    }
+
+    if (_dailyHistoryCount > 0 &&
+        today < _dailyHistory[_dailyHistoryCount - 1].dateKey)
+    {
+        _currentDailyIndex = -1;
+        Serial.println("[HISTORY] RTC date moved backwards; daily recording paused to protect history.");
+        return;
+    }
+
+    if (_dailyHistoryCount < DAILY_HISTORY_DAYS)
+    {
+        _currentDailyIndex = static_cast<int8_t>(_dailyHistoryCount++);
+    }
+    else
+    {
+        for (uint8_t i = 1; i < DAILY_HISTORY_DAYS; ++i)
+            _dailyHistory[i - 1] = _dailyHistory[i];
+        _currentDailyIndex = DAILY_HISTORY_DAYS - 1;
+    }
+
+    _dailyHistory[_currentDailyIndex] = DailyStats{};
+    _dailyHistory[_currentDailyIndex].dateKey = today;
+    persistDailyHistory(millis(), true);
+    Serial.printf("[HISTORY] Started daily record %ld.\\n", static_cast<long>(today));
+}
+
+void PashmakApp::recordDailyElapsed(uint32_t elapsedMs)
+{
+    if (_currentDailyIndex < 0 ||
+        _currentDailyIndex >= static_cast<int8_t>(_dailyHistoryCount))
+        return;
+
+    DailyStats &day = _dailyHistory[_currentDailyIndex];
+    switch (_mode)
+    {
+    case PetMode::Work: day.workMs += elapsedMs; break;
+    case PetMode::Play: day.playMs += elapsedMs; break;
+    case PetMode::Nap: day.napMs += elapsedMs; break;
+    }
+}
+
+void PashmakApp::recordCompletedWorkSession()
+{
+    if (_currentDailyIndex < 0 ||
+        _currentDailyIndex >= static_cast<int8_t>(_dailyHistoryCount))
+        return;
+
+    DailyStats &day = _dailyHistory[_currentDailyIndex];
+    if (day.completedWorkSessions < UINT16_MAX)
+        ++day.completedWorkSessions;
+    persistDailyHistory(millis(), true);
+}
+
+void PashmakApp::persistDailyHistory(uint32_t now, bool force)
+{
+    if (!_statsReady ||
+        (!force && static_cast<uint32_t>(now - _lastHistoryPersistAt) < HISTORY_PERSIST_INTERVAL_MS))
+        return;
+
+    DailyHistoryStorage stored{};
+    stored.version = 1;
+    stored.count = _dailyHistoryCount;
+    for (uint8_t i = 0; i < _dailyHistoryCount; ++i)
+        stored.records[i] = _dailyHistory[i];
+
+    const size_t written = _statsPreferences.putBytes("dailyHist", &stored, sizeof(stored));
+    if (written == sizeof(stored))
+    {
+        _lastHistoryPersistAt = now;
+        Serial.printf("[HISTORY] Saved %u daily records.\\n", _dailyHistoryCount);
+    }
+    else
+    {
+        Serial.println("[HISTORY] Failed to persist daily history.");
+    }
+}
+
 void PashmakApp::updateRtcReminder(uint32_t now)
 {
     const ReminderType reminder = _rtc.update(now);
@@ -174,7 +334,10 @@ void PashmakApp::update()
     case PetMode::Nap: _napMs += elapsed; break;
     }
     _lastWorkTick = now;
+    syncDailyHistory(now);
+    recordDailyElapsed(elapsed);
     persistStats(now);
+    persistDailyHistory(now);
 
     updateAutomaticMode(now);
     _behavior.update(_mode, now);

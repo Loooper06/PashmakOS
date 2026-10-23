@@ -65,7 +65,9 @@ ReminderType RtcService::update(uint32_t nowMs)
     if (current.hour() < 9 || current.hour() >= 21)
         return ReminderType::None;
 
-    if (current.hour() == 10 && current.minute() == 0)
+    // Trigger once per day at or after 10:00. This also survives booting
+    // after 10:00 and short polling delays without missing the daily message.
+    if (current.hour() >= 10)
     {
         const int32_t today = dateKey(current);
         if (_lastComplimentDate != today)

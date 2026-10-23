@@ -3,6 +3,17 @@
 
 namespace
 {
+    const char *modeName(PetMode mode)
+    {
+        switch (mode)
+        {
+        case PetMode::Work: return "Work";
+        case PetMode::Nap: return "Nap";
+        case PetMode::Play: return "Play";
+        default: return "Unknown";
+        }
+    }
+
     constexpr uint32_t WORK_SESSION_MS = 25UL * 60UL * 1000UL;
     constexpr uint32_t PLAY_SESSION_MS = 2UL * 60UL * 1000UL;
     constexpr uint32_t NAP_SESSION_MS = 5UL * 60UL * 1000UL;
@@ -41,7 +52,7 @@ void PashmakApp::setMode(PetMode mode, uint32_t now)
 
     _mode = mode;
     _modeStartedAt = now;
-    Serial.printf("Pet mode changed to: %u\n", static_cast<unsigned>(_mode));
+    Serial.printf("[PET] Mode changed: %s\n", modeName(_mode));
 }
 
 void PashmakApp::updateAutomaticMode(uint32_t now)

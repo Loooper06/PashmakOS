@@ -2,7 +2,6 @@
 #pragma once
 
 #include <TFT_eSPI.h>
-#include <ArabicGFX.h>
 
 class Display
 {
@@ -47,7 +46,6 @@ public:
 
 private:
     TFT_eSPI _tft;
-    ArabicGFX _arabic;
     TFT_eSprite _dogSprite;
 
     bool _spriteReady;

@@ -34,6 +34,7 @@ private:
     bool _dogInitialized;
     PetMode _lastDogMode;
     uint8_t _lastPetId = 255;
+    uint8_t _lastDogPetId = 255;
     int8_t _lastDogBob;
     bool _lastDogMoving;
     bool _lastDogBlinking;

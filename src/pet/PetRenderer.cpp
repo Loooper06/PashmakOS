@@ -205,7 +205,7 @@ void PetRenderer::drawDog(Display &d, PetMode mode, uint32_t frame, uint8_t petI
 
     const int16_t cx = 160;
     d.setDogPosition(pose.travelX, 0);
-    const int16_t cy = 112 + pose.bob + (pose.action == PetAction::Sit ? 4 : 0) + (pose.action == PetAction::LieDown ? 5 : 0);
+    const int16_t cy = 112 + pose.bob + (pose.action == PetAction::Sit ? 4 : 0) + (pose.action == PetAction::LieDown ? 16 : 0);
 
     const int16_t lx = pose.leftEarX;
     const int16_t rx = pose.rightEarX;

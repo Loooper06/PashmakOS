@@ -801,7 +801,7 @@ void PashmakApp::update()
         ++_frame;
         const char *message = _reminderMessage != nullptr
                                   ? _reminderMessage
-                                  : _behavior.state().message;
+                                  : _behaviors[_activePetId].state().message;
 
         char dateTime[24] = "--:--  ----/--/--";
         if (_rtc.isAvailable())

@@ -21,11 +21,19 @@ private:
     struct DailyStats
     {
         int32_t dateKey = 0; // YYYYMMDD
-        uint32_t workSeconds = 0;
-        uint32_t playSeconds = 0;
-        uint32_t napSeconds = 0;
+        uint32_t workMs = 0;
+        uint32_t playMs = 0;
+        uint32_t napMs = 0;
         uint16_t completedWorkSessions = 0;
         uint16_t reserved = 0;
+    };
+
+    struct DailyHistoryStorage
+    {
+        uint32_t version = 1;
+        uint8_t count = 0;
+        uint8_t reserved[3]{};
+        DailyStats records[DAILY_HISTORY_DAYS]{};
     };
 
     Display _display;
@@ -52,6 +60,7 @@ private:
     uint8_t _dailyHistoryCount = 0;
     int8_t _currentDailyIndex = -1;
     uint32_t _lastHistoryPersistAt = 0;
+    static constexpr uint32_t HISTORY_PERSIST_INTERVAL_MS = 60000UL;
 
     uint8_t _completedWorkCycles = 0;
     bool _longRestPending = false;

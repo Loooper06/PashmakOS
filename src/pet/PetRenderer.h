@@ -3,6 +3,7 @@
 
 #include <stdint.h>
 #include "../core/PetState.h"
+#include "PetBehavior.h"
 
 class Display;
 
@@ -16,11 +17,12 @@ public:
         PetMode mode,
         uint32_t frame,
         uint8_t petId,
+        PetMood mood,
         const char *message,
         const char *dateTime);
 
 private:
-    void drawDog(Display &display, PetMode mode, uint32_t frame, uint8_t petId);
+    void drawDog(Display &display, PetMode mode, uint32_t frame, uint8_t petId, PetMood mood);
     void drawHeader(Display &display);
     void drawFooter(Display &display, PetMode mode, uint8_t petId, const char *dateTime);
     void drawMessage(Display &display, const char *message);
@@ -43,6 +45,7 @@ private:
     int8_t _lastDogTailSwing = 0;
     uint8_t _lastDogAction = 255;
     bool _lastDogBlinking;
+    PetMood _lastDogMood = PetMood::Focused;
     int8_t _lastDogLeftEarX;
     int8_t _lastDogRightEarX;
 };

@@ -106,6 +106,9 @@ private:
     uint8_t _completedWorkCycles = 0;
     bool _longRestPending = false;
     const char *_reminderMessage = nullptr;
+    char _serialCommandBuffer[32]{};
+    uint8_t _serialCommandLength = 0;
+    bool _serialCommandOverflow = false;
 
     void setMode(PetMode mode, uint32_t now);
     void updateAutomaticMode(uint32_t now);

@@ -655,9 +655,41 @@ void PashmakApp::handleSerialCommands()
                 Serial.println(statisticsToJson(7));
                 Serial.println("[STATS_JSON_END]");
             }
+            else if (strcmp(_serialCommandBuffer, "daily_csv") == 0)
+            {
+                Serial.println("[DAILY_CSV_BEGIN]");
+                Serial.println("dateKey,workMs,playMs,napMs,completedWorkSessions");
+                for (uint8_t i = 0; i < _dailyHistoryCount; ++i)
+                {
+                    const DailyStats &day = _dailyHistory[i];
+                    Serial.printf("%ld,%lu,%lu,%lu,%u\\n",
+                                  static_cast<long>(day.dateKey),
+                                  static_cast<unsigned long>(day.workMs),
+                                  static_cast<unsigned long>(day.playMs),
+                                  static_cast<unsigned long>(day.napMs),
+                                  static_cast<unsigned int>(day.completedWorkSessions));
+                }
+                Serial.println("[DAILY_CSV_END]");
+            }
+            else if (strcmp(_serialCommandBuffer, "monthly_csv") == 0)
+            {
+                Serial.println("[MONTHLY_CSV_BEGIN]");
+                Serial.println("monthKey,workMs,playMs,napMs,completedWorkSessions");
+                for (uint8_t i = 0; i < _monthlyHistoryCount; ++i)
+                {
+                    const MonthlyStats &month = _monthlyHistory[i];
+                    Serial.printf("%ld,%llu,%llu,%llu,%lu\\n",
+                                  static_cast<long>(month.monthKey),
+                                  static_cast<unsigned long long>(month.workMs),
+                                  static_cast<unsigned long long>(month.playMs),
+                                  static_cast<unsigned long long>(month.napMs),
+                                  static_cast<unsigned long>(month.completedWorkSessions));
+                }
+                Serial.println("[MONTHLY_CSV_END]");
+            }
             else if (strcmp(_serialCommandBuffer, "help") == 0)
             {
-                Serial.println("Commands: stats, help");
+                Serial.println("Commands: stats, daily_csv, monthly_csv, help");
             }
             else if (_serialCommandLength > 0)
             {

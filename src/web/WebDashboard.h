@@ -18,5 +18,6 @@ private:
 
     void handleRoot();
     void handleStats();
+    void handlePetSelection();
     void handleNotFound();
 };

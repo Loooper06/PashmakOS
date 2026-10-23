@@ -1,6 +1,7 @@
 #pragma once
 
 #include <Arduino.h>
+#include <Preferences.h>
 #include "RtcService.h"
 #include "../core/PetState.h"
 #include "../display/Display.h"
@@ -25,8 +26,14 @@ private:
 
     uint32_t _lastFrame = 0;
     uint32_t _frame = 0;
-    uint32_t _workMs = 0;
+    uint64_t _workMs = 0;
+    uint64_t _playMs = 0;
+    uint64_t _napMs = 0;
     uint32_t _lastWorkTick = 0;
+    uint32_t _lastStatsPersistAt = 0;
+    uint32_t _completedWorkSessions = 0;
+    Preferences _statsPreferences;
+    bool _statsReady = false;
     uint32_t _modeStartedAt = 0;
     uint32_t _reminderShownAt = 0;
 
@@ -37,4 +44,5 @@ private:
     void setMode(PetMode mode, uint32_t now);
     void updateAutomaticMode(uint32_t now);
     void updateRtcReminder(uint32_t now);
+    void persistStats(uint32_t now, bool force = false);
 };

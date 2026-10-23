@@ -45,6 +45,8 @@ public:
 
     uint8_t dailyHistoryCount() const;
     bool getDailyStats(uint8_t index, DailyStats &out) const;
+    uint8_t monthlyHistoryCount() const;
+    bool getMonthlyStats(uint8_t index, MonthlyStats &out) const;
     StatsSummary summarizeRecentDays(uint8_t days) const;
     StatsSummary summarizeMonth(uint16_t year, uint8_t month) const;
 

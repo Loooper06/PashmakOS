@@ -50,20 +50,18 @@ namespace
     DogPose getDogPose(PetMode mode, uint32_t frame)
     {
         DogPose pose{};
-        // Use a deterministic two-endpoint route. The pet's center is kept
-        // well inside the 320 px sprite; alternating endpoints prevents the
-        // uneven direction changes caused by the previous multi-waypoint loop.
-        constexpr int16_t LEFT_X = 124;
-        constexpr int16_t RIGHT_X = 196;
+        // A closed route with explicit segment endpoints. Each segment starts
+        // exactly where the previous segment ended, avoiding a direction flip
+        // at the frame-cycle boundary.
+        const int16_t waypoints[] = {124, 196, 148, 188, 132, 180};
+        constexpr uint8_t WAYPOINT_COUNT = sizeof(waypoints) / sizeof(waypoints[0]);
 
-        // Walk, then pause at the destination. Nap uses a shorter walk and
-        // longer rest. The route alternates left <-> right every full cycle.
         const uint16_t cycleLength = mode == PetMode::Nap ? 240 : 200;
         const uint16_t walkLength = mode == PetMode::Nap ? 48 : 72;
         const uint32_t cycle = frame % cycleLength;
-        const bool headingRight = ((frame / cycleLength) % 2U) != 0U;
-        const int16_t fromX = headingRight ? LEFT_X : RIGHT_X;
-        const int16_t toX = headingRight ? RIGHT_X : LEFT_X;
+        const uint8_t waypoint = (frame / cycleLength) % WAYPOINT_COUNT;
+        const int16_t fromX = waypoints[(waypoint + WAYPOINT_COUNT - 1) % WAYPOINT_COUNT];
+        const int16_t toX = waypoints[waypoint];
 
         // Smoothstep easing avoids abrupt starts/stops and keeps each segment
         // continuous at the waypoint boundaries.
@@ -79,14 +77,10 @@ namespace
             // A four-beat gait: diagonal pairs alternate instead of the
             // whole pet simply sliding from one point to another.
             const uint8_t gait = (frame / 3) % 4;
-            const int8_t gaitDirection = headingRight ? 1 : -1;
-            // Reverse the leg phase when travelling in the opposite direction
-            // so the feet do not appear to run backwards while the body moves.
-            const int8_t gaitStep = (gait == 0 || gait == 3) ? -5 : 5;
-            pose.legSwing = static_cast<int8_t>(gaitStep * gaitDirection);
+            pose.legSwing = (gait == 0 || gait == 3) ? -5 : 5;
             pose.tailSwing = (gait < 2) ? -4 : 4;
             pose.bob = (gait == 0 || gait == 2) ? -1 : 2;
-            pose.gazeX = headingRight ? 2 : -2;
+            pose.gazeX = (toX >= fromX) ? 2 : -2;
         }
         else
         {

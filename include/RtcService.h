@@ -25,5 +25,5 @@ private:
     uint32_t _lastPollMs = 0;
     uint32_t _lastWaterReminder = 0;
     uint32_t _lastMovementReminder = 0;
-    int32_t _lastComplimentDay = -1;
+    int32_t _lastComplimentDate = -1;
 };

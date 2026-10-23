@@ -186,7 +186,7 @@ void Display::drawText(
     {
         _arabic.setFont(&ArabicFont_Cairo12);
         _arabic.setAlign(AR_ALIGN_RIGHT);
-        _arabic.setDirection(DIR_RTL);
+        _arabic.setDirection(ArabicBidi::DIR_RTL);
         _arabic.setTextColor(color, 0x2127);
         _arabic.drawText(_tft, x, y, text);
         return;

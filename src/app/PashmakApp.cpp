@@ -116,13 +116,7 @@ String PashmakApp::statisticsToJson(uint8_t recentDays) const
     json += F(",\"mood\":\"");
     json += mood;
     json += F("\",\"message\":\"");
-    for (const char *p = pet.message; p != nullptr && *p; ++p)
-    {
-        if (*p == '"' || *p == '\\\\')
-            json += '\\\\';
-        if (static_cast<uint8_t>(*p) >= 0x20)
-            json += *p;
-    }
+    json += (pet.message != nullptr ? pet.message : "");
     json += F("\"},\"totals\":{\"workMs\":");
     json += String(static_cast<unsigned long long>(_workMs));
     json += F(",\"playMs\":");

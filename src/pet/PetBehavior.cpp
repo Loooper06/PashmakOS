@@ -5,23 +5,23 @@ namespace
     constexpr uint32_t MESSAGE_INTERVAL_MS = 45000;
 
     const char *const WORK_MESSAGES[] = {
-        "وقت تمرکز، مهندس!",
-        "قدم‌به‌قدم پیش برو.",
-        "داری پیشرفت می‌کنی!",
-        "شونه‌هات رو رها کن.",
-        "پلک زدن یادت نره."};
+        "Let's Focus, Engineer!",
+        "Step by Step Is Better",
+        "Improving Every Day!",
+        "Relax, Engineer!",
+        "Don't Forget to Blink!"};
 
     const char *const NAP_MESSAGES[] = {
-        "وقت یه استراحت حسابیه.",
-        "به چشم‌هات استراحت بده.",
-        "آروم نفس بکش.",
-        "بلند شو و کمی کش‌وقوس بیا."};
+        "Time for a Proper Break.",
+        "Give Your Eyes Some Rest.",
+        "Take a Deep Breath.",
+        "Stand Up and Stretch a Little."};
 
     const char *const PLAY_MESSAGES[] = {
-        "بیا کمی حرکت کنیم!",
-        "گردنت رو آروم بکش.",
-        "وقت نوشیدن آبه، مهندس!",
-        "یه پیاده‌روی کوتاه خوبه."};
+        "Let's Get Moving!",
+        "Stretch Your Neck Gently.",
+        "Time to Drink Some Water!",
+        "A Short Walk Would Be Nice."};
 
     constexpr uint8_t WORK_MESSAGE_COUNT =
         sizeof(WORK_MESSAGES) / sizeof(WORK_MESSAGES[0]);
@@ -97,7 +97,7 @@ void PetBehavior::selectMessage(PetMode mode, uint32_t now)
 
     default:
         _state.mood = PetMood::Curious;
-        _state.message = "سلام، مهندس!";
+        _state.message = "Hello, Engineer!";
         break;
     }
 }

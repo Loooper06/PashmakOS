@@ -24,6 +24,7 @@ bool PashmakApp::setActivePet(uint8_t petId)
     if (petId >= PET_COUNT)
         return false;
     _activePetId = petId;
+    if (_statsReady) _statsPreferences.putUChar("activePet", _activePetId);
     return true;
 }
 
@@ -237,6 +238,8 @@ void PashmakApp::begin()
     _statsReady = _statsPreferences.begin("petstats", false);
     if (_statsReady)
     {
+        _activePetId = _statsPreferences.getUChar("activePet", 0);
+        if (_activePetId >= 3) _activePetId = 0;
         _workMs = _statsPreferences.getULong64("workMs", 0);
         _playMs = _statsPreferences.getULong64("playMs", 0);
         _napMs = _statsPreferences.getULong64("napMs", 0);
@@ -260,6 +263,7 @@ void PashmakApp::begin()
         _display,
         _mode,
         _frame,
+        _activePetId,
         _behaviors[_activePetId].state().message,
         nullptr);
 
@@ -811,7 +815,7 @@ void PashmakApp::update()
                      current.hour(), current.minute(), current.year(),
                      current.month(), current.day());
         }
-        _renderer.draw(_display, _mode, _frame, message, dateTime);
+        _renderer.draw(_display, _mode, _frame, _activePetId, message, dateTime);
         _lastFrame = now;
     }
 }

@@ -62,11 +62,9 @@ void PashmakApp::setMode(PetMode mode, uint32_t now)
     if (_mode == mode)
         return;
 
-    if (_mode == PetMode::Work)
-        ++_completedWorkSessions;
-
     _mode = mode;
     _modeStartedAt = now;
+    persistStats(now, true);
     Serial.printf("[PET] Mode changed: %s\n", modeName(_mode));
 }
 
@@ -79,6 +77,7 @@ void PashmakApp::updateAutomaticMode(uint32_t now)
     case PetMode::Work:
         if (modeElapsed >= Config::WORK_SESSION_DURATION_MS)
         {
+            ++_completedWorkSessions;
             ++_completedWorkCycles;
 
             if (_completedWorkCycles >= Config::WORK_CYCLES_BEFORE_LONG_REST)
@@ -125,7 +124,7 @@ void PashmakApp::persistStats(uint32_t now, bool force)
     _statsPreferences.putUInt("workSessions", _completedWorkSessions);
     _lastStatsPersistAt = now;
 
-    Serial.printf("[STATS] Work: %llu min | Play: %llu min | Rest: %llu min | Work sessions: %lu\\n",
+    Serial.printf("[STATS] Work: %llu min | Play: %llu min | Rest: %llu min | Work sessions: %lu\n",
                   static_cast<unsigned long long>(_workMs / 60000ULL),
                   static_cast<unsigned long long>(_playMs / 60000ULL),
                   static_cast<unsigned long long>(_napMs / 60000ULL),

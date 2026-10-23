@@ -248,7 +248,7 @@ void PetRenderer::drawHeader(Display &d)
     d.fillCircle(291, 15, 2, WHITE);
 }
 
-void PetRenderer::drawDog(Display &d, PetMode mode, uint32_t frame, uint8_t petId)
+void PetRenderer::drawDog(Display &d, PetMode mode, uint32_t frame, uint8_t petId, PetMood mood)
 {
     const bool sleeping = mode == PetMode::Nap;
     const uint16_t fur = petId == 1 ? 0xCE79 : (petId == 2 ? 0x7D7C : FUR);
@@ -257,6 +257,8 @@ void PetRenderer::drawDog(Display &d, PetMode mode, uint32_t frame, uint8_t petI
     const uint16_t earPink = petId == 1 ? 0xF2B5 : (petId == 2 ? 0x7DFF : EAR_PINK);
     const uint16_t cream = petId == 1 ? 0xFFFF : (petId == 2 ? 0xCE79 : CREAM);
     const bool playing = mode == PetMode::Play;
+    const bool sleepyEyes = mood == PetMood::Sleepy || mood == PetMood::Tired || mood == PetMood::Exhausted;
+    const bool happyMood = mood == PetMood::Happy || mood == PetMood::Excited;
 
     const DogPose pose = getDogPose(mode, frame);
 
@@ -325,14 +327,30 @@ void PetRenderer::drawDog(Display &d, PetMode mode, uint32_t frame, uint8_t petI
     }
     else
     {
-        d.fillEllipse(cx - 17 + pose.gazeX, cy - 3, 10, 13, furDark);
-        d.fillEllipse(cx + 17 + pose.gazeX, cy - 3, 10, 13, furDark);
-        d.fillEllipse(cx - 17 + pose.gazeX, cy - 4, 8, 11, EYE);
-        d.fillEllipse(cx + 17 + pose.gazeX, cy - 4, 8, 11, EYE);
+        const int8_t eyeHeight = sleepyEyes ? 6 : 11;
+        const int8_t eyeTop = sleepyEyes ? 0 : -4;
+        d.fillEllipse(cx - 17 + pose.gazeX, cy - 3, 10, sleepyEyes ? 8 : 13, furDark);
+        d.fillEllipse(cx + 17 + pose.gazeX, cy - 3, 10, sleepyEyes ? 8 : 13, furDark);
+        d.fillEllipse(cx - 17 + pose.gazeX, cy + eyeTop, 8, eyeHeight, EYE);
+        d.fillEllipse(cx + 17 + pose.gazeX, cy + eyeTop, 8, eyeHeight, EYE);
         d.fillEllipse(cx - 17 + pose.gazeX, cy - 3, 5, 8, MOUTH);
         d.fillEllipse(cx + 17 + pose.gazeX, cy - 3, 5, 8, MOUTH);
-        d.fillCircle(cx - 19 + pose.gazeX, cy - 8, 3, WHITE);
-        d.fillCircle(cx + 15 + pose.gazeX, cy - 8, 3, WHITE);
+        if (!sleepyEyes)
+        {
+            d.fillCircle(cx - 19 + pose.gazeX, cy - 8, 3, WHITE);
+            d.fillCircle(cx + 15 + pose.gazeX, cy - 8, 3, WHITE);
+        }
+        else
+        {
+            // A soft upper lid makes low-energy moods visibly drowsy.
+            d.fillEllipse(cx - 17 + pose.gazeX, cy - 6, 9, 4, fur);
+            d.fillEllipse(cx + 17 + pose.gazeX, cy - 6, 9, 4, fur);
+        }
+        if (happyMood && !pose.moving)
+        {
+            d.drawLine(cx - 25, cy - 15, cx - 17, cy - 18, furDark);
+            d.drawLine(cx + 17, cy - 18, cx + 25, cy - 15, furDark);
+        }
         d.fillCircle(cx - 14, cy - 1, 1, WHITE);
         d.fillCircle(cx + 20, cy - 1, 1, WHITE);
     }
@@ -411,7 +429,7 @@ void PetRenderer::drawFooter(Display &d, PetMode mode, uint8_t petId, const char
         d.drawText(dateTime, 190, 228, 1, WHITE);
 }
 
-void PetRenderer::draw(Display &d, PetMode mode, uint32_t frame, uint8_t petId, const char *message, const char *dateTime)
+void PetRenderer::draw(Display &d, PetMode mode, uint32_t frame, uint8_t petId, PetMood mood, const char *message, const char *dateTime)
 {
     if (!_initialized)
     {
@@ -449,13 +467,14 @@ void PetRenderer::draw(Display &d, PetMode mode, uint32_t frame, uint8_t petId, 
         pose.tailSwing != _lastDogTailSwing ||
         static_cast<uint8_t>(pose.action) != _lastDogAction ||
         pose.blinking != _lastDogBlinking ||
+        mood != _lastDogMood ||
         pose.leftEarX != _lastDogLeftEarX ||
         pose.rightEarX != _lastDogRightEarX;
 
     if (!dogChanged)
         return;
 
-    drawDog(d, mode, frame, petId);
+    drawDog(d, mode, frame, petId, mood);
 
     _lastDogMode = mode;
     _lastDogPetId = petId;
@@ -467,6 +486,7 @@ void PetRenderer::draw(Display &d, PetMode mode, uint32_t frame, uint8_t petId, 
     _lastDogTailSwing = pose.tailSwing;
     _lastDogAction = static_cast<uint8_t>(pose.action);
     _lastDogBlinking = pose.blinking;
+    _lastDogMood = mood;
     _lastDogLeftEarX = pose.leftEarX;
     _lastDogRightEarX = pose.rightEarX;
     _dogInitialized = true;

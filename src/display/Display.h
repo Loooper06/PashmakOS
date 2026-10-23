@@ -53,13 +53,9 @@ private:
     bool _drawingDog;
     int16_t _dogOffsetX = 0;
     int16_t _dogOffsetY = 0;
-    int16_t _lastPushedX = 0;
-    int16_t _lastPushedY = 0;
-    bool _hasPushedDog = false;
-
-    static constexpr int16_t DOG_X = 70;
+    static constexpr int16_t DOG_X = 0;
     static constexpr int16_t DOG_Y = 36;
-    static constexpr int16_t DOG_W = 180;
+    static constexpr int16_t DOG_W = 320;
     static constexpr int16_t DOG_H = 158;
 
     int16_t targetX(int16_t x) const;

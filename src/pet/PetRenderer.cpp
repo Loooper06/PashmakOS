@@ -117,7 +117,10 @@ void PetRenderer::drawMessage(Display &d, const char *message)
     constexpr int16_t MESSAGE_H = 27;
 
     d.fillRect(MESSAGE_X, MESSAGE_Y, MESSAGE_W, MESSAGE_H, PANEL);
-    d.drawText(message, MESSAGE_X + MESSAGE_W - 4, 9, 1, WHITE);
+    // TFT_eSPI's built-in font uses x as the LEFT edge, not the right edge.
+    const int16_t messageWidth = static_cast<int16_t>(strlen(message) * 6);
+    const int16_t messageTextX = MESSAGE_X + MESSAGE_W - 5 - messageWidth;
+    d.drawText(message, messageTextX < MESSAGE_X + 4 ? MESSAGE_X + 4 : messageTextX, 9, 1, WHITE);
 
     _lastMessage = message;
     _messageInitialized = true;
@@ -252,18 +255,18 @@ void PetRenderer::drawFooter(Display &d, PetMode mode)
     switch (mode)
     {
     case PetMode::Work:
-        d.drawText("Focus Time", 150, 201, 2, WHITE);
+        d.drawText("Focus Time", 100, 201, 2, WHITE);
         break;
     case PetMode::Nap:
-        d.drawText("Rest Time", 150, 201, 2, WHITE);
+        d.drawText("Rest Time", 106, 201, 2, WHITE);
         break;
     case PetMode::Play:
-        d.drawText("Move Around", 150, 201, 2, WHITE);
+        d.drawText("Move Around", 88, 201, 2, WHITE);
         break;
     }
 
-    d.drawText("Auto Behavior", 300, 210, 1, WHITE);
-    d.drawText("PashmakOS v0.1", 158, 224, 1, WHITE);
+    d.drawText("Auto Behavior", 121, 210, 1, WHITE);
+    d.drawText("PashmakOS v0.1", 115, 224, 1, WHITE);
 }
 
 void PetRenderer::draw(Display &d, PetMode mode, uint32_t frame, const char *message)

@@ -99,7 +99,7 @@ PetRenderer::PetRenderer()
 void PetRenderer::drawMessage(Display &d, const char *message)
 {
     if (message == nullptr)
-        return;
+        message = "";
 
     if (_messageInitialized &&
         _lastMessage != nullptr &&
@@ -108,19 +108,39 @@ void PetRenderer::drawMessage(Display &d, const char *message)
         return;
     }
 
-    // Keep the message inside the header's right-hand area.
-    // The built-in font is 6 px wide at text size 1, so this
-    // area safely fits short messages without covering the title.
-    constexpr int16_t MESSAGE_X = 145;
-    constexpr int16_t MESSAGE_Y = 5;
-    constexpr int16_t MESSAGE_W = 140;
-    constexpr int16_t MESSAGE_H = 27;
+    // Header layout: title on the left, status text in the middle,
+    // and the decorative icon on the right. Built-in font is 6 px wide.
+    constexpr int16_t MESSAGE_X = 142;
+    constexpr int16_t MESSAGE_Y = 4;
+    constexpr int16_t MESSAGE_W = 142;
+    constexpr int16_t MESSAGE_H = 28;
+    constexpr int16_t FONT_W = 6;
 
     d.fillRect(MESSAGE_X, MESSAGE_Y, MESSAGE_W, MESSAGE_H, PANEL);
-    // TFT_eSPI's built-in font uses x as the LEFT edge, not the right edge.
-    const int16_t messageWidth = static_cast<int16_t>(strlen(message) * 6);
-    const int16_t messageTextX = MESSAGE_X + MESSAGE_W - 5 - messageWidth;
-    d.drawText(message, messageTextX < MESSAGE_X + 4 ? MESSAGE_X + 4 : messageTextX, 9, 1, WHITE);
+
+    // Keep status text within its reserved area, even for long messages.
+    constexpr size_t MAX_MESSAGE_CHARS = (MESSAGE_W - 8) / FONT_W;
+    char visibleMessage[MAX_MESSAGE_CHARS + 1];
+    size_t len = strlen(message);
+    if (len > MAX_MESSAGE_CHARS)
+    {
+        len = MAX_MESSAGE_CHARS;
+        if (len > 3)
+            len -= 3;
+        memcpy(visibleMessage, message, len);
+        visibleMessage[len++] = '.';
+        visibleMessage[len++] = '.';
+        visibleMessage[len++] = '.';
+    }
+    else
+    {
+        memcpy(visibleMessage, message, len);
+    }
+    visibleMessage[len] = '\\0';
+
+    const int16_t textWidth = static_cast<int16_t>(len * FONT_W);
+    const int16_t textX = MESSAGE_X + MESSAGE_W - 4 - textWidth;
+    d.drawText(visibleMessage, textX, 9, 1, WHITE);
 
     _lastMessage = message;
     _messageInitialized = true;
@@ -255,18 +275,18 @@ void PetRenderer::drawFooter(Display &d, PetMode mode)
     switch (mode)
     {
     case PetMode::Work:
-        d.drawText("Focus Time", 100, 201, 2, WHITE);
+        d.drawText("Focus Time", 100, 197, 2, WHITE);
         break;
     case PetMode::Nap:
-        d.drawText("Rest Time", 106, 201, 2, WHITE);
+        d.drawText("Rest Time", 106, 197, 2, WHITE);
         break;
     case PetMode::Play:
-        d.drawText("Move Around", 88, 201, 2, WHITE);
+        d.drawText("Move Around", 94, 197, 2, WHITE);
         break;
     }
 
-    d.drawText("Auto Behavior", 121, 210, 1, WHITE);
-    d.drawText("PashmakOS v0.1", 115, 224, 1, WHITE);
+    d.drawText("Auto Behavior", 121, 215, 1, WHITE);
+    d.drawText("PashmakOS v0.1", 115, 228, 1, WHITE);
 }
 
 void PetRenderer::draw(Display &d, PetMode mode, uint32_t frame, const char *message)

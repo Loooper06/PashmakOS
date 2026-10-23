@@ -60,17 +60,18 @@ PashmakApp::StatsSummary PashmakApp::summarizeMonth(uint16_t year, uint8_t month
         return result;
 
     const int32_t monthKey = static_cast<int32_t>(year) * 100 + month;
-    for (uint8_t i = 0; i < _dailyHistoryCount; ++i)
+    for (uint8_t i = 0; i < _monthlyHistoryCount; ++i)
     {
-        const DailyStats &day = _dailyHistory[i];
-        if (day.dateKey / 100 != monthKey)
+        const MonthlyStats &record = _monthlyHistory[i];
+        if (record.monthKey != monthKey)
             continue;
 
-        result.workMs += day.workMs;
-        result.playMs += day.playMs;
-        result.napMs += day.napMs;
-        result.completedWorkSessions += day.completedWorkSessions;
-        ++result.daysIncluded;
+        result.workMs = record.workMs;
+        result.playMs = record.playMs;
+        result.napMs = record.napMs;
+        result.completedWorkSessions = record.completedWorkSessions;
+        result.daysIncluded = 0; // Monthly aggregates track totals, not individual day coverage.
+        return result;
     }
     return result;
 }
@@ -104,6 +105,8 @@ void PashmakApp::begin()
     _rtc.begin();
     loadDailyHistory();
     syncDailyHistory(now);
+    loadMonthlyHistory();
+    syncMonthlyHistory(now);
 
     _renderer.draw(
         _display,
@@ -124,6 +127,7 @@ void PashmakApp::setMode(PetMode mode, uint32_t now)
     _modeStartedAt = now;
     persistStats(now, true);
     persistDailyHistory(now, true);
+    persistMonthlyHistory(now, true);
     Serial.printf("[PET] Mode changed: %s\n", modeName(_mode));
 }
 
@@ -138,6 +142,7 @@ void PashmakApp::updateAutomaticMode(uint32_t now)
         {
             ++_completedWorkSessions;
             recordCompletedWorkSession();
+            recordMonthlyCompletedWorkSession();
             ++_completedWorkCycles;
 
             if (_completedWorkCycles >= Config::WORK_CYCLES_BEFORE_LONG_REST)
@@ -347,6 +352,152 @@ void PashmakApp::persistDailyHistory(uint32_t now, bool force)
     }
 }
 
+int8_t PashmakApp::findMonthlyRecord(int32_t monthKey) const
+{
+    for (uint8_t i = 0; i < _monthlyHistoryCount; ++i)
+    {
+        if (_monthlyHistory[i].monthKey == monthKey)
+            return static_cast<int8_t>(i);
+    }
+    return -1;
+}
+
+void PashmakApp::loadMonthlyHistory()
+{
+    _monthlyHistoryCount = 0;
+    _currentMonthlyIndex = -1;
+    if (!_statsReady)
+        return;
+
+    const size_t expected = sizeof(MonthlyHistoryStorage);
+    if (_statsPreferences.getBytesLength("monthHist") != expected)
+    {
+        Serial.println("[MONTHLY] No saved monthly history; starting fresh.");
+        return;
+    }
+
+    MonthlyHistoryStorage stored{};
+    if (_statsPreferences.getBytes("monthHist", &stored, expected) != expected ||
+        stored.version != 1 || stored.count > MONTHLY_HISTORY_MONTHS)
+    {
+        Serial.println("[MONTHLY] Saved monthly history is invalid; starting fresh.");
+        return;
+    }
+
+    for (uint8_t i = 0; i < stored.count; ++i)
+    {
+        const int32_t key = stored.records[i].monthKey;
+        const int32_t year = key / 100;
+        const int32_t month = key % 100;
+        if (year < 2000 || year > 2099 || month < 1 || month > 12 ||
+            (i > 0 && key <= stored.records[i - 1].monthKey))
+        {
+            Serial.println("[MONTHLY] Invalid month key/order; history reset.");
+            return;
+        }
+    }
+
+    _monthlyHistoryCount = stored.count;
+    for (uint8_t i = 0; i < _monthlyHistoryCount; ++i)
+        _monthlyHistory[i] = stored.records[i];
+
+    Serial.printf("[MONTHLY] Loaded %u monthly records.\n", _monthlyHistoryCount);
+}
+
+void PashmakApp::syncMonthlyHistory(uint32_t now)
+{
+    (void)now;
+    if (!_rtc.isAvailable())
+    {
+        _currentMonthlyIndex = -1;
+        return;
+    }
+
+    const DateTime date = _rtc.now();
+    const int32_t monthKey = static_cast<int32_t>(date.year()) * 100 + date.month();
+    const int8_t existing = findMonthlyRecord(monthKey);
+    if (existing >= 0)
+    {
+        _currentMonthlyIndex = existing;
+        return;
+    }
+
+    if (_monthlyHistoryCount > 0 &&
+        monthKey < _monthlyHistory[_monthlyHistoryCount - 1].monthKey)
+    {
+        _currentMonthlyIndex = -1;
+        Serial.println("[MONTHLY] RTC month moved backwards; monthly recording paused.");
+        return;
+    }
+
+    if (_monthlyHistoryCount < MONTHLY_HISTORY_MONTHS)
+    {
+        _currentMonthlyIndex = static_cast<int8_t>(_monthlyHistoryCount++);
+    }
+    else
+    {
+        for (uint8_t i = 1; i < MONTHLY_HISTORY_MONTHS; ++i)
+            _monthlyHistory[i - 1] = _monthlyHistory[i];
+        _currentMonthlyIndex = MONTHLY_HISTORY_MONTHS - 1;
+    }
+
+    _monthlyHistory[_currentMonthlyIndex] = MonthlyStats{};
+    _monthlyHistory[_currentMonthlyIndex].monthKey = monthKey;
+    persistMonthlyHistory(millis(), true);
+    Serial.printf("[MONTHLY] Started monthly record %ld.\n", static_cast<long>(monthKey));
+}
+
+void PashmakApp::recordMonthlyElapsed(uint32_t elapsedMs)
+{
+    if (_currentMonthlyIndex < 0 ||
+        _currentMonthlyIndex >= static_cast<int8_t>(_monthlyHistoryCount))
+        return;
+
+    MonthlyStats &record = _monthlyHistory[_currentMonthlyIndex];
+    switch (_mode)
+    {
+    case PetMode::Work: record.workMs += elapsedMs; break;
+    case PetMode::Play: record.playMs += elapsedMs; break;
+    case PetMode::Nap: record.napMs += elapsedMs; break;
+    }
+}
+
+void PashmakApp::recordMonthlyCompletedWorkSession()
+{
+    if (_currentMonthlyIndex < 0 ||
+        _currentMonthlyIndex >= static_cast<int8_t>(_monthlyHistoryCount))
+        return;
+
+    MonthlyStats &record = _monthlyHistory[_currentMonthlyIndex];
+    if (record.completedWorkSessions < UINT32_MAX)
+        ++record.completedWorkSessions;
+    persistMonthlyHistory(millis(), true);
+}
+
+void PashmakApp::persistMonthlyHistory(uint32_t now, bool force)
+{
+    if (!_statsReady ||
+        (!force && static_cast<uint32_t>(now - _lastMonthlyPersistAt) < HISTORY_PERSIST_INTERVAL_MS))
+        return;
+
+    MonthlyHistoryStorage stored{};
+    stored.version = 1;
+    stored.count = _monthlyHistoryCount;
+    for (uint8_t i = 0; i < _monthlyHistoryCount; ++i)
+        stored.records[i] = _monthlyHistory[i];
+
+    const size_t written = _statsPreferences.putBytes("monthHist", &stored, sizeof(stored));
+    if (written == sizeof(stored))
+    {
+        _lastMonthlyPersistAt = now;
+        Serial.printf("[MONTHLY] Saved %u monthly records.\n", _monthlyHistoryCount);
+    }
+    else
+    {
+        Serial.println("[MONTHLY] Failed to persist monthly history.");
+    }
+}
+
 void PashmakApp::updateRtcReminder(uint32_t now)
 {
     const ReminderType reminder = _rtc.update(now);
@@ -391,9 +542,12 @@ void PashmakApp::update()
     }
     _lastWorkTick = now;
     syncDailyHistory(now);
+    syncMonthlyHistory(now);
     recordDailyElapsed(elapsed);
+    recordMonthlyElapsed(elapsed);
     persistStats(now);
     persistDailyHistory(now);
+    persistMonthlyHistory(now);
 
     updateAutomaticMode(now);
     _behavior.update(_mode, now);

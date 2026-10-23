@@ -49,6 +49,8 @@ public:
     bool getMonthlyStats(uint8_t index, MonthlyStats &out) const;
     StatsSummary summarizeRecentDays(uint8_t days) const;
     StatsSummary summarizeMonth(uint16_t year, uint8_t month) const;
+    // Returns a JSON snapshot of lifetime totals and retained daily/monthly history.
+    String statisticsToJson(uint8_t recentDays = 7) const;
 
 private:
     static constexpr uint8_t DAILY_HISTORY_DAYS = 14;

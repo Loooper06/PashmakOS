@@ -33,8 +33,6 @@ bool RtcService::begin()
     const DateTime current = _rtc.now();
     _lastWaterReminder = current.unixtime();
     _lastMovementReminder = current.unixtime();
-    // Do not mark today's compliment as already sent. If booted at 10:00,
-    // it can still be delivered once; later polling will not repeat it.
     _lastComplimentDate = -1;
 
     _available = true;
@@ -57,6 +55,12 @@ ReminderType RtcService::update(uint32_t nowMs)
     const DateTime current = _rtc.now();
     const uint32_t epoch = current.unixtime();
 
+    // If the clock was corrected backwards, reset baselines before interval checks.
+    if (epoch < _lastWaterReminder)
+        _lastWaterReminder = epoch;
+    if (epoch < _lastMovementReminder)
+        _lastMovementReminder = epoch;
+
     // Keep reminders within a daytime window; do not nag overnight.
     if (current.hour() < 9 || current.hour() >= 21)
         return ReminderType::None;
@@ -71,25 +75,17 @@ ReminderType RtcService::update(uint32_t nowMs)
         }
     }
 
-    if (epoch >= _lastWaterReminder &&
-        epoch - _lastWaterReminder >= Config::WATER_REMINDER_INTERVAL_SECONDS)
+    if (epoch - _lastWaterReminder >= Config::WATER_REMINDER_INTERVAL_SECONDS)
     {
         _lastWaterReminder = epoch;
         return ReminderType::DrinkWater;
     }
 
-    if (epoch >= _lastMovementReminder &&
-        epoch - _lastMovementReminder >= Config::MOVEMENT_REMINDER_INTERVAL_SECONDS)
+    if (epoch - _lastMovementReminder >= Config::MOVEMENT_REMINDER_INTERVAL_SECONDS)
     {
         _lastMovementReminder = epoch;
         return ReminderType::MoveBody;
     }
-
-    // If the clock was corrected backwards, reset the elapsed-time baselines.
-    if (epoch < _lastWaterReminder)
-        _lastWaterReminder = epoch;
-    if (epoch < _lastMovementReminder)
-        _lastMovementReminder = epoch;
 
     return ReminderType::None;
 }
@@ -99,7 +95,7 @@ bool RtcService::isAvailable() const
     return _available;
 }
 
-DateTime RtcService::now() const
+DateTime RtcService::now()
 {
     return _rtc.now();
 }

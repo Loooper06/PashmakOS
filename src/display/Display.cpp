@@ -41,19 +41,12 @@ void Display::begin()
 
 int16_t Display::targetX(int16_t x) const
 {
-    if (!_drawingDog)
-        return x;
-
-    // Keep all pet geometry inside the sprite even if a future route uses
-    // positions near the screen edges. TFT_eSprite clips primitives, but
-    // explicitly bounding the translated coordinate avoids invalid starts
-    // for horizontal-line based ellipse drawing.
-    const int32_t translated = static_cast<int32_t>(x) + _dogOffsetX;
-    if (translated < 0)
-        return 0;
-    if (translated >= DOG_W)
-        return DOG_W - 1;
-    return static_cast<int16_t>(translated);
+    // Translate coordinates without clamping individual points. Clamping
+    // endpoints independently distorts lines and triangles; each primitive
+    // must instead be clipped as a whole by the sprite.
+    return _drawingDog
+        ? static_cast<int16_t>(x + _dogOffsetX)
+        : x;
 }
 
 int16_t Display::targetY(int16_t y) const
@@ -258,11 +251,27 @@ void Display::fillEllipse(
 
         if (_drawingDog)
         {
-            _dogSprite.drawFastHLine(
-                targetX(x),
-                targetY(y),
-                width,
-                color);
+            // Clip the horizontal scanline after translating it. Moving only
+            // its start while retaining the original width draws beyond the
+            // intended ellipse at the sprite edges.
+            int32_t drawX = static_cast<int32_t>(x) + _dogOffsetX;
+            int32_t drawW = width;
+            if (drawX < 0)
+            {
+                drawW += drawX;
+                drawX = 0;
+            }
+            if (drawX + drawW > DOG_W)
+                drawW = DOG_W - drawX;
+
+            if (drawW > 0 && y >= DOG_Y && y < DOG_Y + DOG_H)
+            {
+                _dogSprite.drawFastHLine(
+                    static_cast<int16_t>(drawX),
+                    targetY(y),
+                    static_cast<int16_t>(drawW),
+                    color);
+            }
         }
         else
         {

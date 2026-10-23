@@ -30,11 +30,16 @@ namespace
     constexpr uint16_t MOUTH = 0x5129;
     constexpr uint16_t TONGUE = 0xE8B7;
 
+    enum class PetAction : uint8_t { Stand, Walk, Sit, LieDown, Hop };
+
     struct DogPose
     {
         int8_t bob;
         int8_t leftEarX;
         int8_t rightEarX;
+        int8_t legSwing;
+        int8_t tailSwing;
+        PetAction action;
         bool blinking;
         bool moving;
     };
@@ -42,40 +47,58 @@ namespace
     DogPose getDogPose(PetMode mode, uint32_t frame)
     {
         DogPose pose{};
-
-        const bool sleeping = mode == PetMode::Nap;
+        const uint32_t phase = frame % 96;
         const uint32_t blinkPhase = frame % 43;
-
-        pose.blinking = sleeping ||
-                        blinkPhase < 2 ||
+        pose.blinking = mode == PetMode::Nap || blinkPhase < 2 ||
                         (blinkPhase >= 4 && blinkPhase < 6);
+        pose.action = PetAction::Stand;
 
-        if (sleeping)
+        if (mode == PetMode::Nap)
         {
-            pose.bob = 2;
+            pose.action = PetAction::LieDown;
+            pose.bob = (phase % 16 < 8) ? 1 : 2; // slow breathing
         }
         else if (mode == PetMode::Play)
         {
-            pose.bob = (frame % 4 < 2) ? -2 : 2;
+            if (phase % 24 < 16)
+            {
+                pose.action = PetAction::Walk;
+                pose.legSwing = (phase % 8 < 4) ? -4 : 4;
+                pose.tailSwing = (phase % 8 < 4) ? -5 : 5;
+                pose.bob = (phase % 8 < 4) ? -1 : 2;
+            }
+            else
+            {
+                pose.action = PetAction::Hop;
+                pose.bob = (phase % 8 < 4) ? -5 : 1;
+                pose.tailSwing = (phase % 8 < 4) ? 7 : -7;
+            }
+            pose.moving = true;
+        }
+        else if (phase >= 60 && phase < 76)
+        {
+            pose.action = PetAction::Sit;
+            pose.bob = 3;
+        }
+        else if (phase >= 24 && phase < 48)
+        {
+            pose.action = PetAction::Walk;
+            pose.legSwing = (phase % 8 < 4) ? -3 : 3;
+            pose.tailSwing = (phase % 8 < 4) ? -3 : 3;
+            pose.moving = true;
         }
         else
         {
-            pose.bob = (frame % 6 < 3) ? 0 : 1;
+            pose.bob = (phase % 12 < 6) ? 0 : 1;
+            pose.tailSwing = (phase % 12 < 6) ? -2 : 2;
         }
 
         const uint8_t earPhase = (frame / 5) % 12;
-
-        if (!sleeping)
+        if (mode != PetMode::Nap)
         {
-            if (earPhase >= 2 && earPhase < 5)
-                pose.leftEarX = -2;
-
-            if (earPhase >= 7 && earPhase < 10)
-                pose.rightEarX = 2;
+            if (earPhase >= 2 && earPhase < 5) pose.leftEarX = -2;
+            if (earPhase >= 7 && earPhase < 10) pose.rightEarX = 2;
         }
-
-        pose.moving = frame % 8 < 4;
-
         return pose;
     }
 }
@@ -169,14 +192,14 @@ void PetRenderer::drawDog(Display &d, PetMode mode, uint32_t frame, uint8_t petI
     const DogPose pose = getDogPose(mode, frame);
 
     const int16_t cx = 160;
-    const int16_t cy = 112 + pose.bob;
+    const int16_t cy = 112 + pose.bob + (pose.action == PetAction::Sit ? 4 : 0) + (pose.action == PetAction::LieDown ? 5 : 0);
 
     const int16_t lx = pose.leftEarX;
     const int16_t rx = pose.rightEarX;
 
     d.beginDogFrame(BG);
 
-    d.fillEllipse(cx, 185, 43, 5, SHADOW);
+    d.fillEllipse(cx, 185, pose.action == PetAction::LieDown ? 48 : 43, 5, SHADOW);
 
     // Draw the full body behind the head so the character reads as a
     // small standing pet rather than a floating face. Keep all geometry
@@ -185,43 +208,43 @@ void PetRenderer::drawDog(Display &d, PetMode mode, uint32_t frame, uint8_t petI
     {
         // Pashmak: compact body, rounded paws and a curled tail.
         d.drawLine(194, 151, 207, 145, furDark);
-        d.drawLine(207, 145, 215, 151, furDark);
-        d.fillCircle(215, 153, 5, fur);
-        d.fillEllipse(cx, 158, 25, 25, furDark);
-        d.fillEllipse(cx, 156, 22, 23, fur);
+        d.drawLine(207 + pose.tailSwing, 145, 215 + pose.tailSwing, 151, furDark);
+        d.fillCircle(215 + pose.tailSwing, 153, 5, fur);
+        d.fillEllipse(cx, pose.action == PetAction::LieDown ? 166 : 158, pose.action == PetAction::LieDown ? 34 : 25, pose.action == PetAction::LieDown ? 17 : 25, furDark);
+        d.fillEllipse(cx, pose.action == PetAction::LieDown ? 164 : 156, pose.action == PetAction::LieDown ? 31 : 22, pose.action == PetAction::LieDown ? 15 : 23, fur);
         d.fillEllipse(137, 158, 9, 17, furDark);
         d.fillEllipse(137, 157, 6, 14, fur);
         d.fillEllipse(183, 158, 9, 17, furDark);
         d.fillEllipse(183, 157, 6, 14, fur);
-        d.fillEllipse(148, 178, 10, 7, furDark);
-        d.fillEllipse(148, 176, 8, 6, furLight);
-        d.fillEllipse(172, 178, 10, 7, furDark);
-        d.fillEllipse(172, 176, 8, 6, furLight);
+        d.fillEllipse(148 + pose.legSwing, 178, 10, 7, furDark);
+        d.fillEllipse(148 + pose.legSwing, 176, 8, 6, furLight);
+        d.fillEllipse(172 - pose.legSwing, 178, 10, 7, furDark);
+        d.fillEllipse(172 - pose.legSwing, 176, 8, 6, furLight);
     }
     else if (petId == 1)
     {
         // Mochi: rounder, wider body with short legs and a fluffy tail.
-        d.fillEllipse(198, 158, 12, 9, furDark);
-        d.fillEllipse(200, 156, 9, 7, furLight);
-        d.fillEllipse(cx, 159, 29, 25, furDark);
-        d.fillEllipse(cx, 157, 26, 23, fur);
+        d.fillEllipse(198 + pose.tailSwing, 158, 12, 9, furDark);
+        d.fillEllipse(200 + pose.tailSwing, 156, 9, 7, furLight);
+        d.fillEllipse(cx, pose.action == PetAction::LieDown ? 166 : 159, pose.action == PetAction::LieDown ? 38 : 29, pose.action == PetAction::LieDown ? 17 : 25, furDark);
+        d.fillEllipse(cx, pose.action == PetAction::LieDown ? 164 : 157, pose.action == PetAction::LieDown ? 35 : 26, pose.action == PetAction::LieDown ? 15 : 23, fur);
         d.fillEllipse(134, 158, 10, 15, furDark);
         d.fillEllipse(134, 157, 7, 13, fur);
         d.fillEllipse(186, 158, 10, 15, furDark);
         d.fillEllipse(186, 157, 7, 13, fur);
-        d.fillEllipse(146, 178, 11, 7, furDark);
-        d.fillEllipse(146, 176, 9, 6, cream);
-        d.fillEllipse(174, 178, 11, 7, furDark);
-        d.fillEllipse(174, 176, 9, 6, cream);
+        d.fillEllipse(146 + pose.legSwing, 178, 11, 7, furDark);
+        d.fillEllipse(146 + pose.legSwing, 176, 9, 6, cream);
+        d.fillEllipse(174 - pose.legSwing, 178, 11, 7, furDark);
+        d.fillEllipse(174 - pose.legSwing, 176, 9, 6, cream);
         d.fillEllipse(cx, 162, 13, 16, cream);
     }
     else
     {
         // Pixel: slimmer body, longer limbs and a pointed upright tail.
         d.drawLine(188, 164, 201, 151, furDark);
-        d.drawLine(201, 151, 207, 139, furDark);
-        d.drawLine(188, 163, 200, 151, fur);
-        d.drawLine(200, 151, 206, 140, fur);
+        d.drawLine(201 + pose.tailSwing, 151, 207 + pose.tailSwing, 139, furDark);
+        d.drawLine(188, 163, 200 + pose.tailSwing, 151, fur);
+        d.drawLine(200 + pose.tailSwing, 151, 206 + pose.tailSwing, 140, fur);
         d.fillEllipse(cx, 158, 20, 27, furDark);
         d.fillEllipse(cx, 156, 17, 25, fur);
         d.fillEllipse(143, 159, 7, 18, furDark);
@@ -387,6 +410,9 @@ void PetRenderer::draw(Display &d, PetMode mode, uint32_t frame, uint8_t petId, 
         mode != _lastDogMode ||
         pose.bob != _lastDogBob ||
         pose.moving != _lastDogMoving ||
+        pose.legSwing != _lastDogLegSwing ||
+        pose.tailSwing != _lastDogTailSwing ||
+        pose.action != _lastDogAction ||
         pose.blinking != _lastDogBlinking ||
         pose.leftEarX != _lastDogLeftEarX ||
         pose.rightEarX != _lastDogRightEarX;
@@ -400,6 +426,9 @@ void PetRenderer::draw(Display &d, PetMode mode, uint32_t frame, uint8_t petId, 
     _lastDogPetId = petId;
     _lastDogBob = pose.bob;
     _lastDogMoving = pose.moving;
+    _lastDogLegSwing = pose.legSwing;
+    _lastDogTailSwing = pose.tailSwing;
+    _lastDogAction = pose.action;
     _lastDogBlinking = pose.blinking;
     _lastDogLeftEarX = pose.leftEarX;
     _lastDogRightEarX = pose.rightEarX;

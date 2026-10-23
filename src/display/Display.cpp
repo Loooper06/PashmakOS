@@ -191,7 +191,7 @@ void Display::drawText(
         _arabic.setAlign(AR_ALIGN_RIGHT);
         _arabic.setDirection(ArabicBidi::DIR_RTL);
         _arabic.setTextColor(color, 0x2127);
-        _arabic.drawText(_tft, x, y, normalizedText.c_str());
+        _arabic.drawText(_tft, x, y, text);
         return;
     }
 

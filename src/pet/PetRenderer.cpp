@@ -136,7 +136,7 @@ void PetRenderer::drawMessage(Display &d, const char *message)
     {
         memcpy(visibleMessage, message, len);
     }
-    visibleMessage[len] = '\\0';
+    visibleMessage[len] = '\0';
 
     const int16_t textWidth = static_cast<int16_t>(len * FONT_W);
     const int16_t textX = MESSAGE_X + MESSAGE_W - 4 - textWidth;

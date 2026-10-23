@@ -1,6 +1,7 @@
 
 #include "Display.h"
 #include "Config.h"
+#include <fonts/ArabicFont_Cairo12.h>
 
 Display::Display()
     : _dogSprite(&_tft),
@@ -12,6 +13,8 @@ Display::Display()
 void Display::begin()
 {
     _tft.init();
+    _arabic.begin();
+    _arabic.setFont(&ArabicFont_Cairo12);
     _tft.invertDisplay(true);
     _tft.setRotation(Config::TFT_ROTATION);
 
@@ -164,15 +167,37 @@ void Display::drawText(
     int16_t x, int16_t y,
     uint8_t size, uint16_t color)
 {
+    if (text == nullptr)
+        return;
+
+    // UTF-8 Arabic/Persian letters begin with 0xD8 or 0xD9.
+    // ArabicGFX handles contextual shaping and RTL reordering.
+    bool isRtl = false;
+    for (const uint8_t *p = reinterpret_cast<const uint8_t *>(text); *p; ++p)
+    {
+        if (*p == 0xD8 || *p == 0xD9)
+        {
+            isRtl = true;
+            break;
+        }
+    }
+
+    if (isRtl && !_drawingDog)
+    {
+        _arabic.setFont(&ArabicFont_Cairo12);
+        _arabic.setAlign(AR_ALIGN_RIGHT);
+        _arabic.setDirection(DIR_RTL);
+        _arabic.setTextColor(color, 0x2127);
+        _arabic.drawText(_tft, x, y, text);
+        return;
+    }
+
     if (_drawingDog)
     {
         _dogSprite.setTextSize(size);
         _dogSprite.setTextColor(color);
         _dogSprite.setTextWrap(false);
-
-        _dogSprite.setCursor(
-            targetX(x), targetY(y));
-
+        _dogSprite.setCursor(targetX(x), targetY(y));
         _dogSprite.print(text);
     }
     else

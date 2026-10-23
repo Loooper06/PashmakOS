@@ -33,6 +33,20 @@ bool PashmakApp::getDailyStats(uint8_t index, DailyStats &out) const
     return true;
 }
 
+uint8_t PashmakApp::monthlyHistoryCount() const
+{
+    return _monthlyHistoryCount;
+}
+
+bool PashmakApp::getMonthlyStats(uint8_t index, MonthlyStats &out) const
+{
+    if (index >= _monthlyHistoryCount)
+        return false;
+
+    out = _monthlyHistory[index];
+    return true;
+}
+
 PashmakApp::StatsSummary PashmakApp::summarizeRecentDays(uint8_t days) const
 {
     StatsSummary result{};

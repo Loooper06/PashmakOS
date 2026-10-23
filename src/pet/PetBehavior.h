@@ -33,17 +33,23 @@ public:
 
 private:
     PetBehaviorState _state;
+    const char *_baseMessage;
 
     PetMode _lastMode;
     uint32_t _lastMessageAt;
     uint32_t _lastEnergyTickAt;
     uint32_t _energyRemainderMs;
+    uint32_t _eventUntil;
+    uint32_t _nextEventAt;
     uint8_t _workMessageIndex;
     uint8_t _napMessageIndex;
     uint8_t _playMessageIndex;
+    uint8_t _eventIndex;
+    bool _eventActive;
     bool _initialized;
 
     void selectMessage(PetMode mode, uint32_t now);
     void updateEnergy(PetMode mode, uint32_t now);
     void updateMood(PetMode mode);
+    void updateSpontaneousEvent(uint32_t now);
 };

@@ -55,45 +55,49 @@ namespace
         // Keep the complete character inside the 320 px sprite at all times.
         constexpr int16_t LEFT_CENTER = 104;
         constexpr int16_t RIGHT_CENTER = 216;
-        constexpr uint16_t HALF_TRIP_FRAMES = 84;
+        constexpr uint16_t HALF_TRIP_FRAMES = 64;
 
-        // A triangular route has no waypoint table or segment-index wraparound.
-        // The same position is produced for every pet at the same frame.
+        // Ping-pong motion: alternate complete left-to-right and right-to-left
+        // trips. Use a symmetric easing curve and clamp its integer endpoints.
         const uint32_t leg = (frame / HALF_TRIP_FRAMES) & 1U;
         const uint32_t phase = frame % HALF_TRIP_FRAMES;
-        const uint32_t t = (phase * 1000UL) / HALF_TRIP_FRAMES;
+        const uint32_t t = (phase * 1000UL) / (HALF_TRIP_FRAMES - 1U);
         const uint32_t eased = (t * t * (3000UL - 2UL * t)) / 1000000UL;
 
-        const int16_t fromX = leg == 0 ? LEFT_CENTER : RIGHT_CENTER;
-        const int16_t toX = leg == 0 ? RIGHT_CENTER : LEFT_CENTER;
+        const int16_t fromX = leg == 0U ? LEFT_CENTER : RIGHT_CENTER;
+        const int16_t toX = leg == 0U ? RIGHT_CENTER : LEFT_CENTER;
         pose.travelX = static_cast<int16_t>(
             fromX + (static_cast<int32_t>(toX - fromX) * eased) / 1000);
+        if (phase == HALF_TRIP_FRAMES - 1U)
+            pose.travelX = toX;
 
         const bool resting = mode == PetMode::Nap;
-        pose.action = resting ? PetAction::LieDown : PetAction::Walk;
+        // Nap uses a visible seated pose rather than lowering the whole head
+        // into the lower edge of the sprite.
+        pose.action = resting ? PetAction::Sit : PetAction::Walk;
         pose.moving = !resting;
 
         if (resting)
         {
             pose.travelX = 160;
-            pose.bob = ((frame / 12U) & 1U) ? 2 : 1;
+            pose.bob = ((frame / 12U) & 1U) ? 1 : 0;
             pose.gazeX = 0;
             pose.legSwing = 0;
-            pose.tailSwing = 0;
-            pose.blinking = true;
+            pose.tailSwing = ((frame / 16U) & 1U) ? 1 : -1;
+            pose.blinking = ((frame % 47U) < 3U);
         }
         else
         {
             // Four-step gait shared by Pashmak, Mochi and Pixel.
-            // Direction is derived from the current trip, not from a
-            // waypoint comparison that can become ambiguous at boundaries.
-            const bool headingRight = leg == 0;
+            // The eye direction changes clearly at each turnaround so the
+            // otherwise symmetric character visibly faces its travel direction.
+            const bool headingRight = leg == 0U;
             const uint8_t gait = (frame / 3U) & 3U;
-            const int8_t gaitSwing = (gait == 0 || gait == 3) ? -5 : 5;
+            const int8_t gaitSwing = (gait == 0U || gait == 3U) ? -5 : 5;
             pose.legSwing = gaitSwing;
             pose.tailSwing = (gait < 2U) ? -4 : 4;
             pose.bob = (gait == 0U || gait == 2U) ? -1 : 2;
-            pose.gazeX = headingRight ? 2 : -2;
+            pose.gazeX = headingRight ? 6 : -6;
             pose.blinking = (frame % 53U) < 2U;
         }
 

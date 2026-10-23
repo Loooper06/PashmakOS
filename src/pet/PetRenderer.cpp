@@ -57,7 +57,7 @@ namespace
         constexpr int16_t LEFT_CENTER = 112;
         constexpr int16_t RIGHT_CENTER = 208;
         constexpr uint16_t WALK_FRAMES = 52;
-        constexpr uint16_t SIT_FRAMES = 18;
+        constexpr uint16_t SIT_FRAMES = 36;
         constexpr uint16_t CYCLE_FRAMES = 2U * (WALK_FRAMES + SIT_FRAMES);
 
         const bool resting = mode == PetMode::Nap;
@@ -334,28 +334,32 @@ void PetRenderer::drawDog(Display &d, PetMode mode, uint32_t frame, uint8_t petI
         d.fillCircle(cx + 20, cy - 1, 1, WHITE);
     }
 
-    d.fillEllipse(cx - 29, cy + 13, 7, 4, BLUSH);
-    d.fillEllipse(cx + 29, cy + 13, 7, 4, BLUSH);
-    d.fillCircle(cx - 31, cy + 11, 1, cream);
-    d.fillCircle(cx + 27, cy + 11, 1, cream);
+    // Cheeks bounce subtly with the walking gait instead of staying static.
+    const int8_t cheekBob = pose.moving
+        ? static_cast<int8_t>(((frame / 3U) & 1U) ? 2 : -1)
+        : 0;
+    const int8_t cheekPulse = pose.moving && ((frame / 6U) & 1U) ? 1 : 0;
+    d.fillEllipse(cx - 29, cy + 13 + cheekBob, 7 + cheekPulse, 4, BLUSH);
+    d.fillEllipse(cx + 29, cy + 13 + cheekBob, 7 + cheekPulse, 4, BLUSH);
+    d.fillCircle(cx - 31, cy + 11 + cheekBob, 1, cream);
+    d.fillCircle(cx + 27, cy + 11 + cheekBob, 1, cream);
     d.fillEllipse(cx - 9, cy + 17, 13, 10, cream);
     d.fillEllipse(cx + 9, cy + 17, 13, 10, cream);
     d.fillTriangle(cx - 5, cy + 10, cx + 5, cy + 10, cx, cy + 16, NOSE);
     d.fillCircle(cx, cy + 11, 3, NOSE);
     d.fillCircle(cx - 1, cy + 10, 1, WHITE);
 
-    if (playing)
+    // The mouth opens/closes while walking, giving the pet a panting expression.
+    // Play mode pants more often; Work mode uses a calmer cadence.
+    const uint8_t mouthPhase = static_cast<uint8_t>((frame / (playing ? 3U : 5U)) % 4U);
+    const bool mouthOpen = pose.moving && (playing ? mouthPhase != 0U : mouthPhase == 1U || mouthPhase == 2U);
+
+    if (mouthOpen)
     {
         d.drawLine(cx, cy + 15, cx, cy + 21, MOUTH);
-        d.fillEllipse(cx, cy + 25, 8, 8, MOUTH);
-        d.fillEllipse(cx, cy + 27, 5, 5, TONGUE);
+        d.fillEllipse(cx, cy + 25, playing ? 8 : 6, playing ? 8 : 6, MOUTH);
+        d.fillEllipse(cx, cy + 27, playing ? 5 : 3, playing ? 5 : 3, TONGUE);
         d.drawLine(cx, cy + 23, cx, cy + 27, MOUTH);
-        d.fillCircle(111, 113, 2, cream);
-        d.fillCircle(209, 113, 2, cream);
-        d.drawLine(112, 103, 112, 109, WHITE);
-        d.drawLine(109, 106, 115, 106, WHITE);
-        d.drawLine(208, 103, 208, 109, WHITE);
-        d.drawLine(205, 106, 211, 106, WHITE);
     }
     else
     {
@@ -364,6 +368,16 @@ void PetRenderer::drawDog(Display &d, PetMode mode, uint32_t frame, uint8_t petI
         d.drawLine(cx - 5, cy + 18, cx - 8, cy + 18, MOUTH);
         d.drawLine(cx, cy + 21, cx + 5, cy + 18, MOUTH);
         d.drawLine(cx + 5, cy + 18, cx + 8, cy + 18, MOUTH);
+    }
+
+    if (playing)
+    {
+        d.fillCircle(111, 113, 2, cream);
+        d.fillCircle(209, 113, 2, cream);
+        d.drawLine(112, 103, 112, 109, WHITE);
+        d.drawLine(109, 106, 115, 106, WHITE);
+        d.drawLine(208, 103, 208, 109, WHITE);
+        d.drawLine(205, 106, 211, 106, WHITE);
     }
 
     if (sleeping)

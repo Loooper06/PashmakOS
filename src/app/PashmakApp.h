@@ -12,11 +12,22 @@ class PashmakApp
 {
 public:
     PashmakApp();
-
     void begin();
     void update();
 
 private:
+    static constexpr uint8_t DAILY_HISTORY_DAYS = 14;
+
+    struct DailyStats
+    {
+        int32_t dateKey = 0; // YYYYMMDD
+        uint32_t workSeconds = 0;
+        uint32_t playSeconds = 0;
+        uint32_t napSeconds = 0;
+        uint16_t completedWorkSessions = 0;
+        uint16_t reserved = 0;
+    };
+
     Display _display;
     PetRenderer _renderer;
     PetBehavior _behavior;
@@ -37,6 +48,11 @@ private:
     uint32_t _modeStartedAt = 0;
     uint32_t _reminderShownAt = 0;
 
+    DailyStats _dailyHistory[DAILY_HISTORY_DAYS]{};
+    uint8_t _dailyHistoryCount = 0;
+    int8_t _currentDailyIndex = -1;
+    uint32_t _lastHistoryPersistAt = 0;
+
     uint8_t _completedWorkCycles = 0;
     bool _longRestPending = false;
     const char *_reminderMessage = nullptr;
@@ -45,4 +61,11 @@ private:
     void updateAutomaticMode(uint32_t now);
     void updateRtcReminder(uint32_t now);
     void persistStats(uint32_t now, bool force = false);
+    void loadDailyHistory();
+    void syncDailyHistory(uint32_t now);
+    void persistDailyHistory(uint32_t now, bool force = false);
+    void recordDailyElapsed(uint32_t elapsedMs);
+    void recordCompletedWorkSession();
+    int8_t findDailyRecord(int32_t dateKey) const;
+    static int32_t makeDateKey(const DateTime &date);
 };

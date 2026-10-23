@@ -264,6 +264,7 @@ void PashmakApp::begin()
         _mode,
         _frame,
         _activePetId,
+        _behaviors[_activePetId].state().mood,
         _behaviors[_activePetId].state().message,
         nullptr);
 

@@ -1,4 +1,3 @@
-
 #include <cstring>
 #include "PetRenderer.h"
 #include "../display/Display.h"
@@ -109,8 +108,16 @@ void PetRenderer::drawMessage(Display &d, const char *message)
         return;
     }
 
-    d.fillRect(180, 7, 105, 22, PANEL);
-    d.drawText(message, 160, 15, 1, WHITE);
+    // Keep the message inside the header's right-hand area.
+    // The built-in font is 6 px wide at text size 1, so this
+    // area safely fits short messages without covering the title.
+    constexpr int16_t MESSAGE_X = 145;
+    constexpr int16_t MESSAGE_Y = 5;
+    constexpr int16_t MESSAGE_W = 140;
+    constexpr int16_t MESSAGE_H = 27;
+
+    d.fillRect(MESSAGE_X, MESSAGE_Y, MESSAGE_W, MESSAGE_H, PANEL);
+    d.drawText(message, MESSAGE_X + 2, 13, 1, WHITE);
 
     _lastMessage = message;
     _messageInitialized = true;
@@ -141,99 +148,45 @@ void PetRenderer::drawDog(Display &d, PetMode mode, uint32_t frame)
 
     d.beginDogFrame(BG);
 
-    // Ground shadow
     d.fillEllipse(cx, 180, 48, 7, SHADOW);
 
-    // Left outer ear
     d.fillEllipse(119 + lx, 80, 20, 27, FUR_DARK);
-    d.fillTriangle(
-        101 + lx, 84,
-        105 + lx, 57,
-        130 + lx, 65,
-        FUR_DARK);
-
-    // Right outer ear
+    d.fillTriangle(101 + lx, 84, 105 + lx, 57, 130 + lx, 65, FUR_DARK);
     d.fillEllipse(201 + rx, 80, 20, 27, FUR_DARK);
-    d.fillTriangle(
-        190 + rx, 65,
-        215 + rx, 57,
-        219 + rx, 84,
-        FUR_DARK);
+    d.fillTriangle(190 + rx, 65, 215 + rx, 57, 219 + rx, 84, FUR_DARK);
 
-    // Main orange ears
     d.fillEllipse(119 + lx, 80, 17, 24, FUR);
-    d.fillTriangle(
-        104 + lx, 81,
-        108 + lx, 61,
-        128 + lx, 68,
-        FUR);
-
+    d.fillTriangle(104 + lx, 81, 108 + lx, 61, 128 + lx, 68, FUR);
     d.fillEllipse(201 + rx, 80, 17, 24, FUR);
-    d.fillTriangle(
-        192 + rx, 68,
-        212 + rx, 61,
-        216 + rx, 81,
-        FUR);
+    d.fillTriangle(192 + rx, 68, 212 + rx, 61, 216 + rx, 81, FUR);
 
-    // Pink inner ears
     d.fillEllipse(119 + lx, 79, 11, 16, EAR_PINK);
-    d.fillTriangle(
-        110 + lx, 78,
-        112 + lx, 65,
-        124 + lx, 70,
-        EAR_PINK);
-
+    d.fillTriangle(110 + lx, 78, 112 + lx, 65, 124 + lx, 70, EAR_PINK);
     d.fillEllipse(201 + rx, 79, 11, 16, EAR_PINK);
-    d.fillTriangle(
-        196 + rx, 70,
-        208 + rx, 65,
-        210 + rx, 78,
-        EAR_PINK);
+    d.fillTriangle(196 + rx, 70, 208 + rx, 65, 210 + rx, 78, EAR_PINK);
 
-    // Ear highlights
     d.fillEllipse(116 + lx, 73, 3, 5, CREAM_DARK);
     d.fillEllipse(198 + rx, 73, 3, 5, CREAM_DARK);
-
-    // Rounded ear bases
     d.fillEllipse(123 + lx, 96, 13, 12, FUR);
     d.fillEllipse(197 + rx, 96, 13, 12, FUR);
 
-    // Head silhouette
     d.fillEllipse(cx, cy, 43, 43, FUR_DARK);
     d.fillEllipse(cx, cy - 2, 41, 41, FUR);
-
-    // Cream forehead stripe
     d.fillEllipse(cx, cy - 27, 7, 15, CREAM);
     d.fillEllipse(cx, cy - 15, 5, 13, CREAM);
-
-    // Cream cheeks
     d.fillEllipse(cx - 23, cy + 15, 22, 19, CREAM);
     d.fillEllipse(cx + 23, cy + 15, 22, 19, CREAM);
     d.fillEllipse(cx, cy + 27, 25, 13, CREAM);
 
-    // Forehead tufts
-    d.fillTriangle(
-        cx - 12, cy - 37,
-        cx - 5, cy - 29,
-        cx - 17, cy - 27,
-        FUR_LIGHT);
-
-    d.fillTriangle(
-        cx + 3, cy - 38,
-        cx + 12, cy - 29,
-        cx + 1, cy - 27,
-        FUR_LIGHT);
-
-    // Eyebrows
+    d.fillTriangle(cx - 12, cy - 37, cx - 5, cy - 29, cx - 17, cy - 27, FUR_LIGHT);
+    d.fillTriangle(cx + 3, cy - 38, cx + 12, cy - 29, cx + 1, cy - 27, FUR_LIGHT);
     d.fillEllipse(cx - 16, cy - 13, 7, 2, FUR_DARK);
     d.fillEllipse(cx + 16, cy - 13, 7, 2, FUR_DARK);
 
-    // Eyes
     if (pose.blinking)
     {
         d.drawLine(cx - 23, cy - 3, cx - 17, cy + 1, EYE);
         d.drawLine(cx - 17, cy + 1, cx - 11, cy - 3, EYE);
-
         d.drawLine(cx + 11, cy - 3, cx + 17, cy + 1, EYE);
         d.drawLine(cx + 17, cy + 1, cx + 23, cy - 3, EYE);
     }
@@ -241,75 +194,48 @@ void PetRenderer::drawDog(Display &d, PetMode mode, uint32_t frame)
     {
         d.fillEllipse(cx - 17, cy - 3, 10, 13, FUR_DARK);
         d.fillEllipse(cx + 17, cy - 3, 10, 13, FUR_DARK);
-
         d.fillEllipse(cx - 17, cy - 4, 8, 11, EYE);
         d.fillEllipse(cx + 17, cy - 4, 8, 11, EYE);
-
         d.fillEllipse(cx - 17, cy - 3, 5, 8, MOUTH);
         d.fillEllipse(cx + 17, cy - 3, 5, 8, MOUTH);
-
         d.fillCircle(cx - 19, cy - 8, 3, WHITE);
         d.fillCircle(cx + 15, cy - 8, 3, WHITE);
-
         d.fillCircle(cx - 14, cy - 1, 1, WHITE);
         d.fillCircle(cx + 20, cy - 1, 1, WHITE);
     }
 
-    // Rosy cheeks
     d.fillEllipse(cx - 29, cy + 13, 7, 4, BLUSH);
     d.fillEllipse(cx + 29, cy + 13, 7, 4, BLUSH);
-
     d.fillCircle(cx - 31, cy + 11, 1, CREAM);
     d.fillCircle(cx + 27, cy + 11, 1, CREAM);
-
-    // Muzzle
     d.fillEllipse(cx - 9, cy + 17, 13, 10, CREAM);
     d.fillEllipse(cx + 9, cy + 17, 13, 10, CREAM);
-
-    // Nose
-    d.fillTriangle(
-        cx - 5, cy + 10,
-        cx + 5, cy + 10,
-        cx, cy + 16,
-        NOSE);
-
+    d.fillTriangle(cx - 5, cy + 10, cx + 5, cy + 10, cx, cy + 16, NOSE);
     d.fillCircle(cx, cy + 11, 3, NOSE);
     d.fillCircle(cx - 1, cy + 10, 1, WHITE);
 
-    // Mouth expression
     if (playing)
     {
         d.drawLine(cx, cy + 15, cx, cy + 21, MOUTH);
-
         d.fillEllipse(cx, cy + 25, 8, 8, MOUTH);
         d.fillEllipse(cx, cy + 27, 5, 5, TONGUE);
         d.drawLine(cx, cy + 23, cx, cy + 27, MOUTH);
+        d.fillCircle(111, 113, 2, CREAM);
+        d.fillCircle(209, 113, 2, CREAM);
+        d.drawLine(112, 103, 112, 109, WHITE);
+        d.drawLine(109, 106, 115, 106, WHITE);
+        d.drawLine(208, 103, 208, 109, WHITE);
+        d.drawLine(205, 106, 211, 106, WHITE);
     }
     else
     {
         d.drawLine(cx, cy + 16, cx, cy + 21, MOUTH);
-
         d.drawLine(cx, cy + 21, cx - 5, cy + 18, MOUTH);
         d.drawLine(cx - 5, cy + 18, cx - 8, cy + 18, MOUTH);
-
         d.drawLine(cx, cy + 21, cx + 5, cy + 18, MOUTH);
         d.drawLine(cx + 5, cy + 18, cx + 8, cy + 18, MOUTH);
     }
 
-    // Play sparkles
-    if (playing)
-    {
-        d.fillCircle(111, 113, 2, CREAM);
-        d.fillCircle(209, 113, 2, CREAM);
-
-        d.drawLine(112, 103, 112, 109, WHITE);
-        d.drawLine(109, 106, 115, 106, WHITE);
-
-        d.drawLine(208, 103, 208, 109, WHITE);
-        d.drawLine(205, 106, 211, 106, WHITE);
-    }
-
-    // Sleep indicators
     if (sleeping)
     {
         d.drawText("Z", 207, 65, 2, WHITE);
@@ -328,11 +254,9 @@ void PetRenderer::drawFooter(Display &d, PetMode mode)
     case PetMode::Work:
         d.drawText("FOCUS TIME", 10, 201, 2, WHITE);
         break;
-
     case PetMode::Nap:
         d.drawText("REST TIME", 10, 201, 2, WHITE);
         break;
-
     case PetMode::Play:
         d.drawText("MOVE A BIT", 10, 201, 2, WHITE);
         break;
@@ -342,24 +266,18 @@ void PetRenderer::drawFooter(Display &d, PetMode mode)
     d.drawText("PashmakOS v0.1", 158, 224, 1, WHITE);
 }
 
-void PetRenderer::draw(
-    Display &d,
-    PetMode mode,
-    uint32_t frame,
-    const char *message)
+void PetRenderer::draw(Display &d, PetMode mode, uint32_t frame, const char *message)
 {
     if (!_initialized)
     {
         d.clear(BG);
         drawHeader(d);
-
         _initialized = true;
     }
 
     if (!_footerInitialized || mode != _lastMode)
     {
         drawFooter(d, mode);
-
         _lastMode = mode;
         _footerInitialized = true;
     }
@@ -367,7 +285,6 @@ void PetRenderer::draw(
     drawMessage(d, message);
 
     const DogPose pose = getDogPose(mode, frame);
-
     const bool dogChanged =
         !_dogInitialized ||
         mode != _lastDogMode ||

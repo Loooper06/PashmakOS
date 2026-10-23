@@ -38,6 +38,7 @@ namespace Config
     constexpr uint32_t NAP_SESSION_DURATION_MS = 5UL * 60UL * 1000UL;
     constexpr uint32_t REMINDER_DISPLAY_DURATION_MS = 12000UL;
     constexpr uint8_t WORK_CYCLES_BEFORE_LONG_REST = 3;
+    constexpr uint32_t PET_MESSAGE_INTERVAL_MS = 45000UL;
 
     // Reminder scheduling
     constexpr uint32_t RTC_POLL_INTERVAL_MS = 1000;

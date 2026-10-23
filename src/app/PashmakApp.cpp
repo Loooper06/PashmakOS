@@ -3,10 +3,10 @@
 
 namespace
 {
-    // Automatic behavior schedule. These are intentionally easy to tune.
     constexpr uint32_t WORK_SESSION_MS = 25UL * 60UL * 1000UL;
     constexpr uint32_t PLAY_SESSION_MS = 2UL * 60UL * 1000UL;
     constexpr uint32_t NAP_SESSION_MS = 5UL * 60UL * 1000UL;
+    constexpr uint32_t REMINDER_DISPLAY_MS = 12000UL;
     constexpr uint8_t WORK_CYCLES_BEFORE_NAP = 3;
 }
 
@@ -23,6 +23,7 @@ void PashmakApp::begin()
     _modeStartedAt = now;
 
     _behavior.begin(now);
+    _rtc.begin();
 
     _renderer.draw(
         _display,
@@ -52,7 +53,7 @@ void PashmakApp::updateAutomaticMode(uint32_t now)
     case PetMode::Work:
         if (modeElapsed >= WORK_SESSION_MS)
         {
-            _completedWorkCycles++;
+            ++_completedWorkCycles;
 
             if (_completedWorkCycles >= WORK_CYCLES_BEFORE_NAP)
             {
@@ -82,28 +83,63 @@ void PashmakApp::updateAutomaticMode(uint32_t now)
     }
 }
 
+void PashmakApp::updateRtcReminder(uint32_t now)
+{
+    const ReminderType reminder = _rtc.update(now);
+    if (reminder == ReminderType::None)
+        return;
+
+    switch (reminder)
+    {
+    case ReminderType::DrinkWater:
+        _reminderMessage = "Water break, engineer!";
+        Serial.println("[RTC] Reminder: drink water.");
+        break;
+
+    case ReminderType::MoveBody:
+        _reminderMessage = "Stand up and stretch!";
+        Serial.println("[RTC] Reminder: stand up and stretch.");
+        break;
+
+    case ReminderType::Compliment:
+        _reminderMessage = "Looking sharp today!";
+        Serial.println("[RTC] Reminder: daily compliment.");
+        break;
+
+    case ReminderType::None:
+    default:
+        return;
+    }
+
+    _reminderShownAt = now;
+}
+
 void PashmakApp::update()
 {
     const uint32_t now = millis();
 
-    // Account for elapsed work time without blocking the main loop.
     if (_mode == PetMode::Work)
         _workMs += static_cast<uint32_t>(now - _lastWorkTick);
     _lastWorkTick = now;
 
     updateAutomaticMode(now);
     _behavior.update(_mode, now);
+    updateRtcReminder(now);
+
+    if (_reminderMessage != nullptr &&
+        static_cast<uint32_t>(now - _reminderShownAt) >= REMINDER_DISPLAY_MS)
+    {
+        _reminderMessage = nullptr;
+    }
 
     if (static_cast<uint32_t>(now - _lastFrame) >= Config::FRAME_INTERVAL_MS)
     {
         ++_frame;
+        const char *message = _reminderMessage != nullptr
+                                  ? _reminderMessage
+                                  : _behavior.state().message;
 
-        _renderer.draw(
-            _display,
-            _mode,
-            _frame,
-            _behavior.state().message);
-
+        _renderer.draw(_display, _mode, _frame, message);
         _lastFrame = now;
     }
 }

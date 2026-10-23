@@ -39,6 +39,8 @@ namespace
         int8_t rightEarX;
         int8_t legSwing;
         int8_t tailSwing;
+        int16_t travelX;
+        int8_t gazeX;
         PetAction action;
         bool blinking;
         bool moving;
@@ -52,10 +54,19 @@ namespace
         pose.blinking = mode == PetMode::Nap || blinkPhase < 2 ||
                         (blinkPhase >= 4 && blinkPhase < 6);
         pose.action = PetAction::Stand;
+        const int16_t waypoints[] = {112, 208, 145, 232, 92, 176};
+        const uint8_t waypoint = (frame / 40) % 6;
+        const int16_t fromX = waypoints[(waypoint + 5) % 6];
+        const int16_t toX = waypoints[waypoint];
+        const uint8_t within = frame % 40;
+        pose.travelX = static_cast<int16_t>(fromX + (static_cast<int32_t>(toX - fromX) * within) / 40);
+        pose.gazeX = (toX > fromX) ? 2 : ((toX < fromX) ? -2 : 0);
 
         if (mode == PetMode::Nap)
         {
             pose.action = PetAction::LieDown;
+            pose.travelX = waypoints[(frame / 80) % 6];
+            pose.gazeX = 0;
             pose.bob = (phase % 16 < 8) ? 1 : 2; // slow breathing
         }
         else if (mode == PetMode::Play)
@@ -192,6 +203,7 @@ void PetRenderer::drawDog(Display &d, PetMode mode, uint32_t frame, uint8_t petI
     const DogPose pose = getDogPose(mode, frame);
 
     const int16_t cx = 160;
+    d.setDogPosition(pose.travelX, 0);
     const int16_t cy = 112 + pose.bob + (pose.action == PetAction::Sit ? 4 : 0) + (pose.action == PetAction::LieDown ? 5 : 0);
 
     const int16_t lx = pose.leftEarX;
@@ -301,14 +313,14 @@ void PetRenderer::drawDog(Display &d, PetMode mode, uint32_t frame, uint8_t petI
     }
     else
     {
-        d.fillEllipse(cx - 17, cy - 3, 10, 13, furDark);
-        d.fillEllipse(cx + 17, cy - 3, 10, 13, furDark);
-        d.fillEllipse(cx - 17, cy - 4, 8, 11, EYE);
-        d.fillEllipse(cx + 17, cy - 4, 8, 11, EYE);
-        d.fillEllipse(cx - 17, cy - 3, 5, 8, MOUTH);
-        d.fillEllipse(cx + 17, cy - 3, 5, 8, MOUTH);
-        d.fillCircle(cx - 19, cy - 8, 3, WHITE);
-        d.fillCircle(cx + 15, cy - 8, 3, WHITE);
+        d.fillEllipse(cx - 17 + pose.gazeX, cy - 3, 10, 13, furDark);
+        d.fillEllipse(cx + 17 + pose.gazeX, cy - 3, 10, 13, furDark);
+        d.fillEllipse(cx - 17 + pose.gazeX, cy - 4, 8, 11, EYE);
+        d.fillEllipse(cx + 17 + pose.gazeX, cy - 4, 8, 11, EYE);
+        d.fillEllipse(cx - 17 + pose.gazeX, cy - 3, 5, 8, MOUTH);
+        d.fillEllipse(cx + 17 + pose.gazeX, cy - 3, 5, 8, MOUTH);
+        d.fillCircle(cx - 19 + pose.gazeX, cy - 8, 3, WHITE);
+        d.fillCircle(cx + 15 + pose.gazeX, cy - 8, 3, WHITE);
         d.fillCircle(cx - 14, cy - 1, 1, WHITE);
         d.fillCircle(cx + 20, cy - 1, 1, WHITE);
     }
@@ -409,6 +421,8 @@ void PetRenderer::draw(Display &d, PetMode mode, uint32_t frame, uint8_t petId, 
         petId != _lastDogPetId ||
         mode != _lastDogMode ||
         pose.bob != _lastDogBob ||
+        pose.travelX != _lastDogX ||
+        pose.gazeX != _lastDogGazeX ||
         pose.moving != _lastDogMoving ||
         pose.legSwing != _lastDogLegSwing ||
         pose.tailSwing != _lastDogTailSwing ||
@@ -425,6 +439,8 @@ void PetRenderer::draw(Display &d, PetMode mode, uint32_t frame, uint8_t petId, 
     _lastDogMode = mode;
     _lastDogPetId = petId;
     _lastDogBob = pose.bob;
+    _lastDogX = pose.travelX;
+    _lastDogGazeX = pose.gazeX;
     _lastDogMoving = pose.moving;
     _lastDogLegSwing = pose.legSwing;
     _lastDogTailSwing = pose.tailSwing;

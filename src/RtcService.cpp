@@ -2,6 +2,16 @@
 #include "Config.h"
 #include <Wire.h>
 
+namespace
+{
+    int32_t dateKey(const DateTime &date)
+    {
+        return static_cast<int32_t>(date.year()) * 10000L +
+               static_cast<int32_t>(date.month()) * 100L +
+               static_cast<int32_t>(date.day());
+    }
+}
+
 bool RtcService::begin()
 {
     Wire.begin(Config::RTC_PIN_SDA, Config::RTC_PIN_SCL);
@@ -15,16 +25,17 @@ bool RtcService::begin()
 
     if (_rtc.lostPower())
     {
-        // Initial fallback: seed the RTC from firmware build time.
-        // Set the correct system time before the first flash for best accuracy.
+        // Fallback only: this is the firmware build timestamp, not live network time.
         _rtc.adjust(DateTime(F(__DATE__), F(__TIME__)));
-        Serial.println("[RTC] Backup power was lost; clock seeded from build time.");
+        Serial.println("[RTC] Backup power was lost; clock seeded from firmware build time.");
     }
 
     const DateTime current = _rtc.now();
     _lastWaterReminder = current.unixtime();
     _lastMovementReminder = current.unixtime();
-    _lastComplimentDay = current.day();
+    // Do not mark today's compliment as already sent. If booted at 10:00,
+    // it can still be delivered once; later polling will not repeat it.
+    _lastComplimentDate = -1;
 
     _available = true;
     Serial.printf(
@@ -47,28 +58,38 @@ ReminderType RtcService::update(uint32_t nowMs)
     const uint32_t epoch = current.unixtime();
 
     // Keep reminders within a daytime window; do not nag overnight.
-    if (current.hour() >= 9 && current.hour() < 21)
+    if (current.hour() < 9 || current.hour() >= 21)
+        return ReminderType::None;
+
+    if (current.hour() == 10 && current.minute() == 0)
     {
-        if (epoch - _lastWaterReminder >= Config::WATER_REMINDER_INTERVAL_SECONDS)
+        const int32_t today = dateKey(current);
+        if (_lastComplimentDate != today)
         {
-            _lastWaterReminder = epoch;
-            return ReminderType::DrinkWater;
-        }
-
-        if (epoch - _lastMovementReminder >= Config::MOVEMENT_REMINDER_INTERVAL_SECONDS)
-        {
-            _lastMovementReminder = epoch;
-            return ReminderType::MoveBody;
-        }
-
-        // One light-hearted compliment per day, at 10:00.
-        if (current.hour() == 10 && current.minute() == 0 &&
-            _lastComplimentDay != current.day())
-        {
-            _lastComplimentDay = current.day();
+            _lastComplimentDate = today;
             return ReminderType::Compliment;
         }
     }
+
+    if (epoch >= _lastWaterReminder &&
+        epoch - _lastWaterReminder >= Config::WATER_REMINDER_INTERVAL_SECONDS)
+    {
+        _lastWaterReminder = epoch;
+        return ReminderType::DrinkWater;
+    }
+
+    if (epoch >= _lastMovementReminder &&
+        epoch - _lastMovementReminder >= Config::MOVEMENT_REMINDER_INTERVAL_SECONDS)
+    {
+        _lastMovementReminder = epoch;
+        return ReminderType::MoveBody;
+    }
+
+    // If the clock was corrected backwards, reset the elapsed-time baselines.
+    if (epoch < _lastWaterReminder)
+        _lastWaterReminder = epoch;
+    if (epoch < _lastMovementReminder)
+        _lastMovementReminder = epoch;
 
     return ReminderType::None;
 }

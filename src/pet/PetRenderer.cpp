@@ -412,7 +412,7 @@ void PetRenderer::draw(Display &d, PetMode mode, uint32_t frame, uint8_t petId, 
         pose.moving != _lastDogMoving ||
         pose.legSwing != _lastDogLegSwing ||
         pose.tailSwing != _lastDogTailSwing ||
-        pose.action != _lastDogAction ||
+        static_cast<uint8_t>(pose.action) != _lastDogAction ||
         pose.blinking != _lastDogBlinking ||
         pose.leftEarX != _lastDogLeftEarX ||
         pose.rightEarX != _lastDogRightEarX;
@@ -428,7 +428,7 @@ void PetRenderer::draw(Display &d, PetMode mode, uint32_t frame, uint8_t petId, 
     _lastDogMoving = pose.moving;
     _lastDogLegSwing = pose.legSwing;
     _lastDogTailSwing = pose.tailSwing;
-    _lastDogAction = pose.action;
+    _lastDogAction = static_cast<uint8_t>(pose.action);
     _lastDogBlinking = pose.blinking;
     _lastDogLeftEarX = pose.leftEarX;
     _lastDogRightEarX = pose.rightEarX;

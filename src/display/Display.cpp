@@ -1,9 +1,8 @@
 
 #include "Display.h"
 #include "Config.h"
-#include <fonts/ArabicFont_Cairo12.h>
-#include <fonts/ArabicFont_Cairo16.h>
-#include <string>
+#include <fonts/ArabicFont_Amiri16.h>
+#include <fonts/ArabicFont_Amiri24.h>
 
 Display::Display()
     : _dogSprite(&_tft),
@@ -16,7 +15,7 @@ void Display::begin()
 {
     _tft.init();
     _arabic.begin();
-    _arabic.setFont(&ArabicFont_Cairo12);
+    _arabic.setFont(&ArabicFont_Amiri16);
     _tft.invertDisplay(true);
     _tft.setRotation(Config::TFT_ROTATION);
 
@@ -187,17 +186,8 @@ void Display::drawText(
 
     if (isRtl && !_drawingDog)
     {
-        // ArabicGFX/font glyph mapping may not render Persian KAF (U+06A9)
-        // consistently. Normalize it to Arabic KAF (U+0643), which has the
-        // same visual role in these UI labels and is supported by Arabic fonts.
-        std::string normalizedText(text);
-        for (size_t pos = 0; (pos = normalizedText.find("\xD9\xA9", pos)) != std::string::npos; )
-        {
-            normalizedText.replace(pos, 2, "\xD9\x83");
-            pos += 2;
-        }
-
-        _arabic.setFont(size >= 2 ? &ArabicFont_Cairo16 : &ArabicFont_Cairo12);
+        // Use the Amiri font, which has broader Arabic-script glyph coverage.
+        _arabic.setFont(size >= 2 ? &ArabicFont_Amiri24 : &ArabicFont_Amiri16);
         _arabic.setAlign(AR_ALIGN_RIGHT);
         _arabic.setDirection(ArabicBidi::DIR_RTL);
         _arabic.setTextColor(color, 0x2127);

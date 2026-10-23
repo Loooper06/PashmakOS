@@ -33,6 +33,48 @@ bool PashmakApp::getDailyStats(uint8_t index, DailyStats &out) const
     return true;
 }
 
+PashmakApp::StatsSummary PashmakApp::summarizeRecentDays(uint8_t days) const
+{
+    StatsSummary result{};
+    if (days == 0)
+        return result;
+
+    const uint8_t included = days < _dailyHistoryCount ? days : _dailyHistoryCount;
+    const uint8_t first = _dailyHistoryCount - included;
+    for (uint8_t i = first; i < _dailyHistoryCount; ++i)
+    {
+        const DailyStats &day = _dailyHistory[i];
+        result.workMs += day.workMs;
+        result.playMs += day.playMs;
+        result.napMs += day.napMs;
+        result.completedWorkSessions += day.completedWorkSessions;
+        ++result.daysIncluded;
+    }
+    return result;
+}
+
+PashmakApp::StatsSummary PashmakApp::summarizeMonth(uint16_t year, uint8_t month) const
+{
+    StatsSummary result{};
+    if (month < 1 || month > 12)
+        return result;
+
+    const int32_t monthKey = static_cast<int32_t>(year) * 100 + month;
+    for (uint8_t i = 0; i < _dailyHistoryCount; ++i)
+    {
+        const DailyStats &day = _dailyHistory[i];
+        if (day.dateKey / 100 != monthKey)
+            continue;
+
+        result.workMs += day.workMs;
+        result.playMs += day.playMs;
+        result.napMs += day.napMs;
+        result.completedWorkSessions += day.completedWorkSessions;
+        ++result.daysIncluded;
+    }
+    return result;
+}
+
 void PashmakApp::begin()
 {
     Serial.begin(115200);

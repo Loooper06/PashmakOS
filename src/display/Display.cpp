@@ -170,12 +170,13 @@ void Display::drawText(
     if (text == nullptr)
         return;
 
-    // UTF-8 Arabic/Persian letters begin with 0xD8 or 0xD9.
-    // ArabicGFX handles contextual shaping and RTL reordering.
+    // Arabic-script UTF-8 code points used by Arabic and Persian begin
+    // with lead bytes 0xD8 through 0xDB. Include 0xDA/0xDB so Persian
+    // letters such as گ are detected even when they appear first.
     bool isRtl = false;
     for (const uint8_t *p = reinterpret_cast<const uint8_t *>(text); *p; ++p)
     {
-        if (*p == 0xD8 || *p == 0xD9)
+        if (*p >= 0xD8 && *p <= 0xDB)
         {
             isRtl = true;
             break;

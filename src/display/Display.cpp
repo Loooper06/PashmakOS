@@ -80,7 +80,20 @@ void Display::endDogFrame()
     // Place the reduced sprite at its actual screen position.
     if (_drawingDog)
     {
-        _dogSprite.pushSprite(DOG_X + _dogOffsetX, DOG_Y + _dogOffsetY);
+        const int16_t nextX = DOG_X + _dogOffsetX;
+        const int16_t nextY = DOG_Y + _dogOffsetY;
+
+        // Erase the previous sprite footprint before drawing at the new
+        // position. Otherwise every move leaves a stale copy on the TFT.
+        if (_hasPushedDog)
+        {
+            _tft.fillRect(_lastPushedX, _lastPushedY, DOG_W, DOG_H, 0x1082);
+        }
+
+        _dogSprite.pushSprite(nextX, nextY);
+        _lastPushedX = nextX;
+        _lastPushedY = nextY;
+        _hasPushedDog = true;
     }
 
     _drawingDog = false;

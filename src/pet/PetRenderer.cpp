@@ -117,7 +117,7 @@ void PetRenderer::drawMessage(Display &d, const char *message)
     constexpr int16_t MESSAGE_H = 27;
 
     d.fillRect(MESSAGE_X, MESSAGE_Y, MESSAGE_W, MESSAGE_H, PANEL);
-    d.drawText(message, MESSAGE_X + 2, 13, 1, WHITE);
+    d.drawText(message, MESSAGE_X + MESSAGE_W - 4, 9, 1, WHITE);
 
     _lastMessage = message;
     _messageInitialized = true;
@@ -252,17 +252,17 @@ void PetRenderer::drawFooter(Display &d, PetMode mode)
     switch (mode)
     {
     case PetMode::Work:
-        d.drawText("FOCUS TIME", 10, 201, 2, WHITE);
+        d.drawText("زمان تمرکز", 10, 201, 2, WHITE);
         break;
     case PetMode::Nap:
-        d.drawText("REST TIME", 10, 201, 2, WHITE);
+        d.drawText("زمان استراحت", 10, 201, 2, WHITE);
         break;
     case PetMode::Play:
-        d.drawText("MOVE A BIT", 10, 201, 2, WHITE);
+        d.drawText("کمی تحرک", 10, 201, 2, WHITE);
         break;
     }
 
-    d.drawText("Automatic behavior", 158, 210, 1, WHITE);
+    d.drawText("رفتار خودکار", 158, 210, 1, WHITE);
     d.drawText("PashmakOS v0.1", 158, 224, 1, WHITE);
 }
 

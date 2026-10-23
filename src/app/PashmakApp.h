@@ -1,6 +1,7 @@
 #pragma once
 
 #include <Arduino.h>
+#include "RtcService.h"
 #include "../core/PetState.h"
 #include "../display/Display.h"
 #include "../pet/PetRenderer.h"
@@ -18,6 +19,7 @@ private:
     Display _display;
     PetRenderer _renderer;
     PetBehavior _behavior;
+    RtcService _rtc;
 
     PetMode _mode = PetMode::Work;
 
@@ -26,10 +28,13 @@ private:
     uint32_t _workMs = 0;
     uint32_t _lastWorkTick = 0;
     uint32_t _modeStartedAt = 0;
+    uint32_t _reminderShownAt = 0;
 
     uint8_t _completedWorkCycles = 0;
     bool _longRestPending = false;
+    const char *_reminderMessage = nullptr;
 
     void setMode(PetMode mode, uint32_t now);
     void updateAutomaticMode(uint32_t now);
+    void updateRtcReminder(uint32_t now);
 };

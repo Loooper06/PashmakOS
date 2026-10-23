@@ -73,8 +73,11 @@ $('refresh').addEventListener('click',refresh);document.querySelectorAll('[data-
 void WebDashboard::begin(PashmakApp &app)
 {
     _app = &app;
+    // The TFT and ESP32 share USB power. Reduce Wi-Fi peak demand first;
+    // this does not touch the display or pet-rendering code.
     WiFi.mode(WIFI_AP);
-    WiFi.setSleep(false);
+    WiFi.setTxPower(WIFI_POWER_8_5dBm);
+    WiFi.setSleep(true);
     const bool apStarted = WiFi.softAP(WIFI_AP_SSID, WIFI_AP_PASSWORD);
     if (!apStarted)
     {

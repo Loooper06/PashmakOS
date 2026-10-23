@@ -14,11 +14,6 @@ namespace
         }
     }
 
-    constexpr uint32_t WORK_SESSION_MS = 25UL * 60UL * 1000UL;
-    constexpr uint32_t PLAY_SESSION_MS = 2UL * 60UL * 1000UL;
-    constexpr uint32_t NAP_SESSION_MS = 5UL * 60UL * 1000UL;
-    constexpr uint32_t REMINDER_DISPLAY_MS = 12000UL;
-    constexpr uint8_t WORK_CYCLES_BEFORE_NAP = 3;
 }
 
 PashmakApp::PashmakApp() = default;
@@ -63,11 +58,11 @@ void PashmakApp::updateAutomaticMode(uint32_t now)
     switch (_mode)
     {
     case PetMode::Work:
-        if (modeElapsed >= WORK_SESSION_MS)
+        if (modeElapsed >= Config::WORK_SESSION_DURATION_MS)
         {
             ++_completedWorkCycles;
 
-            if (_completedWorkCycles >= WORK_CYCLES_BEFORE_NAP)
+            if (_completedWorkCycles >= Config::WORK_CYCLES_BEFORE_LONG_REST)
             {
                 _completedWorkCycles = 0;
                 _longRestPending = true;
@@ -81,12 +76,12 @@ void PashmakApp::updateAutomaticMode(uint32_t now)
         break;
 
     case PetMode::Play:
-        if (modeElapsed >= PLAY_SESSION_MS)
+        if (modeElapsed >= Config::PLAY_SESSION_DURATION_MS)
             setMode(PetMode::Work, now);
         break;
 
     case PetMode::Nap:
-        if (modeElapsed >= NAP_SESSION_MS)
+        if (modeElapsed >= Config::NAP_SESSION_DURATION_MS)
         {
             _longRestPending = false;
             setMode(PetMode::Work, now);
@@ -139,7 +134,7 @@ void PashmakApp::update()
     updateRtcReminder(now);
 
     if (_reminderMessage != nullptr &&
-        static_cast<uint32_t>(now - _reminderShownAt) >= REMINDER_DISPLAY_MS)
+        static_cast<uint32_t>(now - _reminderShownAt) >= Config::REMINDER_DISPLAY_DURATION_MS)
     {
         _reminderMessage = nullptr;
     }

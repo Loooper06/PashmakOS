@@ -4,6 +4,9 @@
 
 namespace
 {
+    constexpr char PREFERENCES_NAMESPACE[] = "pashmak";
+    constexpr char LAST_COMPLIMENT_KEY[] = "complimentDay";
+
     int32_t dateKey(const DateTime &date)
     {
         return static_cast<int32_t>(date.year()) * 10000L +
@@ -31,9 +34,20 @@ bool RtcService::begin()
     }
 
     const DateTime current = _rtc.now();
-    _lastWaterReminder = current.unixtime();
-    _lastMovementReminder = current.unixtime();
-    _lastComplimentDate = -1;
+    const uint32_t epoch = current.unixtime();
+    _lastWaterReminder = epoch;
+    _lastMovementReminder = epoch;
+
+    _preferencesReady = _preferences.begin(PREFERENCES_NAMESPACE, false);
+    if (_preferencesReady)
+    {
+        _lastComplimentDate = _preferences.getInt(LAST_COMPLIMENT_KEY, -1);
+    }
+    else
+    {
+        _lastComplimentDate = -1;
+        Serial.println("[RTC] Preferences unavailable; daily compliment guard is RAM-only.");
+    }
 
     _available = true;
     Serial.printf(
@@ -55,7 +69,6 @@ ReminderType RtcService::update(uint32_t nowMs)
     const DateTime current = _rtc.now();
     const uint32_t epoch = current.unixtime();
 
-    // If the clock was corrected backwards, reset baselines before interval checks.
     if (epoch < _lastWaterReminder)
         _lastWaterReminder = epoch;
     if (epoch < _lastMovementReminder)
@@ -65,14 +78,15 @@ ReminderType RtcService::update(uint32_t nowMs)
     if (current.hour() < 9 || current.hour() >= 21)
         return ReminderType::None;
 
-    // Trigger once per day at or after 10:00. This also survives booting
-    // after 10:00 and short polling delays without missing the daily message.
+    // Persist the date so a reboot cannot repeat the daily compliment.
     if (current.hour() >= 10)
     {
         const int32_t today = dateKey(current);
         if (_lastComplimentDate != today)
         {
             _lastComplimentDate = today;
+            if (_preferencesReady)
+                _preferences.putInt(LAST_COMPLIMENT_KEY, today);
             return ReminderType::Compliment;
         }
     }

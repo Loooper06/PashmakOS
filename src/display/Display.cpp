@@ -49,6 +49,14 @@ int16_t Display::targetY(int16_t y) const
     return _drawingDog ? y - DOG_Y : y;
 }
 
+void Display::setDogPosition(int16_t centerX, int16_t verticalOffset)
+{
+    _dogOffsetX = centerX - 160;
+    if (_dogOffsetX < -70) _dogOffsetX = -70;
+    if (_dogOffsetX > 70) _dogOffsetX = 70;
+    _dogOffsetY = verticalOffset;
+}
+
 void Display::beginDogFrame(uint16_t background)
 {
     _drawingDog = _spriteReady;
@@ -61,7 +69,7 @@ void Display::beginDogFrame(uint16_t background)
     {
         // Fallback: draw directly to the display.
         _tft.fillRect(
-            DOG_X, DOG_Y,
+            DOG_X + _dogOffsetX, DOG_Y + _dogOffsetY,
             DOG_W, DOG_H,
             background);
     }
@@ -72,7 +80,7 @@ void Display::endDogFrame()
     // Place the reduced sprite at its actual screen position.
     if (_drawingDog)
     {
-        _dogSprite.pushSprite(DOG_X, DOG_Y);
+        _dogSprite.pushSprite(DOG_X + _dogOffsetX, DOG_Y + _dogOffsetY);
     }
 
     _drawingDog = false;

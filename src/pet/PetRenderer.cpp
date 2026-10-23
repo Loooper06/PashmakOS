@@ -334,48 +334,36 @@ void PetRenderer::drawDog(Display &d, PetMode mode, uint32_t frame, uint8_t petI
         d.fillCircle(cx + 20, cy - 1, 1, WHITE);
     }
 
-    // Cheeks bounce subtly with the walking gait instead of staying static.
+    // Cheeks bounce subtly while walking and become a little rounder.
     const int8_t cheekBob = pose.moving
         ? static_cast<int8_t>(((frame / 3U) & 1U) ? 2 : -1)
         : 0;
     const int8_t cheekPulse = pose.moving && ((frame / 6U) & 1U) ? 1 : 0;
-    d.fillEllipse(cx - 29, cy + 13 + cheekBob, 7 + cheekPulse, 4, BLUSH);
-    d.fillEllipse(cx + 29, cy + 13 + cheekBob, 7 + cheekPulse, 4, BLUSH);
+    const int16_t cheekHeight = pose.moving ? 6 : 4;
+    d.fillEllipse(cx - 29, cy + 13 + cheekBob, 7 + cheekPulse, cheekHeight, BLUSH);
+    d.fillEllipse(cx + 29, cy + 13 + cheekBob, 7 + cheekPulse, cheekHeight, BLUSH);
     d.fillCircle(cx - 31, cy + 11 + cheekBob, 1, cream);
     d.fillCircle(cx + 27, cy + 11 + cheekBob, 1, cream);
     d.fillEllipse(cx - 9, cy + 17, 13, 10, cream);
     d.fillEllipse(cx + 9, cy + 17, 13, 10, cream);
-    d.fillTriangle(cx - 5, cy + 10, cx + 5, cy + 10, cx, cy + 16, NOSE);
-    d.fillCircle(cx, cy + 11, 3, NOSE);
-    d.fillCircle(cx - 1, cy + 10, 1, WHITE);
 
-    // Shift the muzzle slightly in the direction of travel while walking.
-    // Keep it centered when seated; all mouth details share the same offset.
-    const int8_t mouthShift = pose.moving
+    // Shift both nose and mouth a little toward the walking direction.
+    // Keep them centered while sitting.
+    const int8_t muzzleShift = pose.moving
         ? static_cast<int8_t>(pose.gazeX > 0 ? 5 : (pose.gazeX < 0 ? -5 : 0))
         : 0;
-    const int16_t mouthX = cx + mouthShift;
+    const int16_t muzzleX = cx + muzzleShift;
 
-    // The mouth opens/closes while walking, giving the pet a panting expression.
-    // Play mode pants more often; Work mode uses a calmer cadence.
-    const uint8_t mouthPhase = static_cast<uint8_t>((frame / (playing ? 3U : 5U)) % 4U);
-    const bool mouthOpen = pose.moving && (playing ? mouthPhase != 0U : mouthPhase == 1U || mouthPhase == 2U);
+    d.fillTriangle(muzzleX - 5, cy + 10, muzzleX + 5, cy + 10, muzzleX, cy + 16, NOSE);
+    d.fillCircle(muzzleX, cy + 11, 3, NOSE);
+    d.fillCircle(muzzleX - 1, cy + 10, 1, WHITE);
 
-    if (mouthOpen)
-    {
-        d.drawLine(mouthX, cy + 15, mouthX, cy + 21, MOUTH);
-        d.fillEllipse(mouthX, cy + 25, playing ? 8 : 6, playing ? 8 : 6, MOUTH);
-        d.fillEllipse(mouthX, cy + 27, playing ? 5 : 3, playing ? 5 : 3, TONGUE);
-        d.drawLine(mouthX, cy + 23, mouthX, cy + 27, MOUTH);
-    }
-    else
-    {
-        d.drawLine(mouthX, cy + 16, mouthX, cy + 21, MOUTH);
-        d.drawLine(mouthX, cy + 21, mouthX - 5, cy + 18, MOUTH);
-        d.drawLine(mouthX - 5, cy + 18, mouthX - 8, cy + 18, MOUTH);
-        d.drawLine(mouthX, cy + 21, mouthX + 5, cy + 18, MOUTH);
-        d.drawLine(mouthX + 5, cy + 18, mouthX + 8, cy + 18, MOUTH);
-    }
+    // Keep the mouth in a stable closed shape while walking; no panting animation.
+    d.drawLine(muzzleX, cy + 16, muzzleX, cy + 21, MOUTH);
+    d.drawLine(muzzleX, cy + 21, muzzleX - 5, cy + 18, MOUTH);
+    d.drawLine(muzzleX - 5, cy + 18, muzzleX - 8, cy + 18, MOUTH);
+    d.drawLine(muzzleX, cy + 21, muzzleX + 5, cy + 18, MOUTH);
+    d.drawLine(muzzleX + 5, cy + 18, muzzleX + 8, cy + 18, MOUTH);
 
     if (playing)
     {

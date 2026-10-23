@@ -1,38 +1,38 @@
-
 #include "PetBehavior.h"
 
 namespace
 {
-    constexpr uint32_t MESSAGE_INTERVAL_MS = 15000;
+    constexpr uint32_t MESSAGE_INTERVAL_MS = 45000;
 
     const char *const WORK_MESSAGES[] = {
-        "Let's focus!",
-        "Keep going!",
-        "You can do it!",
-        "One step at a time."};
+        "Focus, engineer!",
+        "One step at a time.",
+        "You are making progress!",
+        "Relax your shoulders.",
+        "Remember to blink."};
 
     const char *const NAP_MESSAGES[] = {
-        "Time to rest.",
-        "Sweet dreams!",
-        "Take a break..."};
+        "Time for a real break.",
+        "Rest your eyes, engineer.",
+        "Take a slow breath.",
+        "Get up and stretch a little."};
 
     const char *const PLAY_MESSAGES[] = {
-        "Let's play!",
-        "This is fun!",
-        "Yay!"};
+        "Let's move a little!",
+        "Stretch your neck gently.",
+        "Water break, engineer!",
+        "A short walk sounds good."};
 
     constexpr uint8_t WORK_MESSAGE_COUNT =
         sizeof(WORK_MESSAGES) / sizeof(WORK_MESSAGES[0]);
-
     constexpr uint8_t NAP_MESSAGE_COUNT =
         sizeof(NAP_MESSAGES) / sizeof(NAP_MESSAGES[0]);
-
     constexpr uint8_t PLAY_MESSAGE_COUNT =
         sizeof(PLAY_MESSAGES) / sizeof(PLAY_MESSAGES[0]);
 }
 
 PetBehavior::PetBehavior()
-    : _state{PetMood::Focused, "Let's focus!"},
+    : _state{PetMood::Focused, WORK_MESSAGES[0]},
       _lastMode(PetMode::Work),
       _lastMessageAt(0),
       _messageIndex(0),
@@ -60,10 +60,8 @@ void PetBehavior::update(PetMode mode, uint32_t now)
     }
 
     const bool modeChanged = mode != _lastMode;
-
     const bool messageDue =
-        static_cast<uint32_t>(now - _lastMessageAt) >=
-        MESSAGE_INTERVAL_MS;
+        static_cast<uint32_t>(now - _lastMessageAt) >= MESSAGE_INTERVAL_MS;
 
     if (modeChanged || messageDue)
     {
@@ -99,7 +97,7 @@ void PetBehavior::selectMessage(PetMode mode, uint32_t now)
 
     default:
         _state.mood = PetMood::Curious;
-        _state.message = "Hello!";
+        _state.message = "Hello, engineer!";
         break;
     }
 }

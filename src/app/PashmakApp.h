@@ -13,7 +13,7 @@ class PashmakApp
 public:
     struct DailyStats
     {
-        int32_t dateKey = 0; // YYYYMMDD
+        int32_t dateKey = 0;
         uint32_t workMs = 0;
         uint32_t playMs = 0;
         uint32_t napMs = 0;
@@ -32,7 +32,7 @@ public:
 
     struct MonthlyStats
     {
-        int32_t monthKey = 0; // YYYYMM
+        int32_t monthKey = 0;
         uint64_t workMs = 0;
         uint64_t playMs = 0;
         uint64_t napMs = 0;
@@ -43,16 +43,18 @@ public:
     void begin();
     void update();
 
+    bool setActivePet(uint8_t petId);
+    uint8_t activePetId() const;
     uint8_t dailyHistoryCount() const;
     bool getDailyStats(uint8_t index, DailyStats &out) const;
     uint8_t monthlyHistoryCount() const;
     bool getMonthlyStats(uint8_t index, MonthlyStats &out) const;
     StatsSummary summarizeRecentDays(uint8_t days) const;
     StatsSummary summarizeMonth(uint16_t year, uint8_t month) const;
-    // Returns a JSON snapshot of lifetime totals and retained daily/monthly history.
     String statisticsToJson(uint8_t recentDays = 7) const;
 
 private:
+    static constexpr uint8_t PET_COUNT = 3;
     static constexpr uint8_t DAILY_HISTORY_DAYS = 14;
     static constexpr uint8_t MONTHLY_HISTORY_MONTHS = 12;
 
@@ -74,8 +76,9 @@ private:
 
     Display _display;
     PetRenderer _renderer;
-    PetBehavior _behavior;
+    PetBehavior _behaviors[PET_COUNT];
     RtcService _rtc;
+    uint8_t _activePetId = 0;
 
     PetMode _mode = PetMode::Work;
 

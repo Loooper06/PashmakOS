@@ -98,7 +98,32 @@ String PashmakApp::statisticsToJson(uint8_t recentDays) const
     json.reserve(180 + static_cast<size_t>(_dailyHistoryCount) * 100 +
                  static_cast<size_t>(_monthlyHistoryCount) * 140);
 
-    json += F("{\"version\":1,\"totals\":{\"workMs\":");
+    const PetBehaviorState &pet = _behavior.state();
+    const char *mood = "curious";
+    switch (pet.mood)
+    {
+    case PetMood::Happy: mood = "happy"; break;
+    case PetMood::Focused: mood = "focused"; break;
+    case PetMood::Sleepy: mood = "sleepy"; break;
+    case PetMood::Curious: mood = "curious"; break;
+    case PetMood::Excited: mood = "excited"; break;
+    case PetMood::Tired: mood = "tired"; break;
+    case PetMood::Exhausted: mood = "exhausted"; break;
+    }
+
+    json += F("{\"version\":1,\"pet\":{\"energy\":");
+    json += String(pet.energy);
+    json += F(",\"mood\":\"");
+    json += mood;
+    json += F("\",\"message\":\"");
+    for (const char *p = pet.message; p != nullptr && *p; ++p)
+    {
+        if (*p == '"' || *p == '\\\\')
+            json += '\\\\';
+        if (static_cast<uint8_t>(*p) >= 0x20)
+            json += *p;
+    }
+    json += F("\"},\"totals\":{\"workMs\":");
     json += String(static_cast<unsigned long long>(_workMs));
     json += F(",\"playMs\":");
     json += String(static_cast<unsigned long long>(_playMs));

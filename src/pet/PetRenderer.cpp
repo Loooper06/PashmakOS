@@ -326,19 +326,19 @@ void PetRenderer::drawFooter(Display &d, PetMode mode)
     switch (mode)
     {
     case PetMode::Work:
-        d.drawText("WORK MODE", 10, 201, 2, WHITE);
+        d.drawText("FOCUS TIME", 10, 201, 2, WHITE);
         break;
 
     case PetMode::Nap:
-        d.drawText("NAP MODE", 10, 201, 2, WHITE);
+        d.drawText("REST TIME", 10, 201, 2, WHITE);
         break;
 
     case PetMode::Play:
-        d.drawText("PLAY MODE", 10, 201, 2, WHITE);
+        d.drawText("MOVE A BIT", 10, 201, 2, WHITE);
         break;
     }
 
-    d.drawText("MODE: change  NAP: sleep", 158, 210, 1, WHITE);
+    d.drawText("Automatic behavior", 158, 210, 1, WHITE);
     d.drawText("PashmakOS v0.1", 158, 224, 1, WHITE);
 }
 

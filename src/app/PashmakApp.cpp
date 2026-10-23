@@ -98,7 +98,7 @@ String PashmakApp::statisticsToJson(uint8_t recentDays) const
     json.reserve(180 + static_cast<size_t>(_dailyHistoryCount) * 100 +
                  static_cast<size_t>(_monthlyHistoryCount) * 140);
 
-    const PetBehaviorState &pet = _behavior.state();
+    const PetBehaviorState &pet = _behaviors[_activePetId].state();
     const char *mood = "curious";
     switch (pet.mood)
     {
@@ -207,7 +207,8 @@ void PashmakApp::begin()
         Serial.println("[STATS] Preferences unavailable; statistics are RAM-only.");
     }
 
-    _behavior.begin(now);
+    for (uint8_t i = 0; i < 3; ++i)
+        _behaviors[i].begin(now);
     _rtc.begin();
     loadDailyHistory();
     syncDailyHistory(now);
@@ -218,7 +219,7 @@ void PashmakApp::begin()
         _display,
         _mode,
         _frame,
-        _behavior.state().message,
+        _behaviors[_activePetId].state().message,
         nullptr);
 
     Serial.println("PashmakOS: automatic pet behavior enabled");
@@ -744,7 +745,8 @@ void PashmakApp::update()
     persistMonthlyHistory(now);
 
     updateAutomaticMode(now);
-    _behavior.update(_mode, now);
+    for (uint8_t i = 0; i < 3; ++i)
+        _behaviors[i].update(_mode, now);
     updateRtcReminder(now);
 
     if (_reminderMessage != nullptr &&

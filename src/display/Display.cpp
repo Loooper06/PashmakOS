@@ -1,8 +1,6 @@
 
 #include "Display.h"
 #include "Config.h"
-#include <fonts/ArabicFont_Amiri16.h>
-#include <fonts/ArabicFont_Amiri24.h>
 
 Display::Display()
     : _dogSprite(&_tft),
@@ -14,8 +12,6 @@ Display::Display()
 void Display::begin()
 {
     _tft.init();
-    _arabic.begin();
-    _arabic.setFont(&ArabicFont_Amiri16);
     _tft.invertDisplay(true);
     _tft.setRotation(Config::TFT_ROTATION);
 
@@ -170,30 +166,6 @@ void Display::drawText(
 {
     if (text == nullptr)
         return;
-
-    // Arabic-script UTF-8 code points used by Arabic and Persian begin
-    // with lead bytes 0xD8 through 0xDB. Include 0xDA/0xDB so Persian
-    // letters such as گ are detected even when they appear first.
-    bool isRtl = false;
-    for (const uint8_t *p = reinterpret_cast<const uint8_t *>(text); *p; ++p)
-    {
-        if (*p >= 0xD8 && *p <= 0xDB)
-        {
-            isRtl = true;
-            break;
-        }
-    }
-
-    if (isRtl && !_drawingDog)
-    {
-        // Use the Amiri font, which has broader Arabic-script glyph coverage.
-        _arabic.setFont(size >= 2 ? &ArabicFont_Amiri24 : &ArabicFont_Amiri16);
-        _arabic.setAlign(AR_ALIGN_RIGHT);
-        _arabic.setDirection(ArabicBidi::DIR_RTL);
-        _arabic.setTextColor(color, 0x2127);
-        _arabic.drawText(_tft, x, y, text);
-        return;
-    }
 
     if (_drawingDog)
     {

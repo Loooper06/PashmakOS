@@ -22,27 +22,45 @@ namespace
         "Time to Drink Some Water!",
         "A Short Walk Would Be Nice."};
 
+    const char *const SPONTANEOUS_MESSAGES[] = {
+        "Hey! Still there, Engineer?",
+        "A tiny break can help.",
+        "How about a sip of water?",
+        "You're making progress!",
+        "Remember to relax your shoulders.",
+        "One step at a time."};
+
     constexpr uint8_t WORK_MESSAGE_COUNT =
         sizeof(WORK_MESSAGES) / sizeof(WORK_MESSAGES[0]);
     constexpr uint8_t NAP_MESSAGE_COUNT =
         sizeof(NAP_MESSAGES) / sizeof(NAP_MESSAGES[0]);
     constexpr uint8_t PLAY_MESSAGE_COUNT =
         sizeof(PLAY_MESSAGES) / sizeof(PLAY_MESSAGES[0]);
+    constexpr uint8_t SPONTANEOUS_MESSAGE_COUNT =
+        sizeof(SPONTANEOUS_MESSAGES) / sizeof(SPONTANEOUS_MESSAGES[0]);
 
     constexpr uint32_t WORK_ENERGY_STEP_MS = 120000UL;
     constexpr uint32_t PLAY_ENERGY_STEP_MS = 60000UL;
     constexpr uint32_t NAP_ENERGY_STEP_MS = 30000UL;
+    constexpr uint32_t EVENT_DURATION_MS = 7000UL;
+    constexpr uint32_t EVENT_MIN_INTERVAL_MS = 90000UL;
+    constexpr uint32_t EVENT_INTERVAL_VARIATION_MS = 15000UL;
 }
 
 PetBehavior::PetBehavior()
     : _state{PetMood::Focused, WORK_MESSAGES[0], 80},
+      _baseMessage(WORK_MESSAGES[0]),
       _lastMode(PetMode::Work),
       _lastMessageAt(0),
       _lastEnergyTickAt(0),
       _energyRemainderMs(0),
+      _eventUntil(0),
+      _nextEventAt(0),
       _workMessageIndex(0),
       _napMessageIndex(0),
       _playMessageIndex(0),
+      _eventIndex(0),
+      _eventActive(false),
       _initialized(false)
 {
 }
@@ -56,7 +74,12 @@ void PetBehavior::begin(uint32_t now)
     _workMessageIndex = 0;
     _napMessageIndex = 0;
     _playMessageIndex = 0;
-    _state = {PetMood::Focused, WORK_MESSAGES[0], 80};
+    _eventIndex = 0;
+    _eventActive = false;
+    _eventUntil = now;
+    _nextEventAt = now + EVENT_MIN_INTERVAL_MS;
+    _baseMessage = WORK_MESSAGES[0];
+    _state = {PetMood::Focused, _baseMessage, 80};
     _initialized = true;
 }
 
@@ -93,6 +116,8 @@ void PetBehavior::update(PetMode mode, uint32_t now)
         _lastMode = mode;
         _lastMessageAt = now;
     }
+
+    updateSpontaneousEvent(now);
 }
 
 void PetBehavior::updateEnergy(PetMode mode, uint32_t now)
@@ -161,34 +186,64 @@ void PetBehavior::selectMessage(PetMode mode, uint32_t now)
 
     if (_state.energy <= 10)
     {
-        _state.message = "I need a longer rest.";
-        return;
+        _baseMessage = "I need a longer rest.";
     }
-    if (_state.energy <= 30)
+    else if (_state.energy <= 30)
     {
-        _state.message = "I'm getting tired.";
+        _baseMessage = "I'm getting tired.";
+    }
+    else
+    {
+        switch (mode)
+        {
+        case PetMode::Work:
+            _baseMessage = WORK_MESSAGES[_workMessageIndex % WORK_MESSAGE_COUNT];
+            ++_workMessageIndex;
+            break;
+        case PetMode::Nap:
+            _baseMessage = NAP_MESSAGES[_napMessageIndex % NAP_MESSAGE_COUNT];
+            ++_napMessageIndex;
+            break;
+        case PetMode::Play:
+            _baseMessage = PLAY_MESSAGES[_playMessageIndex % PLAY_MESSAGE_COUNT];
+            ++_playMessageIndex;
+            break;
+        default:
+            _baseMessage = "Hello, Engineer!";
+            _state.mood = PetMood::Curious;
+            break;
+        }
+    }
+
+    if (!_eventActive)
+        _state.message = _baseMessage;
+}
+
+void PetBehavior::updateSpontaneousEvent(uint32_t now)
+{
+    // Signed subtraction keeps deadline checks safe across millis() rollover.
+    if (_eventActive && static_cast<int32_t>(now - _eventUntil) >= 0)
+    {
+        _eventActive = false;
+        _state.message = _baseMessage;
+    }
+
+    if (_eventActive || static_cast<int32_t>(now - _nextEventAt) < 0)
+        return;
+
+    // Avoid cheerful interruptions when the pet is exhausted.
+    if (_state.energy <= 10)
+    {
+        _nextEventAt = now + EVENT_MIN_INTERVAL_MS;
         return;
     }
 
-    switch (mode)
-    {
-    case PetMode::Work:
-        _state.message = WORK_MESSAGES[_workMessageIndex % WORK_MESSAGE_COUNT];
-        _workMessageIndex++;
-        break;
-    case PetMode::Nap:
-        _state.message = NAP_MESSAGES[_napMessageIndex % NAP_MESSAGE_COUNT];
-        _napMessageIndex++;
-        break;
-    case PetMode::Play:
-        _state.message = PLAY_MESSAGES[_playMessageIndex % PLAY_MESSAGE_COUNT];
-        _playMessageIndex++;
-        break;
-    default:
-        _state.message = "Hello, Engineer!";
-        _state.mood = PetMood::Curious;
-        break;
-    }
+    _state.message = SPONTANEOUS_MESSAGES[_eventIndex % SPONTANEOUS_MESSAGE_COUNT];
+    ++_eventIndex;
+    _eventActive = true;
+    _eventUntil = now + EVENT_DURATION_MS;
+    _nextEventAt = now + EVENT_MIN_INTERVAL_MS +
+                   static_cast<uint32_t>(_eventIndex % 4) * EVENT_INTERVAL_VARIATION_MS;
 }
 
 const PetBehaviorState &PetBehavior::state() const

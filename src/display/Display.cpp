@@ -41,7 +41,19 @@ void Display::begin()
 
 int16_t Display::targetX(int16_t x) const
 {
-    return _drawingDog ? x + _dogOffsetX : x;
+    if (!_drawingDog)
+        return x;
+
+    // Keep all pet geometry inside the sprite even if a future route uses
+    // positions near the screen edges. TFT_eSprite clips primitives, but
+    // explicitly bounding the translated coordinate avoids invalid starts
+    // for horizontal-line based ellipse drawing.
+    const int32_t translated = static_cast<int32_t>(x) + _dogOffsetX;
+    if (translated < 0)
+        return 0;
+    if (translated >= DOG_W)
+        return DOG_W - 1;
+    return static_cast<int16_t>(translated);
 }
 
 int16_t Display::targetY(int16_t y) const

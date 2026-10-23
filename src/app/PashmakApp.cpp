@@ -90,6 +90,79 @@ PashmakApp::StatsSummary PashmakApp::summarizeMonth(uint16_t year, uint8_t month
     return result;
 }
 
+String PashmakApp::statisticsToJson(uint8_t recentDays) const
+{
+    const StatsSummary recent = summarizeRecentDays(recentDays);
+
+    String json;
+    json.reserve(180 + static_cast<size_t>(_dailyHistoryCount) * 100 +
+                 static_cast<size_t>(_monthlyHistoryCount) * 140);
+
+    json += F("{\"version\":1,\"totals\":{\"workMs\":");
+    json += String(static_cast<unsigned long long>(_workMs));
+    json += F(",\"playMs\":");
+    json += String(static_cast<unsigned long long>(_playMs));
+    json += F(",\"napMs\":");
+    json += String(static_cast<unsigned long long>(_napMs));
+    json += F(",\"completedWorkSessions\":");
+    json += String(static_cast<unsigned long>(_completedWorkSessions));
+    json += F("},\"recent\":{\"requestedDays\":");
+    json += String(recentDays);
+    json += F(",\"daysIncluded\":");
+    json += String(recent.daysIncluded);
+    json += F(",\"workMs\":");
+    json += String(static_cast<unsigned long long>(recent.workMs));
+    json += F(",\"playMs\":");
+    json += String(static_cast<unsigned long long>(recent.playMs));
+    json += F(",\"napMs\":");
+    json += String(static_cast<unsigned long long>(recent.napMs));
+    json += F(",\"completedWorkSessions\":");
+    json += String(static_cast<unsigned long>(recent.completedWorkSessions));
+    json += F("},\"dailyHistory\":[");
+
+    for (uint8_t i = 0; i < _dailyHistoryCount; ++i)
+    {
+        if (i > 0)
+            json += ',';
+
+        const DailyStats &day = _dailyHistory[i];
+        json += F("{\"dateKey\":");
+        json += String(static_cast<long>(day.dateKey));
+        json += F(",\"workMs\":");
+        json += String(static_cast<unsigned long>(day.workMs));
+        json += F(",\"playMs\":");
+        json += String(static_cast<unsigned long>(day.playMs));
+        json += F(",\"napMs\":");
+        json += String(static_cast<unsigned long>(day.napMs));
+        json += F(",\"completedWorkSessions\":");
+        json += String(day.completedWorkSessions);
+        json += '}';
+    }
+
+    json += F("],\"monthlyHistory\":[");
+    for (uint8_t i = 0; i < _monthlyHistoryCount; ++i)
+    {
+        if (i > 0)
+            json += ',';
+
+        const MonthlyStats &month = _monthlyHistory[i];
+        json += F("{\"monthKey\":");
+        json += String(static_cast<long>(month.monthKey));
+        json += F(",\"workMs\":");
+        json += String(static_cast<unsigned long long>(month.workMs));
+        json += F(",\"playMs\":");
+        json += String(static_cast<unsigned long long>(month.playMs));
+        json += F(",\"napMs\":");
+        json += String(static_cast<unsigned long long>(month.napMs));
+        json += F(",\"completedWorkSessions\":");
+        json += String(static_cast<unsigned long>(month.completedWorkSessions));
+        json += '}';
+    }
+
+    json += F("]}");
+    return json;
+}
+
 void PashmakApp::begin()
 {
     Serial.begin(115200);

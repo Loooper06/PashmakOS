@@ -32,7 +32,8 @@ footer{margin-top:18px;color:var(--muted);font-size:.82rem}
 </head>
 <body><main>
 <header><div><h1>PashmakOS</h1><div class="muted">Pet activity dashboard</div></div><div><span id="connection" class="status">Connecting…</span> <button id="refresh">Refresh</button></div></header>
-<section class="card section"><h2>Choose your pet</h2><div id="pet-picker" class="pills"></div><div class="muted">Each pet keeps its own energy, mood and message state.</div></section>\n<section class="card section" id="pet-status"><h2 id="pet-heading">Pet status</h2><div class="grid">
+<section class="card section"><h2>Choose your pet</h2><div id="pet-picker" class="pills"></div><div class="muted">Each pet keeps its own energy, mood and message state.</div></section>
+<section class="card section" id="pet-status"><h2 id="pet-heading">Pet status</h2><div class="grid">
  <article><div class="label">Energy</div><div id="pet-energy" class="metric">—</div><div style="height:8px;background:var(--line);border-radius:99px;overflow:hidden;margin-top:10px"><div id="pet-energy-bar" style="height:100%;width:0%;background:var(--accent);transition:width .25s"></div></div></article>
  <article><div class="label">Mood</div><div id="pet-mood" class="metric">—</div></article>
  <article style="grid-column:span 2"><div class="label">Pet says</div><div id="pet-message" style="font-size:1.05rem;margin-top:8px">Waiting for data…</div></article>

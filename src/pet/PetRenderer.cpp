@@ -50,72 +50,63 @@ namespace
     DogPose getDogPose(PetMode mode, uint32_t frame)
     {
         DogPose pose{};
-        const uint32_t phase = frame % 96;
-        const uint32_t blinkPhase = frame % 43;
-        pose.blinking = mode == PetMode::Nap || blinkPhase < 2 ||
-                        (blinkPhase >= 4 && blinkPhase < 6);
-        pose.action = PetAction::Stand;
         const int16_t waypoints[] = {112, 208, 145, 232, 92, 176};
-        const uint8_t waypoint = (frame / 60) % 6;
-        const int16_t fromX = waypoints[(waypoint + 5) % 6];
-        const int16_t toX = waypoints[waypoint];
-        const uint8_t within = frame % 60;
-        // Walk for 35 frames, then pause at the destination for 25 frames.
-        pose.travelX = within < 35
-            ? static_cast<int16_t>(fromX + (static_cast<int32_t>(toX - fromX) * within) / 35)
-            : toX;
-        pose.gazeX = (toX > fromX) ? 2 : ((toX < fromX) ? -2 : 0);
+        constexpr uint8_t WAYPOINT_COUNT = sizeof(waypoints) / sizeof(waypoints[0]);
 
-        if (mode == PetMode::Nap)
+        // Work: walk for a moderate interval, then sit for a longer interval.
+        // Nap: make a short trip to a resting spot, then remain lying down.
+        const uint16_t cycleLength = mode == PetMode::Nap ? 240 : 200;
+        const uint16_t walkLength = mode == PetMode::Nap ? 48 : 72;
+        const uint32_t cycle = frame % cycleLength;
+        const uint8_t waypoint = (frame / cycleLength) % WAYPOINT_COUNT;
+        const int16_t fromX = waypoints[(waypoint + WAYPOINT_COUNT - 1) % WAYPOINT_COUNT];
+        const int16_t toX = waypoints[waypoint];
+
+        // Smoothstep easing avoids abrupt starts/stops and keeps each segment
+        // continuous at the waypoint boundaries.
+        if (cycle < walkLength)
         {
-            pose.action = PetAction::LieDown;
-            pose.travelX = waypoints[(frame / 80) % 6];
-            pose.gazeX = 0;
-            pose.bob = (phase % 16 < 8) ? 1 : 2; // slow breathing
-        }
-        else if (mode == PetMode::Play)
-        {
-            if (phase % 24 < 16)
-            {
-                pose.action = PetAction::Walk;
-                pose.legSwing = (phase % 8 < 4) ? -4 : 4;
-                pose.tailSwing = (phase % 8 < 4) ? -5 : 5;
-                pose.bob = (phase % 8 < 4) ? -1 : 2;
-            }
-            else
-            {
-                pose.action = PetAction::Hop;
-                pose.bob = (phase % 8 < 4) ? -5 : 1;
-                pose.tailSwing = (phase % 8 < 4) ? 7 : -7;
-            }
-            pose.moving = true;
-        }
-        else if (phase >= 60 && phase < 76)
-        {
-            pose.action = PetAction::Sit;
-            pose.bob = 3;
-        }
-        else if (phase >= 24 && phase < 48)
-        {
+            const uint32_t t = (cycle * 1000UL) / walkLength;
+            const uint32_t eased = (t * t * (3000UL - 2UL * t)) / 1000000UL;
+            pose.travelX = static_cast<int16_t>(
+                fromX + (static_cast<int32_t>(toX - fromX) * eased) / 1000);
             pose.action = PetAction::Walk;
-            pose.legSwing = (phase % 8 < 4) ? -3 : 3;
-            pose.tailSwing = (phase % 8 < 4) ? -3 : 3;
             pose.moving = true;
+
+            // A four-beat gait: diagonal pairs alternate instead of the
+            // whole pet simply sliding from one point to another.
+            const uint8_t gait = (frame / 3) % 4;
+            pose.legSwing = (gait == 0 || gait == 3) ? -5 : 5;
+            pose.tailSwing = (gait < 2) ? -4 : 4;
+            pose.bob = (gait == 0 || gait == 2) ? -1 : 2;
+            pose.gazeX = (toX >= fromX) ? 2 : -2;
         }
         else
         {
-            pose.bob = (phase % 12 < 6) ? 0 : 1;
-            pose.tailSwing = (phase % 12 < 6) ? -2 : 2;
+            pose.travelX = toX;
+            pose.action = mode == PetMode::Nap ? PetAction::LieDown : PetAction::Sit;
+            pose.gazeX = 0;
+            pose.bob = mode == PetMode::Nap
+                ? ((frame / 12) % 2 == 0 ? 1 : 2) // gentle breathing
+                : 2;
+            pose.tailSwing = mode == PetMode::Nap ? 0 : ((frame / 10) % 2 ? 1 : -1);
         }
 
-        if (pose.action == PetAction::Sit)
+        // Play keeps a more energetic gait, but still follows the same
+        // continuous route rather than teleporting between fixed positions.
+        if (mode == PetMode::Play && pose.action == PetAction::Walk)
         {
-            pose.travelX = waypoints[(frame / 60) % 6];
-            pose.gazeX = 0;
+            pose.legSwing = (pose.legSwing < 0) ? -6 : 6;
+            pose.tailSwing = (pose.tailSwing < 0) ? -6 : 6;
         }
+
+        const uint32_t blinkPhase = frame % 53;
+        pose.blinking = mode == PetMode::Nap ||
+                        (blinkPhase < 2) ||
+                        (blinkPhase >= 4 && blinkPhase < 6);
 
         const uint8_t earPhase = (frame / 5) % 12;
-        if (mode != PetMode::Nap)
+        if (mode != PetMode::Nap && pose.action != PetAction::LieDown)
         {
             if (earPhase >= 2 && earPhase < 5) pose.leftEarX = -2;
             if (earPhase >= 7 && earPhase < 10) pose.rightEarX = 2;

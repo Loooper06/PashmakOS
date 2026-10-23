@@ -19,6 +19,20 @@ namespace
 
 PashmakApp::PashmakApp() = default;
 
+bool PashmakApp::setActivePet(uint8_t petId)
+{
+    if (petId >= PET_COUNT)
+        return false;
+    _activePetId = petId;
+    return true;
+}
+
+uint8_t PashmakApp::activePetId() const
+{
+    return _activePetId;
+}
+
+
 uint8_t PashmakApp::dailyHistoryCount() const
 {
     return _dailyHistoryCount;
@@ -111,7 +125,34 @@ String PashmakApp::statisticsToJson(uint8_t recentDays) const
     case PetMood::Exhausted: mood = "exhausted"; break;
     }
 
-    json += F("{\"version\":1,\"pet\":{\"energy\":");
+    json += F("{\"version\":1,\"activePetId\":");
+    json += String(_activePetId);
+    json += F(",\"pets\":[");
+    const char *petNames[] = {"Pashmak", "Mochi", "Pixel"};
+    for (uint8_t i = 0; i < 3; ++i)
+    {
+        if (i > 0) json += ',';
+        const PetBehaviorState &profile = _behaviors[i].state();
+        const char *profileMood = "curious";
+        switch (profile.mood)
+        {
+        case PetMood::Happy: profileMood = "happy"; break;
+        case PetMood::Focused: profileMood = "focused"; break;
+        case PetMood::Sleepy: profileMood = "sleepy"; break;
+        case PetMood::Curious: profileMood = "curious"; break;
+        case PetMood::Excited: profileMood = "excited"; break;
+        case PetMood::Tired: profileMood = "tired"; break;
+        case PetMood::Exhausted: profileMood = "exhausted"; break;
+        }
+        json += F("{\"id\":"); json += String(i);
+        json += F(",\"name\":\""); json += petNames[i];
+        json += F("\",\"energy\":"); json += String(profile.energy);
+        json += F(",\"mood\":\""); json += profileMood;
+        json += F("\",\"message\":\"");
+        json += (profile.message != nullptr ? profile.message : "");
+        json += F("\"}");
+    }
+    json += F("],\"pet\":{\"energy\":");
     json += String(pet.energy);
     json += F(",\"mood\":\"");
     json += mood;

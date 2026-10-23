@@ -37,6 +37,9 @@ private:
     uint8_t _lastDogPetId = 255;
     int8_t _lastDogBob;
     bool _lastDogMoving;
+    int8_t _lastDogLegSwing = 0;
+    int8_t _lastDogTailSwing = 0;
+    uint8_t _lastDogAction = 255;
     bool _lastDogBlinking;
     int8_t _lastDogLeftEarX;
     int8_t _lastDogRightEarX;

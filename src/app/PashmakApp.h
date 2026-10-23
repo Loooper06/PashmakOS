@@ -11,13 +11,6 @@
 class PashmakApp
 {
 public:
-    PashmakApp();
-    void begin();
-    void update();
-
-private:
-    static constexpr uint8_t DAILY_HISTORY_DAYS = 14;
-
     struct DailyStats
     {
         int32_t dateKey = 0; // YYYYMMDD
@@ -27,6 +20,16 @@ private:
         uint16_t completedWorkSessions = 0;
         uint16_t reserved = 0;
     };
+
+    PashmakApp();
+    void begin();
+    void update();
+
+    uint8_t dailyHistoryCount() const;
+    bool getDailyStats(uint8_t index, DailyStats &out) const;
+
+private:
+    static constexpr uint8_t DAILY_HISTORY_DAYS = 14;
 
     struct DailyHistoryStorage
     {

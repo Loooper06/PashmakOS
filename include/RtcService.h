@@ -17,7 +17,7 @@ public:
     bool begin();
     ReminderType update(uint32_t nowMs);
     bool isAvailable() const;
-    DateTime now() const;
+    DateTime now();
 
 private:
     RTC_DS3231 _rtc;

@@ -156,9 +156,14 @@ void PetRenderer::drawHeader(Display &d)
     d.fillCircle(291, 15, 2, WHITE);
 }
 
-void PetRenderer::drawDog(Display &d, PetMode mode, uint32_t frame)
+void PetRenderer::drawDog(Display &d, PetMode mode, uint32_t frame, uint8_t petId)
 {
     const bool sleeping = mode == PetMode::Nap;
+    const uint16_t fur = petId == 1 ? 0xCE79 : (petId == 2 ? 0x7D7C : FUR);
+    const uint16_t furDark = petId == 1 ? 0x9C71 : (petId == 2 ? 0x4A54 : FUR_DARK);
+    const uint16_t furLight = petId == 1 ? 0xF7BE : (petId == 2 ? 0xBDF7 : FUR_LIGHT);
+    const uint16_t earPink = petId == 1 ? 0xF2B5 : (petId == 2 ? 0x7DFF : EAR_PINK);
+    const uint16_t cream = petId == 1 ? 0xFFFF : (petId == 2 ? 0xCE79 : CREAM);
     const bool playing = mode == PetMode::Play;
 
     const DogPose pose = getDogPose(mode, frame);
@@ -173,38 +178,38 @@ void PetRenderer::drawDog(Display &d, PetMode mode, uint32_t frame)
 
     d.fillEllipse(cx, 180, 48, 7, SHADOW);
 
-    d.fillEllipse(119 + lx, 80, 20, 27, FUR_DARK);
-    d.fillTriangle(101 + lx, 84, 105 + lx, 57, 130 + lx, 65, FUR_DARK);
-    d.fillEllipse(201 + rx, 80, 20, 27, FUR_DARK);
-    d.fillTriangle(190 + rx, 65, 215 + rx, 57, 219 + rx, 84, FUR_DARK);
+    d.fillEllipse(119 + lx, 80, 20, 27, furDark);
+    d.fillTriangle(101 + lx, 84, 105 + lx, 57, 130 + lx, 65, furDark);
+    d.fillEllipse(201 + rx, 80, 20, 27, furDark);
+    d.fillTriangle(190 + rx, 65, 215 + rx, 57, 219 + rx, 84, furDark);
 
-    d.fillEllipse(119 + lx, 80, 17, 24, FUR);
-    d.fillTriangle(104 + lx, 81, 108 + lx, 61, 128 + lx, 68, FUR);
-    d.fillEllipse(201 + rx, 80, 17, 24, FUR);
-    d.fillTriangle(192 + rx, 68, 212 + rx, 61, 216 + rx, 81, FUR);
+    d.fillEllipse(119 + lx, 80, 17, 24, fur);
+    d.fillTriangle(104 + lx, 81, 108 + lx, 61, 128 + lx, 68, fur);
+    d.fillEllipse(201 + rx, 80, 17, 24, fur);
+    d.fillTriangle(192 + rx, 68, 212 + rx, 61, 216 + rx, 81, fur);
 
-    d.fillEllipse(119 + lx, 79, 11, 16, EAR_PINK);
-    d.fillTriangle(110 + lx, 78, 112 + lx, 65, 124 + lx, 70, EAR_PINK);
-    d.fillEllipse(201 + rx, 79, 11, 16, EAR_PINK);
-    d.fillTriangle(196 + rx, 70, 208 + rx, 65, 210 + rx, 78, EAR_PINK);
+    d.fillEllipse(119 + lx, 79, 11, 16, earPink);
+    d.fillTriangle(110 + lx, 78, 112 + lx, 65, 124 + lx, 70, earPink);
+    d.fillEllipse(201 + rx, 79, 11, 16, earPink);
+    d.fillTriangle(196 + rx, 70, 208 + rx, 65, 210 + rx, 78, earPink);
 
-    d.fillEllipse(116 + lx, 73, 3, 5, CREAM_DARK);
-    d.fillEllipse(198 + rx, 73, 3, 5, CREAM_DARK);
-    d.fillEllipse(123 + lx, 96, 13, 12, FUR);
-    d.fillEllipse(197 + rx, 96, 13, 12, FUR);
+    d.fillEllipse(116 + lx, 73, 3, 5, cream_DARK);
+    d.fillEllipse(198 + rx, 73, 3, 5, cream_DARK);
+    d.fillEllipse(123 + lx, 96, 13, 12, fur);
+    d.fillEllipse(197 + rx, 96, 13, 12, fur);
 
-    d.fillEllipse(cx, cy, 43, 43, FUR_DARK);
-    d.fillEllipse(cx, cy - 2, 41, 41, FUR);
-    d.fillEllipse(cx, cy - 27, 7, 15, CREAM);
-    d.fillEllipse(cx, cy - 15, 5, 13, CREAM);
-    d.fillEllipse(cx - 23, cy + 15, 22, 19, CREAM);
-    d.fillEllipse(cx + 23, cy + 15, 22, 19, CREAM);
-    d.fillEllipse(cx, cy + 27, 25, 13, CREAM);
+    d.fillEllipse(cx, cy, 43, 43, furDark);
+    d.fillEllipse(cx, cy - 2, 41, 41, fur);
+    d.fillEllipse(cx, cy - 27, 7, 15, cream);
+    d.fillEllipse(cx, cy - 15, 5, 13, cream);
+    d.fillEllipse(cx - 23, cy + 15, 22, 19, cream);
+    d.fillEllipse(cx + 23, cy + 15, 22, 19, cream);
+    d.fillEllipse(cx, cy + 27, 25, 13, cream);
 
-    d.fillTriangle(cx - 12, cy - 37, cx - 5, cy - 29, cx - 17, cy - 27, FUR_LIGHT);
-    d.fillTriangle(cx + 3, cy - 38, cx + 12, cy - 29, cx + 1, cy - 27, FUR_LIGHT);
-    d.fillEllipse(cx - 16, cy - 13, 7, 2, FUR_DARK);
-    d.fillEllipse(cx + 16, cy - 13, 7, 2, FUR_DARK);
+    d.fillTriangle(cx - 12, cy - 37, cx - 5, cy - 29, cx - 17, cy - 27, furLight);
+    d.fillTriangle(cx + 3, cy - 38, cx + 12, cy - 29, cx + 1, cy - 27, furLight);
+    d.fillEllipse(cx - 16, cy - 13, 7, 2, furDark);
+    d.fillEllipse(cx + 16, cy - 13, 7, 2, furDark);
 
     if (pose.blinking)
     {
@@ -215,8 +220,8 @@ void PetRenderer::drawDog(Display &d, PetMode mode, uint32_t frame)
     }
     else
     {
-        d.fillEllipse(cx - 17, cy - 3, 10, 13, FUR_DARK);
-        d.fillEllipse(cx + 17, cy - 3, 10, 13, FUR_DARK);
+        d.fillEllipse(cx - 17, cy - 3, 10, 13, furDark);
+        d.fillEllipse(cx + 17, cy - 3, 10, 13, furDark);
         d.fillEllipse(cx - 17, cy - 4, 8, 11, EYE);
         d.fillEllipse(cx + 17, cy - 4, 8, 11, EYE);
         d.fillEllipse(cx - 17, cy - 3, 5, 8, MOUTH);
@@ -229,10 +234,10 @@ void PetRenderer::drawDog(Display &d, PetMode mode, uint32_t frame)
 
     d.fillEllipse(cx - 29, cy + 13, 7, 4, BLUSH);
     d.fillEllipse(cx + 29, cy + 13, 7, 4, BLUSH);
-    d.fillCircle(cx - 31, cy + 11, 1, CREAM);
-    d.fillCircle(cx + 27, cy + 11, 1, CREAM);
-    d.fillEllipse(cx - 9, cy + 17, 13, 10, CREAM);
-    d.fillEllipse(cx + 9, cy + 17, 13, 10, CREAM);
+    d.fillCircle(cx - 31, cy + 11, 1, cream);
+    d.fillCircle(cx + 27, cy + 11, 1, cream);
+    d.fillEllipse(cx - 9, cy + 17, 13, 10, cream);
+    d.fillEllipse(cx + 9, cy + 17, 13, 10, cream);
     d.fillTriangle(cx - 5, cy + 10, cx + 5, cy + 10, cx, cy + 16, NOSE);
     d.fillCircle(cx, cy + 11, 3, NOSE);
     d.fillCircle(cx - 1, cy + 10, 1, WHITE);
@@ -243,8 +248,8 @@ void PetRenderer::drawDog(Display &d, PetMode mode, uint32_t frame)
         d.fillEllipse(cx, cy + 25, 8, 8, MOUTH);
         d.fillEllipse(cx, cy + 27, 5, 5, TONGUE);
         d.drawLine(cx, cy + 23, cx, cy + 27, MOUTH);
-        d.fillCircle(111, 113, 2, CREAM);
-        d.fillCircle(209, 113, 2, CREAM);
+        d.fillCircle(111, 113, 2, cream);
+        d.fillCircle(209, 113, 2, cream);
         d.drawLine(112, 103, 112, 109, WHITE);
         d.drawLine(109, 106, 115, 106, WHITE);
         d.drawLine(208, 103, 208, 109, WHITE);
@@ -268,7 +273,7 @@ void PetRenderer::drawDog(Display &d, PetMode mode, uint32_t frame)
     d.endDogFrame();
 }
 
-void PetRenderer::drawFooter(Display &d, PetMode mode, const char *dateTime)
+void PetRenderer::drawFooter(Display &d, PetMode mode, uint8_t petId, const char *dateTime)
 {
     d.fillRect(0, FOOTER_Y, SCREEN_W, FOOTER_H, PANEL);
 
@@ -285,13 +290,14 @@ void PetRenderer::drawFooter(Display &d, PetMode mode, const char *dateTime)
         break;
     }
 
-    d.drawText("Auto Behavior", 121, 215, 1, WHITE);
+    const char *petNames[] = {"Pashmak", "Mochi", "Pixel"};
+    d.drawText(petId < 3 ? petNames[petId] : "Pashmak", 121, 215, 1, WHITE);
     d.drawText("PashmakOS v0.1", 8, 228, 1, WHITE);
     if (dateTime != nullptr)
         d.drawText(dateTime, 190, 228, 1, WHITE);
 }
 
-void PetRenderer::draw(Display &d, PetMode mode, uint32_t frame, const char *message, const char *dateTime)
+void PetRenderer::draw(Display &d, PetMode mode, uint32_t frame, uint8_t petId, const char *message, const char *dateTime)
 {
     if (!_initialized)
     {
@@ -301,15 +307,16 @@ void PetRenderer::draw(Display &d, PetMode mode, uint32_t frame, const char *mes
     }
 
     const bool dateTimeChanged = dateTime != nullptr && strcmp(_lastDateTime, dateTime) != 0;
-    if (!_footerInitialized || mode != _lastMode || dateTimeChanged)
+    if (!_footerInitialized || mode != _lastMode || petId != _lastPetId || dateTimeChanged)
     {
-        drawFooter(d, mode, dateTime);
+        drawFooter(d, mode, petId, dateTime);
         if (dateTime != nullptr)
         {
             strncpy(_lastDateTime, dateTime, sizeof(_lastDateTime) - 1);
             _lastDateTime[sizeof(_lastDateTime) - 1] = '\0';
         }
         _lastMode = mode;
+        _lastPetId = petId;
         _footerInitialized = true;
     }
 
@@ -318,6 +325,7 @@ void PetRenderer::draw(Display &d, PetMode mode, uint32_t frame, const char *mes
     const DogPose pose = getDogPose(mode, frame);
     const bool dogChanged =
         !_dogInitialized ||
+        petId != _lastPetId ||
         mode != _lastDogMode ||
         pose.bob != _lastDogBob ||
         pose.moving != _lastDogMoving ||
@@ -328,7 +336,7 @@ void PetRenderer::draw(Display &d, PetMode mode, uint32_t frame, const char *mes
     if (!dogChanged)
         return;
 
-    drawDog(d, mode, frame);
+    drawDog(d, mode, frame, petId);
 
     _lastDogMode = mode;
     _lastDogBob = pose.bob;

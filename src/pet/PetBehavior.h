@@ -34,7 +34,9 @@ private:
 
     PetMode _lastMode;
     uint32_t _lastMessageAt;
-    uint8_t _messageIndex;
+    uint8_t _workMessageIndex;
+    uint8_t _napMessageIndex;
+    uint8_t _playMessageIndex;
     bool _initialized;
 
     void selectMessage(PetMode mode, uint32_t now);

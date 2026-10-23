@@ -618,21 +618,56 @@ void PashmakApp::updateRtcReminder(uint32_t now)
 
 void PashmakApp::handleSerialCommands()
 {
-    if (Serial.available() <= 0)
-        return;
-
-    String command = Serial.readStringUntil('\\n');
-    command.trim();
-
-    if (command == "stats")
+    while (Serial.available() > 0)
     {
-        Serial.println("[STATS_JSON_BEGIN]");
-        Serial.println(statisticsToJson(7));
-        Serial.println("[STATS_JSON_END]");
-    }
-    else if (command == "help")
-    {
-        Serial.println("Commands: stats, help");
+        const char ch = static_cast<char>(Serial.read());
+
+        if (ch == '\r')
+            continue;
+
+        if (ch != '\n')
+        {
+            if (!_serialCommandOverflow)
+            {
+                if (_serialCommandLength < sizeof(_serialCommandBuffer) - 1)
+                {
+                    _serialCommandBuffer[_serialCommandLength++] = ch;
+                }
+                else
+                {
+                    _serialCommandOverflow = true;
+                }
+            }
+            continue;
+        }
+
+        if (_serialCommandOverflow)
+        {
+            Serial.println("[SERIAL] Command too long; ignored.");
+        }
+        else
+        {
+            _serialCommandBuffer[_serialCommandLength] = '\0';
+
+            if (strcmp(_serialCommandBuffer, "stats") == 0)
+            {
+                Serial.println("[STATS_JSON_BEGIN]");
+                Serial.println(statisticsToJson(7));
+                Serial.println("[STATS_JSON_END]");
+            }
+            else if (strcmp(_serialCommandBuffer, "help") == 0)
+            {
+                Serial.println("Commands: stats, help");
+            }
+            else if (_serialCommandLength > 0)
+            {
+                Serial.println("[SERIAL] Unknown command. Type help.");
+            }
+        }
+
+        _serialCommandLength = 0;
+        _serialCommandOverflow = false;
+        _serialCommandBuffer[0] = '\0';
     }
 }
 

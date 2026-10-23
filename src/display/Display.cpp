@@ -51,9 +51,9 @@ int16_t Display::targetY(int16_t y) const
 
 void Display::setDogPosition(int16_t centerX, int16_t verticalOffset)
 {
+    // Keep the mapping 1:1 with the requested position. Clamping the offset
+    // caused the pet to stop following the route correctly near its endpoints.
     _dogOffsetX = centerX - 160;
-    if (_dogOffsetX < -68) _dogOffsetX = -68;
-    if (_dogOffsetX > 68) _dogOffsetX = 68;
     _dogOffsetY = verticalOffset;
 }
 

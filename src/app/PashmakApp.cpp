@@ -616,8 +616,29 @@ void PashmakApp::updateRtcReminder(uint32_t now)
     _reminderShownAt = now;
 }
 
+void PashmakApp::handleSerialCommands()
+{
+    if (Serial.available() <= 0)
+        return;
+
+    String command = Serial.readStringUntil('\\n');
+    command.trim();
+
+    if (command == "stats")
+    {
+        Serial.println("[STATS_JSON_BEGIN]");
+        Serial.println(statisticsToJson(7));
+        Serial.println("[STATS_JSON_END]");
+    }
+    else if (command == "help")
+    {
+        Serial.println("Commands: stats, help");
+    }
+}
+
 void PashmakApp::update()
 {
+    handleSerialCommands();
     const uint32_t now = millis();
 
     const uint32_t elapsed = static_cast<uint32_t>(now - _lastWorkTick);

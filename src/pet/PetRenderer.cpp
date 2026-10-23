@@ -1,5 +1,6 @@
 #include <cstring>
 #include "PetRenderer.h"
+#include "PetAppearance.h"
 #include "../display/Display.h"
 
 namespace
@@ -222,63 +223,14 @@ void PetRenderer::drawDog(Display &d, PetMode mode, uint32_t frame, uint8_t petI
 
     d.fillEllipse(cx, 185, pose.action == PetAction::LieDown ? 48 : 43, 5, SHADOW);
 
-    // Draw the full body behind the head so the character reads as a
-    // small standing pet rather than a floating face. Keep all geometry
-    // inside the animation area (between the header and footer).
+    // Each pet owns its body silhouette and pose-specific limb geometry.
+    const PetBodyPose bodyPose = static_cast<PetBodyPose>(pose.action);
     if (petId == 0)
-    {
-        // Pashmak: compact body, rounded paws and a curled tail.
-        d.drawLine(194, 151, 207, 145, furDark);
-        d.drawLine(207 + pose.tailSwing, 145, 215 + pose.tailSwing, 151, furDark);
-        d.fillCircle(215 + pose.tailSwing, 153, 5, fur);
-        d.fillEllipse(cx, pose.action == PetAction::LieDown ? 166 : 158, pose.action == PetAction::LieDown ? 34 : 25, pose.action == PetAction::LieDown ? 17 : 25, furDark);
-        d.fillEllipse(cx, pose.action == PetAction::LieDown ? 164 : 156, pose.action == PetAction::LieDown ? 31 : 22, pose.action == PetAction::LieDown ? 15 : 23, fur);
-        d.fillEllipse(137, 158, 9, 17, furDark);
-        d.fillEllipse(137, 157, 6, 14, fur);
-        d.fillEllipse(183, 158, 9, 17, furDark);
-        d.fillEllipse(183, 157, 6, 14, fur);
-        d.fillEllipse(148 + pose.legSwing, 178, 10, 7, furDark);
-        d.fillEllipse(148 + pose.legSwing, 176, 8, 6, furLight);
-        d.fillEllipse(172 - pose.legSwing, 178, 10, 7, furDark);
-        d.fillEllipse(172 - pose.legSwing, 176, 8, 6, furLight);
-    }
+        drawPashmakBody(d, bodyPose, pose.legSwing, pose.tailSwing, fur, furDark, furLight, cream);
     else if (petId == 1)
-    {
-        // Mochi: rounder, wider body with short legs and a fluffy tail.
-        d.fillEllipse(198 + pose.tailSwing, 158, 12, 9, furDark);
-        d.fillEllipse(200 + pose.tailSwing, 156, 9, 7, furLight);
-        d.fillEllipse(cx, pose.action == PetAction::LieDown ? 166 : 159, pose.action == PetAction::LieDown ? 38 : 29, pose.action == PetAction::LieDown ? 17 : 25, furDark);
-        d.fillEllipse(cx, pose.action == PetAction::LieDown ? 164 : 157, pose.action == PetAction::LieDown ? 35 : 26, pose.action == PetAction::LieDown ? 15 : 23, fur);
-        d.fillEllipse(134, 158, 10, 15, furDark);
-        d.fillEllipse(134, 157, 7, 13, fur);
-        d.fillEllipse(186, 158, 10, 15, furDark);
-        d.fillEllipse(186, 157, 7, 13, fur);
-        d.fillEllipse(146 + pose.legSwing, 178, 11, 7, furDark);
-        d.fillEllipse(146 + pose.legSwing, 176, 9, 6, cream);
-        d.fillEllipse(174 - pose.legSwing, 178, 11, 7, furDark);
-        d.fillEllipse(174 - pose.legSwing, 176, 9, 6, cream);
-        d.fillEllipse(cx, 162, 13, 16, cream);
-    }
+        drawMochiBody(d, bodyPose, pose.legSwing, pose.tailSwing, fur, furDark, furLight, cream);
     else
-    {
-        // Pixel: slimmer body, longer limbs and a pointed upright tail.
-        d.drawLine(188, 164, 201, 151, furDark);
-        d.drawLine(201 + pose.tailSwing, 151, 207 + pose.tailSwing, 139, furDark);
-        d.drawLine(188, 163, 200 + pose.tailSwing, 151, fur);
-        d.drawLine(200 + pose.tailSwing, 151, 206 + pose.tailSwing, 140, fur);
-        d.fillEllipse(cx, 158, 20, 27, furDark);
-        d.fillEllipse(cx, 156, 17, 25, fur);
-        d.fillEllipse(143, 159, 7, 18, furDark);
-        d.fillEllipse(143, 158, 4, 16, fur);
-        d.fillEllipse(177, 159, 7, 18, furDark);
-        d.fillEllipse(177, 158, 4, 16, fur);
-        d.fillEllipse(149, 179, 8, 6, furDark);
-        d.fillEllipse(149, 177, 6, 5, furLight);
-        d.fillEllipse(171, 179, 8, 6, furDark);
-        d.fillEllipse(171, 177, 6, 5, furLight);
-        d.drawLine(153, 151, 155, 165, cream);
-        d.drawLine(167, 151, 165, 165, cream);
-    }
+        drawPixelBody(d, bodyPose, pose.legSwing, pose.tailSwing, fur, furDark, furLight, cream);
 
     d.fillEllipse(119 + lx, 80, 20, 27, furDark);
     d.fillTriangle(101 + lx, 84, 105 + lx, 57, 130 + lx, 65, furDark);

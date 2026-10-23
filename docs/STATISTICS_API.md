@@ -12,6 +12,8 @@
 |---|---|
 | `help` | Prints the supported commands |
 | `stats` | Prints a JSON snapshot between `[STATS_JSON_BEGIN]` and `[STATS_JSON_END]` |
+| `daily_csv` | Prints retained daily history as CSV between `[DAILY_CSV_BEGIN]` and `[DAILY_CSV_END]` |
+| `monthly_csv` | Prints retained monthly history as CSV between `[MONTHLY_CSV_BEGIN]` and `[MONTHLY_CSV_END]` |
 
 Unknown commands are ignored with a diagnostic message. Commands longer than the fixed input buffer are rejected.
 
@@ -55,3 +57,8 @@ Example shape (values are illustrative):
 - The JSON snapshot is currently available over USB serial only; this does not start Wi-Fi, HTTP, or MQTT.
 - History is retained in ESP32 Preferences. Daily history keeps up to 14 records and monthly history up to 12 records.
 - The current schema is versioned so a future dashboard can detect incompatible changes.
+
+
+## CSV export
+
+The `daily_csv` and `monthly_csv` commands print header rows and comma-separated numeric records. Copy only the content between the matching begin/end markers into a `.csv` file. The `dateKey` format is `YYYYMMDD`; `monthKey` is `YYYYMM`. Durations are milliseconds.

@@ -176,7 +176,65 @@ void PetRenderer::drawDog(Display &d, PetMode mode, uint32_t frame, uint8_t petI
 
     d.beginDogFrame(BG);
 
-    d.fillEllipse(cx, 180, 48, 7, SHADOW);
+    d.fillEllipse(cx, 185, 43, 5, SHADOW);
+
+    // Draw the full body behind the head so the character reads as a
+    // small standing pet rather than a floating face. Keep all geometry
+    // inside the animation area (between the header and footer).
+    if (petId == 0)
+    {
+        // Pashmak: compact body, rounded paws and a curled tail.
+        d.drawLine(194, 151, 207, 145, furDark);
+        d.drawLine(207, 145, 215, 151, furDark);
+        d.fillCircle(215, 153, 5, fur);
+        d.fillEllipse(cx, 158, 25, 25, furDark);
+        d.fillEllipse(cx, 156, 22, 23, fur);
+        d.fillEllipse(137, 158, 9, 17, furDark);
+        d.fillEllipse(137, 157, 6, 14, fur);
+        d.fillEllipse(183, 158, 9, 17, furDark);
+        d.fillEllipse(183, 157, 6, 14, fur);
+        d.fillEllipse(148, 178, 10, 7, furDark);
+        d.fillEllipse(148, 176, 8, 6, furLight);
+        d.fillEllipse(172, 178, 10, 7, furDark);
+        d.fillEllipse(172, 176, 8, 6, furLight);
+    }
+    else if (petId == 1)
+    {
+        // Mochi: rounder, wider body with short legs and a fluffy tail.
+        d.fillEllipse(198, 158, 12, 9, furDark);
+        d.fillEllipse(200, 156, 9, 7, furLight);
+        d.fillEllipse(cx, 159, 29, 25, furDark);
+        d.fillEllipse(cx, 157, 26, 23, fur);
+        d.fillEllipse(134, 158, 10, 15, furDark);
+        d.fillEllipse(134, 157, 7, 13, fur);
+        d.fillEllipse(186, 158, 10, 15, furDark);
+        d.fillEllipse(186, 157, 7, 13, fur);
+        d.fillEllipse(146, 178, 11, 7, furDark);
+        d.fillEllipse(146, 176, 9, 6, cream);
+        d.fillEllipse(174, 178, 11, 7, furDark);
+        d.fillEllipse(174, 176, 9, 6, cream);
+        d.fillEllipse(cx, 162, 13, 16, cream);
+    }
+    else
+    {
+        // Pixel: slimmer body, longer limbs and a pointed upright tail.
+        d.drawLine(188, 164, 201, 151, furDark);
+        d.drawLine(201, 151, 207, 139, furDark);
+        d.drawLine(188, 163, 200, 151, fur);
+        d.drawLine(200, 151, 206, 140, fur);
+        d.fillEllipse(cx, 158, 20, 27, furDark);
+        d.fillEllipse(cx, 156, 17, 25, fur);
+        d.fillEllipse(143, 159, 7, 18, furDark);
+        d.fillEllipse(143, 158, 4, 16, fur);
+        d.fillEllipse(177, 159, 7, 18, furDark);
+        d.fillEllipse(177, 158, 4, 16, fur);
+        d.fillEllipse(149, 179, 8, 6, furDark);
+        d.fillEllipse(149, 177, 6, 5, furLight);
+        d.fillEllipse(171, 179, 8, 6, furDark);
+        d.fillEllipse(171, 177, 6, 5, furLight);
+        d.drawLine(153, 151, 155, 165, cream);
+        d.drawLine(167, 151, 165, 165, cream);
+    }
 
     d.fillEllipse(119 + lx, 80, 20, 27, furDark);
     d.fillTriangle(101 + lx, 84, 105 + lx, 57, 130 + lx, 65, furDark);

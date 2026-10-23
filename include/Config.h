@@ -28,9 +28,16 @@ namespace Config
     constexpr uint8_t TFT_ROTATION = 1;
     constexpr uint32_t TFT_SPI_FREQUENCY = 27000000;
 
-    // Application
+    // Application timing
     constexpr uint32_t FRAME_INTERVAL_MS = 100;
     constexpr uint32_t BUTTON_DEBOUNCE_MS = 35;
+
+    // Automatic pet behavior (milliseconds)
+    constexpr uint32_t WORK_SESSION_DURATION_MS = 25UL * 60UL * 1000UL;
+    constexpr uint32_t PLAY_SESSION_DURATION_MS = 2UL * 60UL * 1000UL;
+    constexpr uint32_t NAP_SESSION_DURATION_MS = 5UL * 60UL * 1000UL;
+    constexpr uint32_t REMINDER_DISPLAY_DURATION_MS = 12000UL;
+    constexpr uint8_t WORK_CYCLES_BEFORE_LONG_REST = 3;
 
     // Reminder scheduling
     constexpr uint32_t RTC_POLL_INTERVAL_MS = 1000;

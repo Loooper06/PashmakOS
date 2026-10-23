@@ -1,9 +1,8 @@
 #include "PetBehavior.h"
+#include "Config.h"
 
 namespace
 {
-    constexpr uint32_t MESSAGE_INTERVAL_MS = 45000;
-
     const char *const WORK_MESSAGES[] = {
         "Let's Focus, Engineer!",
         "Step by Step Is Better",
@@ -35,7 +34,9 @@ PetBehavior::PetBehavior()
     : _state{PetMood::Focused, WORK_MESSAGES[0]},
       _lastMode(PetMode::Work),
       _lastMessageAt(0),
-      _messageIndex(0),
+      _workMessageIndex(0),
+      _napMessageIndex(0),
+      _playMessageIndex(0),
       _initialized(false)
 {
 }
@@ -44,7 +45,9 @@ void PetBehavior::begin(uint32_t now)
 {
     _lastMessageAt = now;
     _lastMode = PetMode::Work;
-    _messageIndex = 0;
+    _workMessageIndex = 0;
+    _napMessageIndex = 0;
+    _playMessageIndex = 0;
     _state = {PetMood::Focused, WORK_MESSAGES[0]};
     _initialized = true;
 }
@@ -61,7 +64,7 @@ void PetBehavior::update(PetMode mode, uint32_t now)
 
     const bool modeChanged = mode != _lastMode;
     const bool messageDue =
-        static_cast<uint32_t>(now - _lastMessageAt) >= MESSAGE_INTERVAL_MS;
+        static_cast<uint32_t>(now - _lastMessageAt) >= Config::PET_MESSAGE_INTERVAL_MS;
 
     if (modeChanged || messageDue)
     {
@@ -79,20 +82,20 @@ void PetBehavior::selectMessage(PetMode mode, uint32_t now)
     {
     case PetMode::Work:
         _state.mood = PetMood::Focused;
-        _state.message = WORK_MESSAGES[_messageIndex % WORK_MESSAGE_COUNT];
-        _messageIndex++;
+        _state.message = WORK_MESSAGES[_workMessageIndex % WORK_MESSAGE_COUNT];
+        _workMessageIndex++;
         break;
 
     case PetMode::Nap:
         _state.mood = PetMood::Sleepy;
-        _state.message = NAP_MESSAGES[_messageIndex % NAP_MESSAGE_COUNT];
-        _messageIndex++;
+        _state.message = NAP_MESSAGES[_napMessageIndex % NAP_MESSAGE_COUNT];
+        _napMessageIndex++;
         break;
 
     case PetMode::Play:
         _state.mood = PetMood::Excited;
-        _state.message = PLAY_MESSAGES[_messageIndex % PLAY_MESSAGE_COUNT];
-        _messageIndex++;
+        _state.message = PLAY_MESSAGES[_playMessageIndex % PLAY_MESSAGE_COUNT];
+        _playMessageIndex++;
         break;
 
     default:

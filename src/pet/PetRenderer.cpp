@@ -50,7 +50,9 @@ namespace
     DogPose getDogPose(PetMode mode, uint32_t frame)
     {
         DogPose pose{};
-        const int16_t waypoints[] = {112, 208, 145, 232, 92, 176};
+        // Keep the complete character comfortably inside the 320 px sprite.
+        // The coordinates are the head/body center, not the sprite origin.
+        const int16_t waypoints[] = {132, 188, 148, 196, 124, 172};
         constexpr uint8_t WAYPOINT_COUNT = sizeof(waypoints) / sizeof(waypoints[0]);
 
         // Work: walk for a moderate interval, then sit for a longer interval.

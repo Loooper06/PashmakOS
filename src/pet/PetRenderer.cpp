@@ -349,6 +349,13 @@ void PetRenderer::drawDog(Display &d, PetMode mode, uint32_t frame, uint8_t petI
     d.fillCircle(cx, cy + 11, 3, NOSE);
     d.fillCircle(cx - 1, cy + 10, 1, WHITE);
 
+    // Shift the muzzle slightly in the direction of travel while walking.
+    // Keep it centered when seated; all mouth details share the same offset.
+    const int8_t mouthShift = pose.moving
+        ? static_cast<int8_t>(pose.gazeX > 0 ? 5 : (pose.gazeX < 0 ? -5 : 0))
+        : 0;
+    const int16_t mouthX = cx + mouthShift;
+
     // The mouth opens/closes while walking, giving the pet a panting expression.
     // Play mode pants more often; Work mode uses a calmer cadence.
     const uint8_t mouthPhase = static_cast<uint8_t>((frame / (playing ? 3U : 5U)) % 4U);
@@ -356,18 +363,18 @@ void PetRenderer::drawDog(Display &d, PetMode mode, uint32_t frame, uint8_t petI
 
     if (mouthOpen)
     {
-        d.drawLine(cx, cy + 15, cx, cy + 21, MOUTH);
-        d.fillEllipse(cx, cy + 25, playing ? 8 : 6, playing ? 8 : 6, MOUTH);
-        d.fillEllipse(cx, cy + 27, playing ? 5 : 3, playing ? 5 : 3, TONGUE);
-        d.drawLine(cx, cy + 23, cx, cy + 27, MOUTH);
+        d.drawLine(mouthX, cy + 15, mouthX, cy + 21, MOUTH);
+        d.fillEllipse(mouthX, cy + 25, playing ? 8 : 6, playing ? 8 : 6, MOUTH);
+        d.fillEllipse(mouthX, cy + 27, playing ? 5 : 3, playing ? 5 : 3, TONGUE);
+        d.drawLine(mouthX, cy + 23, mouthX, cy + 27, MOUTH);
     }
     else
     {
-        d.drawLine(cx, cy + 16, cx, cy + 21, MOUTH);
-        d.drawLine(cx, cy + 21, cx - 5, cy + 18, MOUTH);
-        d.drawLine(cx - 5, cy + 18, cx - 8, cy + 18, MOUTH);
-        d.drawLine(cx, cy + 21, cx + 5, cy + 18, MOUTH);
-        d.drawLine(cx + 5, cy + 18, cx + 8, cy + 18, MOUTH);
+        d.drawLine(mouthX, cy + 16, mouthX, cy + 21, MOUTH);
+        d.drawLine(mouthX, cy + 21, mouthX - 5, cy + 18, MOUTH);
+        d.drawLine(mouthX - 5, cy + 18, mouthX - 8, cy + 18, MOUTH);
+        d.drawLine(mouthX, cy + 21, mouthX + 5, cy + 18, MOUTH);
+        d.drawLine(mouthX + 5, cy + 18, mouthX + 8, cy + 18, MOUTH);
     }
 
     if (playing)

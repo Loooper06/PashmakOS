@@ -315,10 +315,13 @@ void PetRenderer::drawDog(Display &d, PetMode mode, uint32_t frame, uint8_t petI
 
     if (pose.blinking)
     {
-        d.drawLine(cx - 23, cy - 3, cx - 17, cy + 1, EYE);
-        d.drawLine(cx - 17, cy + 1, cx - 11, cy - 3, EYE);
-        d.drawLine(cx + 11, cy - 3, cx + 17, cy + 1, EYE);
-        d.drawLine(cx + 17, cy + 1, cx + 23, cy - 3, EYE);
+        // Closed-eye curves follow the same gaze offset as open eyes,
+        // so blinks stay aligned with the walking direction.
+        const int16_t blinkShift = pose.moving ? pose.gazeX : 0;
+        d.drawLine(cx - 23 + blinkShift, cy - 3, cx - 17 + blinkShift, cy + 1, EYE);
+        d.drawLine(cx - 17 + blinkShift, cy + 1, cx - 11 + blinkShift, cy - 3, EYE);
+        d.drawLine(cx + 11 + blinkShift, cy - 3, cx + 17 + blinkShift, cy + 1, EYE);
+        d.drawLine(cx + 17 + blinkShift, cy + 1, cx + 23 + blinkShift, cy - 3, EYE);
     }
     else
     {

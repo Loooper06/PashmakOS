@@ -29,6 +29,7 @@ public:
     void begin(uint32_t now);
     bool restoreEnergy(uint8_t energy, uint32_t now);
     void update(PetMode mode, uint32_t now, int8_t hour = -1);
+    void interact(PetMode mode, uint32_t now, uint8_t bond);
 
     const PetBehaviorState &state() const;
 
@@ -49,6 +50,9 @@ private:
     uint8_t _playMessageIndex;
     uint8_t _eventIndex;
     bool _eventActive;
+    bool _interactionActive;
+    uint32_t _interactionUntil;
+    const char *_interactionMessage;
     bool _initialized;
 
     void selectMessage(PetMode mode, uint32_t now, int8_t hour);

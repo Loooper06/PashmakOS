@@ -52,7 +52,9 @@ public:
     void update();
 
     bool setActivePet(uint8_t petId);
+    bool interactWithActivePet(uint32_t now);
     uint8_t activePetId() const;
+    uint8_t petBond(uint8_t petId) const;
     TimerSettings timerSettings() const;
     bool setTimerSettings(const TimerSettings &settings);
     uint8_t dailyHistoryCount() const;
@@ -127,6 +129,9 @@ private:
     uint32_t _lastStatsPersistAt = 0;
     uint32_t _lastPetProfilePersistAt = 0;
     uint8_t _petProfileEnergy[PET_COUNT] = {80, 80, 80};
+    uint8_t _petBond[PET_COUNT] = {0, 0, 0};
+    uint32_t _lastInteractionAt[PET_COUNT]{};
+    bool _hasInteracted[PET_COUNT]{};
     uint32_t _completedWorkSessions = 0;
     Preferences _statsPreferences;
     bool _statsReady = false;

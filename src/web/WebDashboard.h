@@ -19,6 +19,7 @@ private:
     void handleRoot();
     void handleStats();
     void handlePetSelection();
+    void handlePetInteraction();
     void handleTimerSettingsGet();
     void handleTimerSettingsPost();
     void handleNotFound();

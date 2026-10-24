@@ -361,7 +361,9 @@ void PashmakApp::begin()
         _activePetId,
         _behaviors[_activePetId].state().mood,
         _behaviors[_activePetId].state().message,
-        nullptr);
+        nullptr,
+        false,
+        0);
 
     Serial.println("PashmakOS: automatic pet behavior enabled");
 }

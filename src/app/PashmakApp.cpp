@@ -182,6 +182,105 @@ bool PashmakApp::setTimerSettings(const TimerSettings &settings)
 }
 
 
+bool PashmakApp::controlTimer(TimerCommand command, uint32_t now)
+{
+    const auto durationFor = [this](PetMode phase) -> uint32_t
+    {
+        switch (phase)
+        {
+        case PetMode::Work: return static_cast<uint32_t>(_timerSettings.workMinutes) * 60000UL;
+        case PetMode::Play: return static_cast<uint32_t>(_timerSettings.playMinutes) * 60000UL;
+        case PetMode::Nap: return static_cast<uint32_t>(_timerSettings.napMinutes) * 60000UL;
+        }
+        return 0;
+    };
+
+    switch (command)
+    {
+    case TimerCommand::Pause:
+        if (_timerPaused)
+            return true;
+        {
+            const uint32_t duration = durationFor(_mode);
+            const uint32_t elapsed = static_cast<uint32_t>(now - _modeStartedAt);
+            _pausedRemainingMs = elapsed >= duration ? 0U : duration - elapsed;
+            _timerPaused = true;
+            _lastWorkTick = now;
+            Serial.printf("[TIMER] Paused with %lu ms remaining.\\n",
+                          static_cast<unsigned long>(_pausedRemainingMs));
+        }
+        return true;
+
+    case TimerCommand::Start:
+        if (_timerPaused)
+        {
+            const uint32_t duration = durationFor(_mode);
+            const uint32_t remaining = _pausedRemainingMs > duration ? duration : _pausedRemainingMs;
+            _modeStartedAt = now - (duration - remaining);
+            _timerPaused = false;
+            _pausedRemainingMs = 0;
+        }
+        else
+        {
+            _modeStartedAt = now;
+        }
+        _lastWorkTick = now;
+        Serial.println("[TIMER] Started/resumed.");
+        return true;
+
+    case TimerCommand::Skip:
+        if (_mode == PetMode::Work)
+        {
+            // Skipping is not a completed focus session and must not award stats or achievements.
+            setMode(PetMode::Play, now);
+        }
+        else
+        {
+            setMode(PetMode::Work, now);
+            _longRestPending = false;
+        }
+        _lastWorkTick = now;
+        return true;
+
+    case TimerCommand::Reset:
+        _completedWorkCycles = 0;
+        _longRestPending = false;
+        _timerPaused = false;
+        _pausedRemainingMs = 0;
+        setMode(PetMode::Work, now);
+        _modeStartedAt = now;
+        _lastWorkTick = now;
+        Serial.println("[TIMER] Reset to a fresh work session.");
+        return true;
+    }
+    return false;
+}
+
+PashmakApp::TimerStatus PashmakApp::timerStatus(uint32_t now) const
+{
+    TimerStatus status{};
+    status.phase = _mode;
+    status.paused = _timerPaused;
+    status.completedCycles = _completedWorkCycles;
+    status.cyclesBeforeLongRest = _timerSettings.workCyclesBeforeLongRest;
+
+    uint32_t duration = 0;
+    switch (_mode)
+    {
+    case PetMode::Work: duration = static_cast<uint32_t>(_timerSettings.workMinutes) * 60000UL; break;
+    case PetMode::Play: duration = static_cast<uint32_t>(_timerSettings.playMinutes) * 60000UL; break;
+    case PetMode::Nap: duration = static_cast<uint32_t>(_timerSettings.napMinutes) * 60000UL; break;
+    }
+    if (_timerPaused)
+        status.remainingMs = _pausedRemainingMs > duration ? duration : _pausedRemainingMs;
+    else
+    {
+        const uint32_t elapsed = static_cast<uint32_t>(now - _modeStartedAt);
+        status.remainingMs = elapsed >= duration ? 0U : duration - elapsed;
+    }
+    return status;
+}
+
 uint8_t PashmakApp::dailyHistoryCount() const
 {
     return _dailyHistoryCount;
@@ -384,6 +483,8 @@ void PashmakApp::setMode(PetMode mode, uint32_t now)
         return;
 
     _mode = mode;
+    _timerPaused = false;
+    _pausedRemainingMs = 0;
     _modeStartedAt = now;
     persistStats(now, true);
     persistDailyHistory(now, true);
@@ -393,6 +494,9 @@ void PashmakApp::setMode(PetMode mode, uint32_t now)
 
 void PashmakApp::updateAutomaticMode(uint32_t now)
 {
+    if (_timerPaused)
+        return;
+
     const uint32_t modeElapsed = static_cast<uint32_t>(now - _modeStartedAt);
 
     switch (_mode)
@@ -1130,7 +1234,7 @@ void PashmakApp::update()
     handleSerialCommands();
     const uint32_t now = millis();
 
-    const uint32_t elapsed = static_cast<uint32_t>(now - _lastWorkTick);
+    const uint32_t elapsed = _timerPaused ? 0U : static_cast<uint32_t>(now - _lastWorkTick);
     switch (_mode)
     {
     case PetMode::Work: _workMs += elapsed; break;

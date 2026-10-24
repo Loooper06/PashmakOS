@@ -72,6 +72,11 @@ uint8_t PashmakApp::activePetId() const
     return _activePetId;
 }
 
+uint8_t PashmakApp::petBond(uint8_t petId) const
+{
+    return petId < PET_COUNT ? _petBond[petId] : 0;
+}
+
 PashmakApp::TimerSettings PashmakApp::timerSettings() const
 {
     return _timerSettings;

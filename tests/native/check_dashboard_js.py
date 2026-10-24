@@ -22,6 +22,11 @@ required_fragments = (
     "pet-option-energy-fill",
     "Mood · '+mood",
     "energyFill.style.width=energy+'%'",
+    "@media(max-width:600px)",
+    "header>div:last-child{display:grid",
+    ".grid>article[style*=\"grid-column:span 2\"]{grid-column:1/-1!important}",
+    "button{min-height:44px}",
+    "@media(max-width:380px)",
 )
 for fragment in required_fragments:
     if fragment not in match.group(1):

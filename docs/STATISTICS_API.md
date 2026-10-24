@@ -29,7 +29,7 @@ The `stats` response is a single JSON object with `version: 1`. The dashboard va
 - `dailyHistory`: retained daily records, each with `dateKey` in `YYYYMMDD` format. The dashboard expects no more than 14 records.
 - `monthlyHistory`: retained monthly records, each with `monthKey` in `YYYYMM` format. The dashboard expects no more than 12 records.
 
-The dashboard uses a 5-second request timeout and bounded retry backoff up to 60 seconds. A successful response resets the refresh interval to 10 seconds. During temporary failures it preserves the last valid snapshot and marks it stale. It also rejects malformed calendar keys, inconsistent selected-pet data, missing numeric counters, and invalid history entries before updating the UI. CSV export quotes cells and prefixes formula-like values to reduce spreadsheet formula-injection risk.
+Persisted daily date keys are validated as real calendar dates (including leap years) before being accepted; monthly keys must contain a valid year and month. Invalid saved history is discarded safely rather than being exposed as malformed API data. The dashboard uses a 5-second request timeout and bounded retry backoff up to 60 seconds. A successful response resets the refresh interval to 10 seconds. During temporary failures it preserves the last valid snapshot and marks it stale. It also rejects malformed calendar keys, inconsistent selected-pet data, missing numeric counters, and invalid history entries before updating the UI. CSV export quotes cells and prefixes formula-like values to reduce spreadsheet formula-injection risk.
 
 All duration values ending in `Ms` are milliseconds. Session counters are counts, not durations. JSON numeric values should be treated as unsigned counters where applicable.
 

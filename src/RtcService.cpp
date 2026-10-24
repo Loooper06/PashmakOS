@@ -57,7 +57,7 @@ bool RtcService::begin()
     return true;
 }
 
-ReminderType RtcService::update(uint32_t nowMs)
+ReminderType RtcService::update(uint32_t nowMs, bool quietHours)
 {
     if (!_available ||
         static_cast<uint32_t>(nowMs - _lastPollMs) < Config::RTC_POLL_INTERVAL_MS)
@@ -74,9 +74,14 @@ ReminderType RtcService::update(uint32_t nowMs)
     if (epoch < _lastMovementReminder)
         _lastMovementReminder = epoch;
 
-    // Keep reminders within a daytime window; do not nag overnight.
-    if (current.hour() < 9 || current.hour() >= 21)
+    // Quiet hours suppress reminders and restart interval clocks so an overdue
+    // reminder does not fire immediately when quiet hours end.
+    if (quietHours)
+    {
+        _lastWaterReminder = epoch;
+        _lastMovementReminder = epoch;
         return ReminderType::None;
+    }
 
     // Persist the date so a reboot cannot repeat the daily compliment.
     if (current.hour() >= 10)

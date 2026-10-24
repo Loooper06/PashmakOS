@@ -508,6 +508,7 @@ $('timer-pause').addEventListener('click',()=>controlTimer('pause'));
 $('timer-skip').addEventListener('click',()=>controlTimer('skip'));
 $('timer-reset').addEventListener('click',()=>controlTimer('reset'));
 setInterval(renderTimerStatus,1000);
+setInterval(loadTimerStatus,10000);
 
 $('backup-download').addEventListener('click',downloadSettingsBackup);
 $('backup-file').addEventListener('change',event=>{selectedBackupFile=event.target.files&&event.target.files[0]||null;$('backup-restore').disabled=!selectedBackupFile;$('backup-status').textContent=selectedBackupFile?'Selected '+selectedBackupFile.name+'. Validate before restoring.':'No backup file selected.'});

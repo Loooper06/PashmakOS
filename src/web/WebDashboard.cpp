@@ -541,6 +541,8 @@ void WebDashboard::begin(PashmakApp &app)
     _server.on("/api/stats", HTTP_GET, [this]() { handleStats(); });
     _server.on("/api/pet/select", HTTP_POST, [this]() { handlePetSelection(); });
     _server.on("/api/pet/interact", HTTP_POST, [this]() { handlePetInteraction(); });
+    _server.on("/api/timer", HTTP_GET, [this]() { handleTimerStatusGet(); });
+    _server.on("/api/timer", HTTP_POST, [this]() { handleTimerControlPost(); });
     _server.on("/api/timer-settings", HTTP_GET, [this]() { handleTimerSettingsGet(); });
     _server.on("/api/timer-settings", HTTP_POST, [this]() { handleTimerSettingsPost(); });
     _server.on("/api/quiet-hours", HTTP_GET, [this]() { handleQuietHoursGet(); });
@@ -635,6 +637,58 @@ void WebDashboard::handlePetInteraction()
     _server.sendHeader("Cache-Control", "no-store");
     _server.send(200, "application/json", response);
 }
+void WebDashboard::handleTimerStatusGet()
+{
+    if (_app == nullptr)
+    {
+        _server.send(503, "application/json", "{\\"error\\":\\"timer unavailable\\"}");
+        return;
+    }
+    const PashmakApp::TimerStatus status = _app->timerStatus(millis());
+    const char *phase = status.phase == PetMode::Work ? "work" :
+                        status.phase == PetMode::Play ? "shortBreak" : "longBreak";
+    char json[192];
+    snprintf(json, sizeof(json),
+             "{\\"phase\\":\\"%s\\",\\"remainingMs\\":%lu,\\"paused\\":%s,\\"completedCycles\\":%u,\\"cyclesBeforeLongRest\\":%u}",
+             phase, static_cast<unsigned long>(status.remainingMs),
+             status.paused ? "true" : "false", status.completedCycles,
+             status.cyclesBeforeLongRest);
+    _server.sendHeader("Cache-Control", "no-store");
+    _server.send(200, "application/json; charset=utf-8", json);
+}
+
+void WebDashboard::handleTimerControlPost()
+{
+    if (_app == nullptr)
+    {
+        _server.send(503, "application/json", "{\\"error\\":\\"timer unavailable\\"}");
+        return;
+    }
+    if (!_server.hasArg("action"))
+    {
+        _server.send(400, "application/json", "{\\"error\\":\\"missing action\\"}");
+        return;
+    }
+    const String action = _server.arg("action");
+    PashmakApp::TimerCommand command;
+    if (action == "start") command = PashmakApp::TimerCommand::Start;
+    else if (action == "pause") command = PashmakApp::TimerCommand::Pause;
+    else if (action == "skip") command = PashmakApp::TimerCommand::Skip;
+    else if (action == "reset") command = PashmakApp::TimerCommand::Reset;
+    else
+    {
+        _server.send(400, "application/json", "{\\"error\\":\\"unsupported action\\"}");
+        return;
+    }
+    if (!_app->controlTimer(command, millis()))
+    {
+        _server.send(409, "application/json", "{\\"error\\":\\"timer action rejected\\"}");
+        return;
+    }
+    appendEvent(EVENT_TIMER_SETTINGS_SAVED);
+    handleTimerStatusGet();
+}
+
 void WebDashboard::handleTimerSettingsGet()
 {
     if (_app == nullptr)

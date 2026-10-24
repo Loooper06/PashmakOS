@@ -24,5 +24,7 @@ private:
     void handleTimerSettingsPost();
     void handleQuietHoursGet();
     void handleQuietHoursPost();
+    void handleReminderSettingsGet();
+    void handleReminderSettingsPost();
     void handleNotFound();
 };

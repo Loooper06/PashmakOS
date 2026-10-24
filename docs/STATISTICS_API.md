@@ -125,3 +125,8 @@ The `daily_csv` and `monthly_csv` commands print header rows and comma-separated
 ## Settings backup and restore
 
 The dashboard can export a versioned JSON backup containing timer-cycle settings, quiet-hours settings, and reminder intervals. Restore validates the file schema and all supported ranges before submitting values through the existing settings APIs. Because each settings group is persisted by its own endpoint, a network or storage error during restore can leave earlier groups restored; the UI reports this possibility. Files larger than 16 KiB are rejected. Wi-Fi SSID/password and activity history are intentionally excluded; the backup does not contain secrets or historical records.
+
+
+## Persistent event log
+
+`GET /api/events` returns the latest events in newest-first order. The fixed-capacity ring buffer retains 24 records in the `pashmak_log` Preferences namespace. Records include a sequence number, uptime seconds for the current boot, event code, and event-specific detail. Events cover boot, access-point startup failure, pet selection, and successful timer, quiet-hours, reminder, and Wi-Fi settings updates. Uptime is relative to the boot that recorded the event, not wall-clock time; no RTC timestamp is implied. Frequent pet interactions are intentionally omitted to reduce flash writes. The endpoint is read-only and sends `Cache-Control: no-store`.

@@ -41,6 +41,11 @@ if not client:
 js = client.group(1)
 
 checks = {
+    "event log endpoint returns a bounded newest-first event list without caching": '_server.on("/api/events", HTTP_GET, [this]() { handleEventLog(); });' in web and 'void WebDashboard::handleEventLog()' in web and '"Cache-Control","no-store"' in function_body(web, "void WebDashboard::handleEventLog()", "void WebDashboard::handleDiagnostics()") and "EVENT_LOG_CAPACITY" in web,
+    "event log persists a versioned fixed-capacity ring buffer in Preferences": all(token in web for token in ['EVENT_LOG_NAMESPACE[] = "pashmak_log"', 'EVENT_LOG_KEY[] = "evtlog"', "struct StoredEventLog", "preferences.getBytes(EVENT_LOG_KEY", "preferences.putBytes(EVENT_LOG_KEY", "EVENT_LOG_CAPACITY = 24"]),
+    "event log records boot, AP failure, pet selection, and settings updates": all(token in web for token in ["appendEvent(EVENT_BOOT)", "appendEvent(EVENT_AP_START_FAILED)", "appendEvent(EVENT_PET_SELECTED", "appendEvent(EVENT_TIMER_SETTINGS_SAVED)", "appendEvent(EVENT_QUIET_HOURS_SAVED)", "appendEvent(EVENT_REMINDERS_SAVED)", "appendEvent(EVENT_WIFI_SETTINGS_SAVED)"]),
+    "dashboard renders event log safely and supports manual refresh": all(token in web for token in ['id="event-log-refresh"', 'id="event-log-list"', "async function loadEventLog()", "fetch('/api/events',{cache:'no-store'})", "title.textContent=EVENT_NAMES[item.code]||'Unknown event'", "meta.textContent="]) and "loadEventLog();" in web,
+
     "settings backup UI offers JSON download and file restore controls": all(token in web for token in ['id="backup-download"', 'id="backup-file"', 'id="backup-restore"', 'id="backup-status"', 'accept=".json,application/json"']),
     "settings backup exports versioned timer, quiet-hours and reminder settings": all(token in web for token in ["PashmakOS-settings-backup", "schemaVersion:1", "fetchSettings('/api/timer-settings')", "fetchSettings('/api/quiet-hours')", "fetchSettings('/api/reminder-settings')", "pashmakos-settings-backup.json"]),
     "settings restore validates schema, field ranges and file size before applying settings": all(token in web for token in ["function validBackupSettings(data)", "selectedBackupFile.size>16384", "JSON.parse(await selectedBackupFile.text())", "backup.format!=='PashmakOS-settings-backup'", "window.confirm("]),

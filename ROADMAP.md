@@ -102,7 +102,7 @@ This sequence supplements the existing engineering roadmap above. Each feature p
 
 | Feature phase | Scope | Status |
 |---:|---|---|
-| 1 | Distinct personalities: voice plus per-pet energy dynamics | In progress |
+| 1 | Distinct personalities: voice plus per-pet energy dynamics | Completed (PR #43) |
 | 2 | Direct interaction with the pet | Planned |
 | 3 | Pet needs: energy, happiness, and bond model | Planned |
 | 4 | Achievements and persistent progression | Planned |
@@ -116,9 +116,9 @@ This sequence supplements the existing engineering roadmap above. Each feature p
 
 ### Feature phase 1 — acceptance criteria
 
-- [ ] Pashmak, Mochi, and Pixel differ in energy consumption and recovery, not only in their messages.
-- [ ] Energy remains within 0–100 for long delays and all supported modes.
-- [ ] Mode switches and millis() rollover remain safe.
-- [ ] Native behavior/dashboard CI and ESP32 firmware build both pass.
-- [ ] User confirms the physical ESP32/TFT behavior.
-- [ ] After confirmation, this phase is marked complete and its PR is merged.
+- [x] Pashmak, Mochi, and Pixel differ in energy consumption and recovery, not only in their messages.
+- [x] Energy remains within 0–100 for long delays and all supported modes.
+- [x] Mode switches and millis() rollover remain safe.
+- [x] Native behavior/dashboard CI and ESP32 firmware build both pass.
+- [x] User confirms the physical ESP32/TFT behavior.
+- [x] Phase completed and PR #43 merged.

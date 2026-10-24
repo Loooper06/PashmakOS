@@ -32,9 +32,9 @@ private:
 
     bool _initialized;
     bool _footerInitialized;
-    const char *_lastMessage;
+    char _lastMessage[23] = "";
     bool _messageInitialized;
-    char _lastDateTime[24] = "";
+    char _lastDateTime[25] = "";
     PetMode _lastMode;
     bool _dogInitialized;
     PetMode _lastDogMode;

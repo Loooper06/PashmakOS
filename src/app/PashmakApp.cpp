@@ -347,6 +347,8 @@ void PashmakApp::begin()
         _behaviors[i].begin(now);
         if (!_behaviors[i].restoreEnergy(_petProfileEnergy[i], now))
             _behaviors[i].restoreEnergy(80, now);
+        if (!_behaviors[i].restoreHappiness(_petProfileHappiness[i], now))
+            _behaviors[i].restoreHappiness(70, now);
     }
     _rtc.begin();
     loadDailyHistory();
@@ -504,67 +506,72 @@ void PashmakApp::loadReminderSettings()
 void PashmakApp::loadPetProfiles()
 {
     for (uint8_t i = 0; i < PET_COUNT; ++i)
+    {
         _petProfileEnergy[i] = 80;
-
-    if (!_statsReady)
-        return;
-
-    const size_t expected = sizeof(PetProfileStorage);
-    if (_statsPreferences.getBytesLength("petProfile") != expected)
-    {
-        Serial.println("[PET_PROFILE] No compatible saved profiles; using defaults.");
-        return;
+        _petProfileHappiness[i] = 70;
     }
+    if (!_statsReady) return;
 
-    PetProfileStorage stored{};
-    if (_statsPreferences.getBytes("petProfile", &stored, expected) != expected ||
-        !PetProfileValidation::isValid<PetProfileStorage, PET_COUNT>(stored, 1))
+    const size_t storedLength = _statsPreferences.getBytesLength("petProfile");
+    if (storedLength == sizeof(PetProfileStorage))
     {
-        Serial.println("[PET_PROFILE] Invalid profile storage; using defaults.");
-        return;
+        PetProfileStorage stored{};
+        if (_statsPreferences.getBytes("petProfile", &stored, sizeof(stored)) == sizeof(stored) &&
+            PetProfileValidation::isValid<PetProfileStorage, PET_COUNT>(stored, 2))
+        {
+            for (uint8_t i = 0; i < PET_COUNT; ++i)
+            {
+                if (stored.happiness[i] > 100) { Serial.println("[PET_PROFILE] Invalid happiness; using defaults."); return; }
+                _petProfileEnergy[i] = stored.energy[i];
+                _petProfileHappiness[i] = stored.happiness[i];
+            }
+            Serial.println("[PET_PROFILE] Loaded version 2 energy and happiness for all pets.");
+            return;
+        }
     }
-
-    for (uint8_t i = 0; i < PET_COUNT; ++i)
-        _petProfileEnergy[i] = stored.energy[i];
-
-    Serial.println("[PET_PROFILE] Loaded version 1 energy for all pets.");
+    if (storedLength == sizeof(LegacyPetProfileStorage))
+    {
+        LegacyPetProfileStorage legacy{};
+        if (_statsPreferences.getBytes("petProfile", &legacy, sizeof(legacy)) == sizeof(legacy) &&
+            PetProfileValidation::isValid<LegacyPetProfileStorage, PET_COUNT>(legacy, 1))
+        {
+            for (uint8_t i = 0; i < PET_COUNT; ++i) _petProfileEnergy[i] = legacy.energy[i];
+            Serial.println("[PET_PROFILE] Migrated version 1 energy; happiness defaults to 70.");
+            return;
+        }
+    }
+    Serial.println("[PET_PROFILE] No compatible saved profiles; using defaults.");
 }
 
 void PashmakApp::persistPetProfiles(uint32_t now)
 {
     constexpr uint32_t PET_PROFILE_PERSIST_INTERVAL_MS = 60000UL;
-    if (!_statsReady ||
-        static_cast<uint32_t>(now - _lastPetProfilePersistAt) < PET_PROFILE_PERSIST_INTERVAL_MS)
-        return;
-
-    // Limit NVS writes to one profile blob per minute, regardless of pet count.
+    if (!_statsReady || static_cast<uint32_t>(now - _lastPetProfilePersistAt) < PET_PROFILE_PERSIST_INTERVAL_MS) return;
     _lastPetProfilePersistAt = now;
     PetProfileStorage stored{};
-    stored.version = 1;
+    stored.version = 2;
     stored.count = PET_COUNT;
     bool changed = false;
     for (uint8_t i = 0; i < PET_COUNT; ++i)
     {
         stored.petIds[i] = i;
         stored.energy[i] = _behaviors[i].state().energy;
-        changed = changed || stored.energy[i] != _petProfileEnergy[i];
+        stored.happiness[i] = _behaviors[i].state().happiness;
+        changed = changed || stored.energy[i] != _petProfileEnergy[i] || stored.happiness[i] != _petProfileHappiness[i];
     }
-
-    // Avoid flash writes when every saved energy value is unchanged.
-    if (!changed)
-        return;
-
+    if (!changed) return;
     if (_statsPreferences.putBytes("petProfile", &stored, sizeof(stored)) != sizeof(stored))
     {
         Serial.println("[PET_PROFILE] Failed to persist pet profiles; will retry next interval.");
         return;
     }
-
     for (uint8_t i = 0; i < PET_COUNT; ++i)
+    {
         _petProfileEnergy[i] = stored.energy[i];
-    Serial.println("[PET_PROFILE] Saved energy for all pets.");
+        _petProfileHappiness[i] = stored.happiness[i];
+    }
+    Serial.println("[PET_PROFILE] Saved energy and happiness for all pets.");
 }
-
 void PashmakApp::persistStats(uint32_t now, bool force)
 {
     constexpr uint32_t STATS_PERSIST_INTERVAL_MS = 60000UL;

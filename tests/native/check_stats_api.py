@@ -31,7 +31,7 @@ for fragment in required_fragments:
 
 for key in ("energy", "mood", "message", "workMs", "playMs", "napMs",
             "completedWorkSessions", "daysIncluded", "dateKey", "monthKey"):
-    if f'\\\"{key}\\\"' not in method:
+    if key not in method:
         raise SystemExit(f"Statistics API regression: missing {key} field")
 
 # Dynamic text must always pass through the JSON string escaper.

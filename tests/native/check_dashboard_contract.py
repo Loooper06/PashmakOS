@@ -41,6 +41,10 @@ if not client:
 js = client.group(1)
 
 checks = {
+    "diagnostics endpoint is registered and returns uncached runtime metrics": '_server.on("/api/diagnostics", HTTP_GET' in web and 'void WebDashboard::handleDiagnostics()' in web and '"Cache-Control", "no-store"' in function_body(web, "void WebDashboard::handleDiagnostics()", "void WebDashboard::handleWifiSettingsGet()"),
+    "diagnostics includes heap, PSRAM, uptime, Wi-Fi clients, CPU and reset reason": all(token in web for token in ["ESP.getFreeHeap()", "ESP.getMinFreeHeap()", "ESP.getMaxAllocHeap()", "ESP.getFreePsram()", "WiFi.softAPgetStationNum()", "ESP.getCpuFreqMHz()", "esp_reset_reason()", "millis() / 1000UL"]),
+    "dashboard displays and validates diagnostics without persistence": all(token in web for token in ['id="diag-uptime"', 'id="diag-heap"', 'id="diag-psram"', 'id="diag-clients"', 'id="diagnostics-refresh"', "async function loadDiagnostics()", "fetch('/api/diagnostics',{cache:'no-store'})"]) and "loadDiagnostics();" in web,
+
     "stats endpoint returns 503 when app is unavailable": '_server.send(503, "application/json"' in stats,
     "stats endpoint disables caching": '"Cache-Control", "no-store"' in stats,
     "pet selection rejects missing ID": '!_server.hasArg("id")' in select,

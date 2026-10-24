@@ -243,8 +243,11 @@ void PetRenderer::drawMessage(Display &d, const char *message)
 void PetRenderer::drawHeader(Display &d)
 {
     d.fillRect(0, 0, SCREEN_W, HEADER_H, PANEL);
+    d.drawLine(0, HEADER_H - 1, SCREEN_W - 1, HEADER_H - 1, STAGE_LINE);
 
+    // Keep branding and status in distinct, stable zones.
     d.drawText("PashmakOS", 12, 10, 2, PURPLE);
+    d.fillRect(132, 7, 1, 22, STAGE_LINE);
 
     d.fillCircle(294, 18, 8, PINK);
     d.fillCircle(291, 15, 2, WHITE);
@@ -518,25 +521,50 @@ void PetRenderer::drawDog(Display &d, PetMode mode, uint32_t frame, uint8_t petI
 void PetRenderer::drawFooter(Display &d, PetMode mode, uint8_t petId, const char *dateTime)
 {
     d.fillRect(0, FOOTER_Y, SCREEN_W, FOOTER_H, PANEL);
+    d.drawLine(0, FOOTER_Y, SCREEN_W - 1, FOOTER_Y, STAGE_LINE);
 
+    // Center the mode label in a consistent visual slot.
+    const char *modeLabel = "Focus Time";
+    int16_t modeX = 100;
     switch (mode)
     {
     case PetMode::Work:
-        d.drawText("Focus Time", 100, 197, 2, WHITE);
+        modeLabel = "Focus Time";
+        modeX = 100;
         break;
     case PetMode::Nap:
-        d.drawText("Rest Time", 106, 197, 2, WHITE);
+        modeLabel = "Rest Time";
+        modeX = 106;
         break;
     case PetMode::Play:
-        d.drawText("Move Around", 94, 197, 2, WHITE);
+        modeLabel = "Move Around";
+        modeX = 94;
         break;
     }
+    d.drawText(modeLabel, modeX, 197, 2, WHITE);
 
     const char *petNames[] = {"Pashmak", "Mochi", "Pixel"};
-    d.drawText(petId < 3 ? petNames[petId] : "Pashmak", 121, 215, 1, WHITE);
+    const char *petName = petId < 3 ? petNames[petId] : "Pashmak";
+    const int16_t petNameX = static_cast<int16_t>((SCREEN_W - static_cast<int16_t>(strlen(petName) * 6U)) / 2);
+    d.drawText(petName, petNameX, 215, 1, WHITE);
+
+    // Reserve separate left/right zones so the build label and clock cannot
+    // overwrite each other. The footer is fully cleared before each redraw.
     d.drawText("PashmakOS v0.1", 8, 228, 1, WHITE);
-    if (dateTime != nullptr)
-        d.drawText(dateTime, 190, 228, 1, WHITE);
+    if (dateTime != nullptr && dateTime[0] != '\\0')
+    {
+        constexpr size_t MAX_DATETIME_CHARS = 24;
+        const size_t dateTimeLength = strlen(dateTime);
+        const char *visibleDateTime = dateTime;
+        size_t visibleLength = dateTimeLength;
+        if (visibleLength > MAX_DATETIME_CHARS)
+        {
+            visibleDateTime = dateTime + (visibleLength - MAX_DATETIME_CHARS);
+            visibleLength = MAX_DATETIME_CHARS;
+        }
+        const int16_t dateTimeX = static_cast<int16_t>(SCREEN_W - 8 - visibleLength * 6U);
+        d.drawText(visibleDateTime, dateTimeX, 228, 1, WHITE);
+    }
 }
 
 void PetRenderer::draw(Display &d, PetMode mode, uint32_t frame, uint8_t petId, PetMood mood, const char *message, const char *dateTime, bool attentionActive, uint8_t attentionPhase)

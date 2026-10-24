@@ -21,9 +21,13 @@ stats = function_body(web, "void WebDashboard::handleStats()", "void WebDashboar
 select = function_body(web, "void WebDashboard::handlePetSelection()", "void WebDashboard::handlePetInteraction()")
 interaction = function_body(web, "void WebDashboard::handlePetInteraction()", "void WebDashboard::handleTimerSettingsGet()")
 timer_get = function_body(web, "void WebDashboard::handleTimerSettingsGet()", "void WebDashboard::handleTimerSettingsPost()")
-timer_post = function_body(web, "void WebDashboard::handleTimerSettingsPost()", "void WebDashboard::handleNotFound()")
+timer_post = function_body(web, "void WebDashboard::handleTimerSettingsPost()", "void WebDashboard::handleQuietHoursGet()")
+quiet_post = function_body(web, "void WebDashboard::handleQuietHoursPost()", "void WebDashboard::handleNotFound()")
 timer_setter = function_body(app, "bool PashmakApp::setTimerSettings(", "uint8_t PashmakApp::dailyHistoryCount()")
-timer_load = function_body(app, "void PashmakApp::loadTimerSettings()", "void PashmakApp::loadPetProfiles()")
+timer_load = function_body(app, "void PashmakApp::loadTimerSettings()", "void PashmakApp::loadQuietHoursSettings()")
+quiet_setter = function_body(app, "bool PashmakApp::setQuietHoursSettings(", "PashmakApp::TimerSettings PashmakApp::timerSettings() const")
+quiet_logic = function_body(app, "bool PashmakApp::isQuietHour(", "PashmakApp::TimerSettings PashmakApp::timerSettings() const")
+quiet_load = function_body(app, "void PashmakApp::loadQuietHoursSettings()", "void PashmakApp::loadPetProfiles()")
 automatic_mode = function_body(app, "void PashmakApp::updateAutomaticMode(", "void PashmakApp::loadTimerSettings()")
 setter = function_body(app, "bool PashmakApp::setActivePet(", "uint8_t PashmakApp::activePetId()")
 begin = function_body(app, "void PashmakApp::begin()", "void PashmakApp::setMode(")
@@ -49,6 +53,12 @@ checks = {
     "dashboard exposes bond meter and interaction button": 'id="pet-bond-progress"' in web and 'id="pet-interact"' in web,
     "dashboard validates bond range and selected-pet consistency": "Number.isInteger(Number(p.bond))" in js and "Number(data.pet.bond)!==Number(selected.bond)" in js,
     "dashboard POSTs interaction and handles cooldown": "fetch('/api/pet/interact',{method:'POST'" in js and "response.status===429" in js,
+    "quiet-hours endpoints are registered": '_server.on("/api/quiet-hours", HTTP_GET' in web and '_server.on("/api/quiet-hours", HTTP_POST' in web,
+    "quiet-hours API validates distinct hour bounds": "startHour == endHour" in quiet_post and "startHour > 23 || endHour > 23" in quiet_post,
+    "quiet-hours settings are persisted in a versioned blob": '_statsPreferences.putBytes("quietCfg", &stored, sizeof(stored))' in quiet_setter and 'stored.version != 1' in quiet_load,
+    "quiet-hours default and rollover-midnight ranges are supported": "_quietHours = QuietHoursSettings{};" in quiet_load and "return hour >= _quietHours.startHour || hour < _quietHours.endHour;" in quiet_logic,
+    "dashboard loads, validates, and saves quiet hours": "async function loadQuietHours()" in js and "async function saveQuietHours()" in js and "fetch('/api/quiet-hours',{method:'POST'" in js,
+    "dashboard exposes accessible quiet-hours controls": 'id="quiet-enabled"' in web and 'id="quiet-start"' in web and 'id="quiet-end"' in web and 'id="quiet-status"' in web,
     "quiet-hours endpoints are registered": '_server.on("/api/quiet-hours", HTTP_GET' in web and '_server.on("/api/quiet-hours", HTTP_POST' in web,
     "quiet-hours API validates distinct hour bounds": "startHour == endHour" in quiet_post and "startHour > 23 || endHour > 23" in quiet_post,
     "quiet-hours settings are persisted in a versioned blob": '_statsPreferences.putBytes("quietCfg", &stored, sizeof(stored))' in quiet_setter and 'stored.version != 1' in quiet_load,

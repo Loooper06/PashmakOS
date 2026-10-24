@@ -28,6 +28,7 @@ h1{font-size:clamp(1.45rem,4vw,2rem);margin:0}h2{font-size:1.05rem;margin:0 0 14
 button{border:1px solid var(--line);background:#292e3e;color:var(--text);padding:9px 13px;border-radius:10px;font:inherit;cursor:pointer}button:hover{border-color:var(--accent)}
 .pills{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}.empty{color:var(--muted);padding:12px 0}.trend-list{display:grid;gap:10px}.trend-row{display:grid;grid-template-columns:92px minmax(0,1fr);align-items:center;gap:12px}.trend-date{font-size:.82rem;color:var(--muted)}.trend-bars{display:grid;gap:4px}.trend-track{height:8px;background:var(--line);border-radius:99px;overflow:hidden}.trend-fill{height:100%;width:0;border-radius:99px;transition:width .25s}.trend-work{background:#b9a0ff}.trend-play{background:#8fe0d0}.trend-nap{background:#ffbf86}.trend-legend{display:flex;gap:14px;flex-wrap:wrap;margin-bottom:12px;font-size:.82rem;color:var(--muted)}.legend-dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:5px}.chart-empty{color:var(--muted);padding:8px 0}button:disabled{opacity:.45;cursor:not-allowed}
 .pet-picker{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:12px}.pet-option{display:flex;align-items:center;gap:12px;text-align:left;width:100%;padding:12px;background:#202432;border:1px solid var(--line);border-radius:14px;transition:border-color .18s,transform .18s,background .18s}.pet-option:hover{transform:translateY(-1px)}.pet-option[aria-pressed=true]{border-color:var(--pet-color);background:color-mix(in srgb,var(--pet-color) 14%,var(--card));box-shadow:inset 0 0 0 1px var(--pet-color)}.pet-avatar{display:grid;place-items:center;flex:0 0 44px;height:44px;border-radius:14px;background:var(--pet-tint);font-size:1.65rem}.pet-option-copy{min-width:0;flex:1}.pet-option-name{display:block;font-weight:700}.pet-option-meta{display:block;color:var(--muted);font-size:.78rem}.pet-selected{color:var(--pet-color);font-size:.8rem;font-weight:700}
+.settings-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px}.settings-grid label{display:grid;gap:6px;color:var(--muted);font-size:.88rem}.settings-grid input{width:100%;min-width:0;border:1px solid var(--line);background:#11131b;color:var(--text);border-radius:10px;padding:10px;font:inherit}.settings-grid input:focus{outline:2px solid var(--accent);outline-offset:1px}
 footer{margin-top:18px;color:var(--muted);font-size:.82rem}
 </style>
 </head>
@@ -45,6 +46,17 @@ footer{margin-top:18px;color:var(--muted);font-size:.82rem}
  <article class="card"><div class="label">Lifetime nap</div><div id="total-nap" class="metric">—</div></article>
  <article class="card"><div class="label">Completed work sessions</div><div id="total-sessions" class="metric">—</div></article>
 </div>
+<section class="card section" aria-labelledby="timer-settings-heading">
+<h2 id="timer-settings-heading">Focus cycle settings</h2>
+<p class="muted">Customize the automatic work and rest cycle. Changes apply immediately and are saved on the ESP32.</p>
+<div class="settings-grid">
+<label>Work session (minutes)<input id="setting-work" type="number" min="1" max="180" value="25" inputmode="numeric"></label>
+<label>Play break (minutes)<input id="setting-play" type="number" min="1" max="60" value="2" inputmode="numeric"></label>
+<label>Long rest (minutes)<input id="setting-nap" type="number" min="1" max="120" value="5" inputmode="numeric"></label>
+<label>Work sessions before long rest<input id="setting-cycles" type="number" min="1" max="8" value="3" inputmode="numeric"></label>
+</div>
+<div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:14px"><button id="settings-save" type="button">Save settings</button><span id="settings-status" class="muted" role="status" aria-live="polite">Loading saved settings…</span></div>
+</section>
 <section class="card section"><h2>Recent activity</h2><div class="pills"><button data-days="1">Today / latest day</button><button data-days="7">7 days</button><button data-days="14">14 days</button></div>
 <div class="grid">
  <article><div class="label">Work</div><div id="recent-work" class="metric">—</div></article>
@@ -75,6 +87,8 @@ if(!daily.children.length)daily.appendChild(row(['No daily records yet','—','�
 const monthly=$('monthly');monthly.replaceChildren();(data.monthlyHistory||[]).slice().reverse().forEach(m=>monthly.appendChild(row([monthLabel(m.monthKey),duration(m.workMs),duration(m.playMs),duration(m.napMs),m.completedWorkSessions])));
 if(!monthly.children.length)monthly.appendChild(row(['No monthly records yet','—','—','—','—']));
 $('export-daily').disabled=!(data.dailyHistory||[]).length;$('export-monthly').disabled=!(data.monthlyHistory||[]).length;}
+async function loadTimerSettings(){try{const response=await fetch('/api/timer-settings',{cache:'no-store'});if(!response.ok)throw new Error('HTTP '+response.status);const settings=await response.json();if(!Number.isInteger(settings.workMinutes)||settings.workMinutes<1||settings.workMinutes>180||!Number.isInteger(settings.playMinutes)||settings.playMinutes<1||settings.playMinutes>60||!Number.isInteger(settings.napMinutes)||settings.napMinutes<1||settings.napMinutes>120||!Number.isInteger(settings.workCyclesBeforeLongRest)||settings.workCyclesBeforeLongRest<1||settings.workCyclesBeforeLongRest>8)throw new Error('Invalid settings payload');$('setting-work').value=settings.workMinutes;$('setting-play').value=settings.playMinutes;$('setting-nap').value=settings.napMinutes;$('setting-cycles').value=settings.workCyclesBeforeLongRest;$('settings-status').textContent='Loaded from device.'}catch(e){$('settings-status').textContent='Could not load settings. Defaults are shown; try refresh.'}}
+async function saveTimerSettings(){const values={workMinutes:Number($('setting-work').value),playMinutes:Number($('setting-play').value),napMinutes:Number($('setting-nap').value),workCyclesBeforeLongRest:Number($('setting-cycles').value)};if(!Number.isInteger(values.workMinutes)||values.workMinutes<1||values.workMinutes>180||!Number.isInteger(values.playMinutes)||values.playMinutes<1||values.playMinutes>60||!Number.isInteger(values.napMinutes)||values.napMinutes<1||values.napMinutes>120||!Number.isInteger(values.workCyclesBeforeLongRest)||values.workCyclesBeforeLongRest<1||values.workCyclesBeforeLongRest>8){$('settings-status').textContent='Check the allowed ranges before saving.';return}const button=$('settings-save');button.disabled=true;$('settings-status').textContent='Saving…';try{const response=await fetch('/api/timer-settings',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams(values)});if(!response.ok)throw new Error('HTTP '+response.status);$('settings-status').textContent='Saved. New durations are active immediately.';await refresh()}catch(e){$('settings-status').textContent='Save failed · '+(e.message||'connection error')}}finally{button.disabled=false}}
 function isCounter(value){return value!==null&&value!==undefined&&value!==''&&Number.isFinite(Number(value))&&Number(value)>=0}
 function isValidDateKey(value){const text=String(value);if(!/^\d{8}$/.test(text))return false;const y=Number(text.slice(0,4)),m=Number(text.slice(4,6)),d=Number(text.slice(6,8));const date=new Date(Date.UTC(y,m-1,d));return date.getUTCFullYear()===y&&date.getUTCMonth()===m-1&&date.getUTCDate()===d}
 function isValidMonthKey(value){const text=String(value);return /^\d{6}$/.test(text)&&Number(text.slice(0,4))>=2000&&Number(text.slice(4,6))>=1&&Number(text.slice(4,6))<=12}
@@ -98,6 +112,8 @@ function scheduleRefresh(delay){if(refreshTimer!==null)clearTimeout(refreshTimer
 async function selectPet(id){try{const response=await fetch('/api/pet/select',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:'id='+encodeURIComponent(id)});if(!response.ok)throw new Error('HTTP '+response.status);await refresh()}catch(e){$('connection').dataset.state=snapshot?'stale':'error';$('connection').textContent=snapshot?'Pet selection failed · showing last valid data':'Pet selection failed';}}
 async function refresh(){if(refreshInFlight){refreshRequested=true;return}refreshInFlight=true;if(refreshTimer!==null){clearTimeout(refreshTimer);refreshTimer=null}$('refresh').disabled=true;const controller=new AbortController();const timeout=setTimeout(()=>controller.abort(),5000);try{const response=await fetch('/api/stats',{cache:'no-store',signal:controller.signal});if(!response.ok)throw new Error('HTTP '+response.status);const data=await response.json();if(!isValidStats(data))throw new Error('Invalid statistics payload');render(data);$('connection').dataset.state='connected';$('connection').textContent='Connected · updated '+new Date().toLocaleTimeString();lastUpdatedAt=Date.now();retryDelay=10000}catch(e){$('connection').dataset.state=snapshot?'stale':'error';$('connection').textContent=snapshot?'Stale data · last valid update '+new Date(lastUpdatedAt).toLocaleTimeString():'Connection unavailable · retrying';retryDelay=Math.min(retryDelay*2,60000)}finally{clearTimeout(timeout);refreshInFlight=false;$('refresh').disabled=false;const nextDelay=refreshRequested?250:retryDelay;refreshRequested=false;scheduleRefresh(nextDelay)}}
 $('refresh').addEventListener('click',refresh);
+$('settings-save').addEventListener('click',saveTimerSettings);
+loadTimerSettings();
 $('export-daily').disabled=true;$('export-monthly').disabled=true;$('export-daily').addEventListener('click',()=>{if(!snapshot?.dailyHistory?.length)return;const records=(snapshot?.dailyHistory||[]).map(d=>[dateLabel(d.dateKey),d.workMs,d.playMs,d.napMs,d.completedWorkSessions]);downloadCsv('pashmak-daily-history.csv',['Date','Work ms','Play ms','Nap ms','Completed sessions'],records)});
 $('export-monthly').addEventListener('click',()=>{if(!snapshot?.monthlyHistory?.length)return;const records=(snapshot?.monthlyHistory||[]).map(m=>[monthLabel(m.monthKey),m.workMs,m.playMs,m.napMs,m.completedWorkSessions]);downloadCsv('pashmak-monthly-history.csv',['Month','Work ms','Play ms','Nap ms','Completed sessions'],records)});
 document.querySelectorAll('[data-days]').forEach(b=>b.addEventListener('click',()=>{selectedDays=Number(b.dataset.days);if(snapshot)render(snapshot)}));refresh();
@@ -123,6 +139,8 @@ void WebDashboard::begin(PashmakApp &app)
     _server.on("/", HTTP_GET, [this]() { handleRoot(); });
     _server.on("/api/stats", HTTP_GET, [this]() { handleStats(); });
     _server.on("/api/pet/select", HTTP_POST, [this]() { handlePetSelection(); });
+    _server.on("/api/timer-settings", HTTP_GET, [this]() { handleTimerSettingsGet(); });
+    _server.on("/api/timer-settings", HTTP_POST, [this]() { handleTimerSettingsPost(); });
     _server.onNotFound([this]() { handleNotFound(); });
     _server.begin();
     _started = true;
@@ -172,6 +190,84 @@ void WebDashboard::handlePetSelection()
     }
 
     _server.send(200, "application/json", "{\"ok\":true}");
+}
+
+void WebDashboard::handleTimerSettingsGet()
+{
+    if (_app == nullptr)
+    {
+        _server.send(503, "application/json", "{\\"error\\":\\"settings unavailable\\"}");
+        return;
+    }
+
+    const PashmakApp::TimerSettings settings = _app->timerSettings();
+    char json[128];
+    snprintf(json, sizeof(json),
+             "{\\"workMinutes\\":%u,\\"playMinutes\\":%u,\\"napMinutes\\":%u,\\"workCyclesBeforeLongRest\\":%u}",
+             settings.workMinutes, settings.playMinutes, settings.napMinutes,
+             settings.workCyclesBeforeLongRest);
+    _server.sendHeader("Cache-Control", "no-store");
+    _server.send(200, "application/json; charset=utf-8", json);
+}
+
+void WebDashboard::handleTimerSettingsPost()
+{
+    if (_app == nullptr)
+    {
+        _server.send(503, "application/json", "{\\"error\\":\\"settings unavailable\\"}");
+        return;
+    }
+
+    const char *keys[] = {"workMinutes", "playMinutes", "napMinutes", "workCyclesBeforeLongRest"};
+    uint32_t values[4]{};
+    for (uint8_t i = 0; i < 4; ++i)
+    {
+        if (!_server.hasArg(keys[i]))
+        {
+            _server.send(400, "application/json", "{\\"error\\":\\"missing setting\\"}");
+            return;
+        }
+        const String raw = _server.arg(keys[i]);
+        if (raw.length() == 0 || raw.length() > 3)
+        {
+            _server.send(400, "application/json", "{\\"error\\":\\"invalid setting\\"}");
+            return;
+        }
+        uint32_t parsed = 0;
+        for (size_t j = 0; j < raw.length(); ++j)
+        {
+            if (raw[j] < '0' || raw[j] > '9')
+            {
+                _server.send(400, "application/json", "{\\"error\\":\\"invalid setting\\"}");
+                return;
+            }
+            parsed = parsed * 10U + static_cast<uint32_t>(raw[j] - '0');
+        }
+        values[i] = parsed;
+    }
+
+    if (values[0] < 1 || values[0] > 180 ||
+        values[1] < 1 || values[1] > 60 ||
+        values[2] < 1 || values[2] > 120 ||
+        values[3] < 1 || values[3] > 8)
+    {
+        _server.send(400, "application/json", "{\\"error\\":\\"setting out of range\\"}");
+        return;
+    }
+
+    const PashmakApp::TimerSettings settings{
+        static_cast<uint16_t>(values[0]),
+        static_cast<uint16_t>(values[1]),
+        static_cast<uint16_t>(values[2]),
+        static_cast<uint8_t>(values[3])};
+    if (!_app->setTimerSettings(settings))
+    {
+        _server.send(500, "application/json", "{\\"error\\":\\"could not persist settings\\"}");
+        return;
+    }
+
+    _server.sendHeader("Cache-Control", "no-store");
+    _server.send(200, "application/json", "{\\"ok\\":true}");
 }
 
 void WebDashboard::handleNotFound()

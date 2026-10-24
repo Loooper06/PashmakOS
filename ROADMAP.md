@@ -104,7 +104,7 @@ This sequence supplements the existing engineering roadmap above. Each feature p
 |---:|---|---|
 | 1 | Distinct personalities: voice plus per-pet energy dynamics | Completed (PR #43) |
 | 2 | Direct interaction with the pet | Completed (PR #45) |
-| 3 | Pet needs: energy, happiness, and bond model | Planned |
+| 3 | Pet needs: energy, happiness, and bond model | In progress (PR pending) |
 | 4 | Achievements and persistent progression | Planned |
 | 5 | Complete Pomodoro flow and work/rest cycle controls | Planned |
 | 6 | Persistent settings through the dashboard | Planned |

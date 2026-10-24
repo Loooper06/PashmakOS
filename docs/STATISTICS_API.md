@@ -22,7 +22,7 @@ Unknown commands are ignored with a diagnostic message. Commands longer than the
 The `stats` response is a single JSON object with `version: 2`. The dashboard validates the payload before rendering it; an invalid response is treated as a failed refresh, and the last valid snapshot remains visible.
 
 - `activePetId`: selected pet ID (0–2).
-- `pets`: exactly three pet profiles. Each profile has `id`, `name`, `energy` (0–100), `bond` (0–100), `mood`, and `message`.
+- `pets`: exactly three pet profiles. Each profile has `id`, `name`, `energy` (0–100), `happiness` (0–100), `bond` (0–100), `mood`, and `message`.
 - `pet`: the selected pet's `energy`, `mood`, and `message`. This duplicates the selected profile's `energy`, `bond`, `mood`, and `message` for convenient dashboard rendering.
 - `totals`: lifetime counters currently stored in Preferences.
 - `recent`: aggregate of the most recent available daily records, up to the requested number of days (the serial command currently requests 7; the dashboard requests 14).

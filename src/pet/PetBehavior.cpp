@@ -166,6 +166,7 @@ void PetBehavior::update(PetMode mode, uint32_t now, int8_t hour)
         if (static_cast<int32_t>(now - _interactionUntil) >= 0)
         {
             _interactionActive = false;
+            _state.message = _baseMessage;
         }
         else if (_state.energy > 30)
         {

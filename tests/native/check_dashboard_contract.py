@@ -73,7 +73,7 @@ checks = {
     "invalid stored active-pet ID falls back to pet 0 before use": "if (_activePetId >= 3) _activePetId = 0;" in begin and begin.find("if (_activePetId >= 3) _activePetId = 0;") < begin.find("_renderer.draw("),
     "pet interaction endpoint is registered": '_server.on("/api/pet/interact", HTTP_POST' in web,
     "pet interaction endpoint applies cooldown and returns 429": "_app->interactWithActivePet(millis())" in interaction and "_server.send(429" in interaction,
-    "dashboard exposes bond meter and three interaction actions": 'id="pet-bond-progress"' in web and all(token in web for token in ['data-interaction="affection"', 'data-interaction="playful"', 'data-interaction="comfort"]),
+    "dashboard exposes bond meter and three interaction actions": 'id="pet-bond-progress"' in web and all(token in web for token in ['data-interaction="affection"', 'data-interaction="playful"', 'data-interaction="comfort"']),
     "dashboard shows bond relationship tier and next milestone": 'id="pet-bond-stage"' in web and 'id="pet-bond-next"' in web and "function bondTier(value)" in js,
     "pet picker shows each profile bond tier and progress": "const bond=Math.max(0,Math.min(100,Number(p.bond)||0))" in js and "bondLabel.textContent=tier.name+' · '+bond+'/100'" in js and "pet-option-bond-fill" in js and "bond '+bond+' of 100" in js,
     "interaction acknowledgement reports the current bond tier": "tier.remaining+' more to '+tier.next" in js and "' · maximum bond'" in js,

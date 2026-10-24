@@ -127,7 +127,7 @@ bool PetBehavior::restoreEnergy(uint8_t energy, uint32_t now)
     return true;
 }
 
-void PetBehavior::update(PetMode mode, uint32_t now, int8_t hour)
+void PetBehavior::update(PetMode mode, uint32_t now, int8_t hour, bool quietHours)
 {
     if (!_initialized)
     {
@@ -161,7 +161,7 @@ void PetBehavior::update(PetMode mode, uint32_t now, int8_t hour)
         _lastMessageAt = now;
     }
 
-    updateSpontaneousEvent(mode, now);
+    updateSpontaneousEvent(mode, now, quietHours);
 
     if (_interactionActive)
     {
@@ -378,7 +378,7 @@ void PetBehavior::interact(PetMode mode, uint32_t now, uint8_t bond)
         _state.mood = PetMood::Happy;
 }
 
-void PetBehavior::updateSpontaneousEvent(PetMode mode, uint32_t now)
+void PetBehavior::updateSpontaneousEvent(PetMode mode, uint32_t now, bool quietHours)
 {
     // Signed subtraction keeps deadline checks safe across millis() rollover.
     if (_eventActive && static_cast<int32_t>(now - _eventUntil) >= 0)
@@ -389,6 +389,12 @@ void PetBehavior::updateSpontaneousEvent(PetMode mode, uint32_t now)
 
     if (_eventActive || static_cast<int32_t>(now - _nextEventAt) < 0)
         return;
+
+    if (quietHours)
+    {
+        _nextEventAt = now + EVENT_MIN_INTERVAL_MS;
+        return;
+    }
 
     // Nap is a quiet state: do not start a spontaneous interruption while the
     // pet is resting. Schedule the next opportunity from now so an overdue

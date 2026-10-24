@@ -40,6 +40,38 @@ uint8_t PashmakApp::activePetId() const
     return _activePetId;
 }
 
+PashmakApp::TimerSettings PashmakApp::timerSettings() const
+{
+    return _timerSettings;
+}
+
+bool PashmakApp::setTimerSettings(const TimerSettings &settings)
+{
+    if (settings.workMinutes < 1 || settings.workMinutes > 180 ||
+        settings.playMinutes < 1 || settings.playMinutes > 60 ||
+        settings.napMinutes < 1 || settings.napMinutes > 120 ||
+        settings.workCyclesBeforeLongRest < 1 || settings.workCyclesBeforeLongRest > 8)
+        return false;
+
+    if (!_statsReady)
+        return false;
+
+    TimerSettingsStorage stored{};
+    stored.version = 1;
+    stored.settings = settings;
+    if (_statsPreferences.putBytes("timerCfg", &stored, sizeof(stored)) != sizeof(stored))
+    {
+        Serial.println("[TIMER] Failed to persist timer settings.");
+        return false;
+    }
+
+    _timerSettings = settings;
+    Serial.printf("[TIMER] Settings saved: work=%u min, play=%u min, nap=%u min, long-rest every %u work sessions.\n",
+                  _timerSettings.workMinutes, _timerSettings.playMinutes,
+                  _timerSettings.napMinutes, _timerSettings.workCyclesBeforeLongRest);
+    return true;
+}
+
 
 uint8_t PashmakApp::dailyHistoryCount() const
 {
@@ -193,6 +225,7 @@ void PashmakApp::begin()
         Serial.println("[STATS] Preferences unavailable; statistics are RAM-only.");
     }
 
+    loadTimerSettings();
     loadPetProfiles();
     for (uint8_t i = 0; i < PET_COUNT; ++i)
     {
@@ -238,14 +271,14 @@ void PashmakApp::updateAutomaticMode(uint32_t now)
     switch (_mode)
     {
     case PetMode::Work:
-        if (modeElapsed >= Config::WORK_SESSION_DURATION_MS)
+        if (modeElapsed >= static_cast<uint32_t>(_timerSettings.workMinutes) * 60UL * 1000UL)
         {
             ++_completedWorkSessions;
             recordCompletedWorkSession();
             recordMonthlyCompletedWorkSession();
             ++_completedWorkCycles;
 
-            if (_completedWorkCycles >= Config::WORK_CYCLES_BEFORE_LONG_REST)
+            if (_completedWorkCycles >= _timerSettings.workCyclesBeforeLongRest)
             {
                 _completedWorkCycles = 0;
                 _longRestPending = true;
@@ -259,12 +292,12 @@ void PashmakApp::updateAutomaticMode(uint32_t now)
         break;
 
     case PetMode::Play:
-        if (modeElapsed >= Config::PLAY_SESSION_DURATION_MS)
+        if (modeElapsed >= static_cast<uint32_t>(_timerSettings.playMinutes) * 60UL * 1000UL)
             setMode(PetMode::Work, now);
         break;
 
     case PetMode::Nap:
-        if (modeElapsed >= Config::NAP_SESSION_DURATION_MS)
+        if (modeElapsed >= static_cast<uint32_t>(_timerSettings.napMinutes) * 60UL * 1000UL)
         {
             _longRestPending = false;
             setMode(PetMode::Work, now);
@@ -273,6 +306,38 @@ void PashmakApp::updateAutomaticMode(uint32_t now)
     }
 }
 
+
+void PashmakApp::loadTimerSettings()
+{
+    _timerSettings = TimerSettings{};
+    if (!_statsReady)
+        return;
+
+    const size_t expected = sizeof(TimerSettingsStorage);
+    if (_statsPreferences.getBytesLength("timerCfg") != expected)
+    {
+        Serial.println("[TIMER] No saved timer settings; using defaults.");
+        return;
+    }
+
+    TimerSettingsStorage stored{};
+    if (_statsPreferences.getBytes("timerCfg", &stored, expected) != expected ||
+        stored.version != 1 ||
+        stored.settings.workMinutes < 1 || stored.settings.workMinutes > 180 ||
+        stored.settings.playMinutes < 1 || stored.settings.playMinutes > 60 ||
+        stored.settings.napMinutes < 1 || stored.settings.napMinutes > 120 ||
+        stored.settings.workCyclesBeforeLongRest < 1 ||
+        stored.settings.workCyclesBeforeLongRest > 8)
+    {
+        Serial.println("[TIMER] Invalid saved settings; using defaults.");
+        return;
+    }
+
+    _timerSettings = stored.settings;
+    Serial.printf("[TIMER] Loaded settings: work=%u min, play=%u min, nap=%u min, long-rest every %u work sessions.\n",
+                  _timerSettings.workMinutes, _timerSettings.playMinutes,
+                  _timerSettings.napMinutes, _timerSettings.workCyclesBeforeLongRest);
+}
 
 void PashmakApp::loadPetProfiles()
 {

@@ -39,12 +39,22 @@ public:
         uint32_t completedWorkSessions = 0;
     };
 
+    struct TimerSettings
+    {
+        uint16_t workMinutes = 25;
+        uint16_t playMinutes = 2;
+        uint16_t napMinutes = 5;
+        uint8_t workCyclesBeforeLongRest = 3;
+    };
+
     PashmakApp();
     void begin();
     void update();
 
     bool setActivePet(uint8_t petId);
     uint8_t activePetId() const;
+    TimerSettings timerSettings() const;
+    bool setTimerSettings(const TimerSettings &settings);
     uint8_t dailyHistoryCount() const;
     bool getDailyStats(uint8_t index, DailyStats &out) const;
     uint8_t monthlyHistoryCount() const;
@@ -75,6 +85,12 @@ private:
     };
 
     // Versioned, bounded storage for each pet's energy and stable personality ID.
+    struct TimerSettingsStorage
+    {
+        uint32_t version = 1;
+        TimerSettings settings{};
+    };
+
     struct PetProfileStorage
     {
         uint32_t version = 1;
@@ -88,6 +104,7 @@ private:
     PetBehavior _behaviors[PET_COUNT];
     RtcService _rtc;
     uint8_t _activePetId = 0;
+    TimerSettings _timerSettings{};
 
     PetMode _mode = PetMode::Work;
 
@@ -139,6 +156,7 @@ private:
     void updateRtcReminder(uint32_t now);
     void handleSerialCommands();
     void persistStats(uint32_t now, bool force = false);
+    void loadTimerSettings();
     void loadPetProfiles();
     void persistPetProfiles(uint32_t now);
     void loadDailyHistory();

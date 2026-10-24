@@ -19,11 +19,12 @@ Unknown commands are ignored with a diagnostic message. Commands longer than the
 
 ## JSON schema
 
-The `stats` response is a single JSON object with `version: 2`. The dashboard validates the payload before rendering it; an invalid response is treated as a failed refresh, and the last valid snapshot remains visible.
+The `stats` response is a single JSON object with `version: 3`. The dashboard validates the payload before rendering it; an invalid response is treated as a failed refresh, and the last valid snapshot remains visible.
 
 - `activePetId`: selected pet ID (0–2).
-- `pets`: exactly three pet profiles. Each profile has `id`, `name`, `energy` (0–100), `happiness` (0–100), `bond` (0–100), `mood`, and `message`.
-- `pet`: the selected pet's `energy`, `mood`, and `message`. This duplicates the selected profile's `energy`, `bond`, `mood`, and `message` for convenient dashboard rendering.
+- `pets`: exactly three pet profiles. Each profile has `id`, `name`, `energy` (0–100), `happiness` (0–100), `bond` (0–100), `interactions` (0–65535), `achievementMask` (known per-pet achievement bits), `mood`, and `message`.
+- `pet`: the selected pet's `energy`, `mood`, and `message`. This duplicates the selected profile's `energy`, `happiness`, `bond`, `interactions`, `achievementMask`, `mood`, and `message` for convenient dashboard rendering.
+- `globalAchievementMask`: persisted global achievement bits for focus-session milestones and a three-consecutive-day focus streak.
 - `totals`: lifetime counters currently stored in Preferences.
 - `recent`: aggregate of the most recent available daily records, up to the requested number of days (the serial command currently requests 7; the dashboard requests 14).
 - `dailyHistory`: retained daily records, each with `dateKey` in `YYYYMMDD` format. The dashboard expects no more than 14 records.
@@ -37,7 +38,7 @@ Example shape (values are illustrative):
 
 ```json
 {
-  "version": 2,
+  "version": 3,
   "totals": {
     "workMs": 120000,
     "playMs": 30000,
@@ -142,3 +143,7 @@ The dashboard can export a versioned JSON backup containing timer-cycle settings
 
 
 Pet records in schema version 2 include `happiness` (integer, 0–100), alongside `energy` and `bond`. Version 2 adds this required field to both `pets[]` and the active `pet` record; clients must validate the version before consuming the payload.
+
+## Persistent achievements
+
+Achievement progress is stored locally in the ESP32 Preferences namespace as a versioned, validated record. Per-pet interaction counts and achievement masks remain separate for each pet; focus-session milestones and the three-consecutive-day streak use a global mask. Achievement bits are awarded once and persisted immediately when a new achievement unlocks. Other progress is coalesced into writes no more frequently than once per minute. Invalid records fall back to an empty progress record. The dashboard only renders achievements from the validated API masks, rather than inferring unlocked status from browser-local state.

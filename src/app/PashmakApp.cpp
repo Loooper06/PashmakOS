@@ -4,6 +4,44 @@
 
 namespace
 {
+    void appendJsonString(String &json, const char *value)
+    {
+        static const char HEX[] = "0123456789ABCDEF";
+        json += '"';
+        if (value != nullptr)
+        {
+            const unsigned char *cursor =
+                reinterpret_cast<const unsigned char *>(value);
+            while (*cursor != '\0')
+            {
+                const unsigned char ch = *cursor++;
+                switch (ch)
+                {
+                case '"': json += F("\\\""); break;
+                case '\\': json += F("\\\\"); break;
+                case '\b': json += F("\\b"); break;
+                case '\f': json += F("\\f"); break;
+                case '\n': json += F("\\n"); break;
+                case '\r': json += F("\\r"); break;
+                case '\t': json += F("\\t"); break;
+                default:
+                    if (ch < 0x20)
+                    {
+                        json += F("\\u00");
+                        json += HEX[(ch >> 4) & 0x0F];
+                        json += HEX[ch & 0x0F];
+                    }
+                    else
+                    {
+                        json += static_cast<char>(ch);
+                    }
+                    break;
+                }
+            }
+        }
+        json += '"';
+    }
+
     const char *modeName(PetMode mode)
     {
         switch (mode)
@@ -146,20 +184,20 @@ String PashmakApp::statisticsToJson(uint8_t recentDays) const
         case PetMood::Exhausted: profileMood = "exhausted"; break;
         }
         json += F("{\"id\":"); json += String(i);
-        json += F(",\"name\":\""); json += petNames[i];
-        json += F("\",\"energy\":"); json += String(profile.energy);
-        json += F(",\"mood\":\""); json += profileMood;
-        json += F("\",\"message\":\"");
-        json += (profile.message != nullptr ? profile.message : "");
-        json += F("\"}");
+        json += F(",\"name\":"); appendJsonString(json, petNames[i]);
+        json += F(",\"energy\":"); json += String(profile.energy);
+        json += F(",\"mood\":"); appendJsonString(json, profileMood);
+        json += F(",\"message\":");
+        appendJsonString(json, profile.message);
+        json += '}';
     }
     json += F("],\"pet\":{\"energy\":");
     json += String(pet.energy);
-    json += F(",\"mood\":\"");
-    json += mood;
-    json += F("\",\"message\":\"");
-    json += (pet.message != nullptr ? pet.message : "");
-    json += F("\"},\"totals\":{\"workMs\":");
+    json += F(",\"mood\":");
+    appendJsonString(json, mood);
+    json += F(",\"message\":");
+    appendJsonString(json, pet.message);
+    json += F("},\"totals\":{\"workMs\":");
     json += String(static_cast<unsigned long long>(_workMs));
     json += F(",\"playMs\":");
     json += String(static_cast<unsigned long long>(_playMs));

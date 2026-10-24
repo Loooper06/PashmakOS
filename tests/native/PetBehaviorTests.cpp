@@ -208,6 +208,28 @@ static void testEnergyLowerBoundAndRecovery()
     assert(pet.state().energy <= 100);
 }
 
+static void testPetInteractionReactionsAndExpiry()
+{
+    PetBehavior pashmak(0);
+    PetBehavior mochi(1);
+    PetBehavior pixel(2);
+    pashmak.begin(0);
+    mochi.begin(0);
+    pixel.begin(0);
+
+    pashmak.interact(PetMode::Work, 10, 5);
+    mochi.interact(PetMode::Work, 10, 75);
+    pixel.interact(PetMode::Nap, 10, 30);
+    assert(strcmp(pashmak.state().message, "Happy tail wag for you!") == 0);
+    assert(strcmp(mochi.state().message, "My favorite human!") == 0);
+    assert(strcmp(pixel.state().message, "Quiet ping received.") == 0);
+
+    pashmak.update(PetMode::Work, 1000);
+    assert(strcmp(pashmak.state().message, "Happy tail wag for you!") == 0);
+    pashmak.update(PetMode::Work, 6010);
+    assert(strcmp(pashmak.state().message, "Let's Focus, Engineer!") == 0);
+}
+
 static void testInvalidPersonalityFallsBackSafely()
 {
     PetBehavior fallback(0);
@@ -347,6 +369,7 @@ int main()
     testEventExpiryRestoresLatestModeMessage();
     testEnergyLowerBoundAndRecovery();
     testInvalidPersonalityFallsBackSafely();
+    testPetInteractionReactionsAndExpiry();
     puts("PetBehavior native tests: PASS");
     return 0;
 }

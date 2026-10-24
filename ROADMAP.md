@@ -13,13 +13,15 @@ Target: ESP32-WROOM-32 + ILI9341 TFT (320x240 landscape), DS3231 RTC
 - Preferences-backed totals/history, RTC-aware date/month tracking, serial diagnostics/export commands.
 - Latest dashboard commit at roadmap creation: 6d74bd2bc7b184cc54eb22d8599ef7054d386365.
 
-## Phase 1 — Data integrity and runtime resilience (next)
-1. Correctly escape JSON strings (quotes, backslashes, control characters) for all pet messages.
-2. Harden behavior timing against long update gaps and millis() rollover where applicable.
-3. Make dashboard API handling defensive and preserve the last known snapshot during temporary failures.
-4. Add concise serial diagnostics without flooding the serial port.
-5. Build with PlatformIO CI and inspect JSON output; hardware verification remains separate.
-Acceptance: valid API JSON for all message contents; intended energy rates; dashboard usable through brief disconnects; CI passes.
+## Phase 1 — Data integrity and runtime resilience (in progress)
+- [x] Shared JSON string escaping handles quotes, backslashes, common escapes, and remaining control bytes; native edge-case tests cover UTF-8 preservation and null input.
+- [x] Dashboard validates the versioned response, counters, selected-pet consistency, and calendar keys before rendering.
+- [x] Last valid dashboard snapshot survives request failures; requests time out and retries use bounded backoff.
+- [x] Behavior timing uses rollover-safe elapsed/deadline arithmetic and a wide energy-time accumulator.
+- [x] PlatformIO CI and native behavior tests are enabled; latest verified CI run is linked from the development conversation.
+- [ ] Add an end-to-end host test for the complete `statisticsToJson()` payload and recent-history aggregation.
+- [ ] Complete a physical Wi-Fi disconnect/reconnect smoke test after the latest dashboard changes.
+Acceptance: valid API JSON for all message contents; intended energy rates; dashboard usable through brief disconnects; CI passes and hardware checks are recorded.
 
 ## Phase 2 — Behavior quality and pet personality
 1. Give each pet a distinct message pool/personality profile without duplicating the behavior engine.
@@ -45,12 +47,13 @@ Acceptance: no new physical-display flicker/frame stalls; reminders and messages
 5. Bound NVS writes and verify restart/power-loss behavior.
 Acceptance: intended state survives restart; invalid data falls back safely; no excessive flash writes.
 
-## Phase 5 — Dashboard quality and API contract
-1. Document /api/stats JSON schema and versioning.
-2. Improve mobile layout, accessible labels, empty states, and chart explanations.
-3. Add stale-data indication and bounded retry/backoff.
-4. Harden CSV export for missing values and spreadsheet compatibility.
-5. Keep pet selection/history responsive on small screens.
+## Phase 5 — Dashboard quality and API contract (in progress)
+- [x] Document `/api/stats` JSON schema and versioning.
+- [x] Add stale-data status and bounded retry/backoff.
+- [x] Validate incoming statistics defensively and preserve the last valid snapshot.
+- [x] Quote CSV cells and neutralize formula-like values during export.
+- [ ] Review mobile layout, accessible labels, empty states, and chart explanations on a phone.
+- [ ] Verify pet selection and history exports on a small screen.
 Acceptance: documented schema; failures do not erase useful data; dashboard readable on mobile.
 
 ## Phase 6 — User-aware features

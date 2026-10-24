@@ -75,12 +75,28 @@ if(!daily.children.length)daily.appendChild(row(['No daily records yet','—','�
 const monthly=$('monthly');monthly.replaceChildren();(data.monthlyHistory||[]).slice().reverse().forEach(m=>monthly.appendChild(row([monthLabel(m.monthKey),duration(m.workMs),duration(m.playMs),duration(m.napMs),m.completedWorkSessions])));
 if(!monthly.children.length)monthly.appendChild(row(['No monthly records yet','—','—','—','—']));
 $('connection').textContent='Connected · updated '+new Date().toLocaleTimeString();lastUpdatedAt=Date.now();$('export-daily').disabled=!(data.dailyHistory||[]).length;$('export-monthly').disabled=!(data.monthlyHistory||[]).length;}
-async function selectPet(id){try{const response=await fetch('/api/pet/select',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:'id='+encodeURIComponent(id)});if(!response.ok)throw new Error('HTTP '+response.status);await refresh()}catch(e){$('connection').textContent='Pet selection failed';}}
-async function refresh(){if(refreshInFlight)return;refreshInFlight=true;$('refresh').disabled=true;try{const response=await fetch('/api/stats',{cache:'no-store'});if(!response.ok)throw new Error('HTTP '+response.status);render(await response.json())}catch(e){$('connection').textContent=lastUpdatedAt?'Connection lost · last update '+new Date(lastUpdatedAt).toLocaleTimeString():'Connection lost · retrying'}finally{refreshInFlight=false;$('refresh').disabled=false}}
+function isCounter(value){return Number.isFinite(Number(value))&&Number(value)>=0}
+function isRecord(record,key){return !!record&&Number.isInteger(Number(record[key]))&&Number(record[key])>0&&isCounter(record.workMs)&&isCounter(record.playMs)&&isCounter(record.napMs)&&isCounter(record.completedWorkSessions)}
+function isValidStats(data){
+ if(!data||typeof data!=='object'||data.version!==1)return false;
+ if(!Number.isInteger(data.activePetId)||data.activePetId<0||data.activePetId>2)return false;
+ if(!Array.isArray(data.pets)||data.pets.length!==3)return false;
+ if(!data.pets.every((p,i)=>p&&Number(p.id)===i&&typeof p.name==='string'&&typeof p.mood==='string'&&typeof p.message==='string'&&Number.isFinite(Number(p.energy))&&Number(p.energy)>=0&&Number(p.energy)<=100))return false;
+ if(!data.pet||typeof data.pet.mood!=='string'||typeof data.pet.message!=='string'||!Number.isFinite(Number(data.pet.energy))||Number(data.pet.energy)<0||Number(data.pet.energy)>100)return false;
+ if(!data.totals||!['workMs','playMs','napMs','completedWorkSessions'].every(k=>isCounter(data.totals[k])))return false;
+ if(!data.recent||!['requestedDays','daysIncluded','workMs','playMs','napMs','completedWorkSessions'].every(k=>isCounter(data.recent[k])))return false;
+ if(!Array.isArray(data.dailyHistory)||data.dailyHistory.length>14||!data.dailyHistory.every(d=>isRecord(d,'dateKey')&&String(d.dateKey).length===8))return false;
+ if(!Array.isArray(data.monthlyHistory)||data.monthlyHistory.length>12||!data.monthlyHistory.every(m=>isRecord(m,'monthKey')&&String(m.monthKey).length===6))return false;
+ return true;
+}
+let retryDelay=10000;let refreshTimer=null;
+function scheduleRefresh(delay){if(refreshTimer!==null)clearTimeout(refreshTimer);refreshTimer=setTimeout(()=>{refreshTimer=null;refresh()},delay)}
+async function selectPet(id){try{const response=await fetch('/api/pet/select',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:'id='+encodeURIComponent(id)});if(!response.ok)throw new Error('HTTP '+response.status);await refresh()}catch(e){$('connection').textContent=snapshot?'Pet selection failed · showing last valid data':'Pet selection failed';}}
+async function refresh(){if(refreshInFlight)return;refreshInFlight=true;if(refreshTimer!==null){clearTimeout(refreshTimer);refreshTimer=null}$('refresh').disabled=true;const controller=new AbortController();const timeout=setTimeout(()=>controller.abort(),5000);try{const response=await fetch('/api/stats',{cache:'no-store',signal:controller.signal});if(!response.ok)throw new Error('HTTP '+response.status);const data=await response.json();if(!isValidStats(data))throw new Error('Invalid statistics payload');render(data);retryDelay=10000}catch(e){$('connection').textContent=snapshot?'Stale data · last valid update '+new Date(lastUpdatedAt).toLocaleTimeString():'Connection unavailable · retrying';retryDelay=Math.min(retryDelay*2,60000)}finally{clearTimeout(timeout);refreshInFlight=false;$('refresh').disabled=false;scheduleRefresh(retryDelay)}}
 $('refresh').addEventListener('click',refresh);
 $('export-daily').disabled=true;$('export-monthly').disabled=true;$('export-daily').addEventListener('click',()=>{if(!snapshot?.dailyHistory?.length)return;const records=(snapshot?.dailyHistory||[]).map(d=>[dateLabel(d.dateKey),d.workMs,d.playMs,d.napMs,d.completedWorkSessions]);downloadCsv('pashmak-daily-history.csv',['Date','Work ms','Play ms','Nap ms','Completed sessions'],records)});
 $('export-monthly').addEventListener('click',()=>{if(!snapshot?.monthlyHistory?.length)return;const records=(snapshot?.monthlyHistory||[]).map(m=>[monthLabel(m.monthKey),m.workMs,m.playMs,m.napMs,m.completedWorkSessions]);downloadCsv('pashmak-monthly-history.csv',['Month','Work ms','Play ms','Nap ms','Completed sessions'],records)});
-document.querySelectorAll('[data-days]').forEach(b=>b.addEventListener('click',()=>{selectedDays=Number(b.dataset.days);if(snapshot)render(snapshot)}));refresh();setInterval(refresh,10000);
+document.querySelectorAll('[data-days]').forEach(b=>b.addEventListener('click',()=>{selectedDays=Number(b.dataset.days);if(snapshot)render(snapshot)}));refresh();
 </script></body></html>
 )HTML";
 }

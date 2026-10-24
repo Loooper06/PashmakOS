@@ -24,7 +24,7 @@ struct PetBehaviorState
 class PetBehavior
 {
 public:
-    PetBehavior();
+    explicit PetBehavior(uint8_t personalityId = 0);
 
     void begin(uint32_t now);
     void update(PetMode mode, uint32_t now);
@@ -32,6 +32,7 @@ public:
     const PetBehaviorState &state() const;
 
 private:
+    uint8_t _personalityId;
     PetBehaviorState _state;
     const char *_baseMessage;
 

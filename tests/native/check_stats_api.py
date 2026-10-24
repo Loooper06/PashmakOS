@@ -18,7 +18,7 @@ if '#include "../core/StatsJson.h"' not in source:
     raise SystemExit("PashmakApp.cpp does not include the portable serializer")
 if "StatsJson::appendStatisticsJson(json, payload)" not in method:
     raise SystemExit("statisticsToJson() does not use the portable serializer")
-if "StatsJson::appendStatisticsJson" not in header:
+if "void appendStatisticsJson" not in header:
     raise SystemExit("portable statistics serializer implementation is missing")
 
 fixture = root / "tests" / "native" / "StatsJsonFixture.cpp"

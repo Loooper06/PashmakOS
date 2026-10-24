@@ -42,6 +42,6 @@ namespace Config
 
     // Reminder scheduling
     constexpr uint32_t RTC_POLL_INTERVAL_MS = 1000;
-    constexpr uint32_t WATER_REMINDER_INTERVAL_SECONDS = 60UL * 60UL;
-    constexpr uint32_t MOVEMENT_REMINDER_INTERVAL_SECONDS = 45UL * 60UL;
+    constexpr uint16_t WATER_REMINDER_INTERVAL_MINUTES = 60;
+    constexpr uint16_t MOVEMENT_REMINDER_INTERVAL_MINUTES = 45;
 }

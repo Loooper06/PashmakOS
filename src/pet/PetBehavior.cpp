@@ -151,9 +151,12 @@ void PetBehavior::update(PetMode mode, uint32_t now, int8_t hour, bool quietHour
     {
         // Charge elapsed time to the mode that was active during that interval.
         updateEnergy(_lastMode, now);
+        updateHappiness(_lastMode, now);
         // Fractional time from one mode must not leak into another mode's rate.
         _energyRemainderMs = 0;
         _lastEnergyTickAt = now;
+        _happinessRemainderMs = 0;
+        _lastHappinessTickAt = now;
     }
 
     updateEnergy(mode, now);

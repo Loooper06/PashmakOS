@@ -15,6 +15,7 @@ A local-first ESP32 desk companion with automatic work/play/nap cycles, three pe
 - Pet picker cards show each companion's current mood, an energy progress bar, and bond-tier progress, so all three profiles can be compared at a glance.
 - Time-aware messages and RTC reminders with configurable water/movement intervals and quiet hours.
 - Local dashboard with pet selection, energy/mood/message, lifetime counters, recent activity, daily/monthly history, and CSV export.
+- Mobile-friendly dashboard layout with full-width pet cards, compact controls, single-column settings, and safe full-width status panels on narrow screens.
 - Preferences/NVS-backed lifetime counters and bounded daily/monthly history.
 - Serial diagnostics and `stats`, `daily_csv`, and `monthly_csv` commands.
 - Native C++ tests and GitHub Actions checks for the ESP32 build, pet behavior, dashboard JavaScript, and statistics JSON contract.

@@ -279,7 +279,7 @@ void PetBehavior::selectMessage(PetMode mode, uint32_t now, int8_t hour)
 
     // Time-aware lines are occasional, but the same line should never be
     // shown twice in a row when the RTC hour has not changed.
-    if (_baseMessage == _lastBaseMessage)
+    if (timeMessage && _baseMessage == _lastBaseMessage)
     {
         switch (mode)
         {

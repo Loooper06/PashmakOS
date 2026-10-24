@@ -45,12 +45,13 @@ Progress update (2026-10-24): mood-specific facial expressions are implemented u
 5. Keep display/network work non-blocking.
 Acceptance: no new physical-display flicker/frame stalls; reminders and messages restore correctly.
 
-## Phase 4 — Multi-pet data model and persistence
-1. Persist per-pet energy/personality state with versioned storage and safe defaults.
+## Phase 4 — Multi-pet data model and persistence (in progress)
+- [x] Persist each pet's energy in a versioned Preferences blob; validate schema version, record count, stable pet IDs, and energy range, with safe defaults on invalid data.
+- [x] Bound profile persistence to one blob write per minute, independent of the number of pets.
+- [ ] Verify per-pet energy survives reboot and invalid profile data safely falls back on physical hardware.
 2. Validate selected pet IDs on load and API requests.
-3. Decide/document whether lifetime totals are global or per-pet; do not silently change existing totals.
-4. Add migration/version handling before changing Preferences layouts.
-5. Bound NVS writes and verify restart/power-loss behavior.
+3. Decide/document whether lifetime totals are global or per-pet; current lifetime and history counters remain global and are intentionally unchanged.
+4. Add migration/version handling before changing Preferences layouts; profile storage starts at version 1 and existing statistics/history keys are untouched.
 Acceptance: intended state survives restart; invalid data falls back safely; no excessive flash writes.
 
 ## Phase 5 — Dashboard quality and API contract (in progress)

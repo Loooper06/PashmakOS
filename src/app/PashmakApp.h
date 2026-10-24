@@ -74,6 +74,15 @@ private:
         MonthlyStats records[MONTHLY_HISTORY_MONTHS]{};
     };
 
+    // Versioned, bounded storage for each pet's energy and stable personality ID.
+    struct PetProfileStorage
+    {
+        uint32_t version = 1;
+        uint8_t count = 0;
+        uint8_t petIds[PET_COUNT]{};
+        uint8_t energy[PET_COUNT]{};
+    };
+
     Display _display;
     PetRenderer _renderer;
     PetBehavior _behaviors[PET_COUNT];
@@ -99,6 +108,8 @@ private:
     uint64_t _napMs = 0;
     uint32_t _lastWorkTick = 0;
     uint32_t _lastStatsPersistAt = 0;
+    uint32_t _lastPetProfilePersistAt = 0;
+    uint8_t _petProfileEnergy[PET_COUNT] = {80, 80, 80};
     uint32_t _completedWorkSessions = 0;
     Preferences _statsPreferences;
     bool _statsReady = false;
@@ -128,6 +139,8 @@ private:
     void updateRtcReminder(uint32_t now);
     void handleSerialCommands();
     void persistStats(uint32_t now, bool force = false);
+    void loadPetProfiles();
+    void persistPetProfiles(uint32_t now);
     void loadDailyHistory();
     void syncDailyHistory(uint32_t now);
     void loadMonthlyHistory();

@@ -10,6 +10,7 @@ A local-first ESP32 desk companion with automatic work/play/nap cycles, three pe
 - Dashboard-configurable work, play, and long-rest durations plus the number of work sessions before a long rest; settings persist in ESP32 Preferences.
 - Dashboard-configurable water and movement reminder intervals; either reminder can be disabled independently.
 - Three pet profiles: Pashmak, Mochi, and Pixel, each with independent behavior state, energy, mood, and message.
+- Pet bonding with four relationship stages (New companion, Familiar friend, Close companion, Best friend), personality-specific interaction reactions, and progress to the next milestone.
 - Time-aware messages and RTC reminders with configurable water/movement intervals and quiet hours.
 - Local dashboard with pet selection, energy/mood/message, lifetime counters, recent activity, daily/monthly history, and CSV export.
 - Preferences/NVS-backed lifetime counters and bounded daily/monthly history.

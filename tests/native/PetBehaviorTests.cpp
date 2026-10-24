@@ -252,6 +252,36 @@ static void testPetInteractionReactionsAndExpiry()
     assert(strcmp(pashmak.state().message, "Let's Focus, Engineer!") == 0);
 }
 
+static void testBondRelationshipTiers()
+{
+    PetBehavior pashmak(0);
+    PetBehavior mochi(1);
+    PetBehavior pixel(2);
+    pashmak.begin(0);
+    mochi.begin(0);
+    pixel.begin(0);
+
+    pashmak.interact(PetMode::Work, 1, 24);
+    assert(strcmp(pashmak.state().message, "Happy tail wag for you!") == 0);
+    pashmak.interact(PetMode::Work, 2, 25);
+    assert(strcmp(pashmak.state().message, "I'm happy to see you again!") == 0);
+    pashmak.interact(PetMode::Work, 3, 49);
+    assert(strcmp(pashmak.state().message, "I'm happy to see you again!") == 0);
+    pashmak.interact(PetMode::Work, 4, 50);
+    assert(strcmp(pashmak.state().message, "We make a great team!") == 0);
+    pashmak.interact(PetMode::Work, 5, 74);
+    assert(strcmp(pashmak.state().message, "We make a great team!") == 0);
+    pashmak.interact(PetMode::Work, 6, 75);
+    assert(strcmp(pashmak.state().message, "You're my best friend!") == 0);
+    pashmak.interact(PetMode::Work, 7, 100);
+    assert(strcmp(pashmak.state().message, "You're my best friend!") == 0);
+
+    mochi.interact(PetMode::Work, 8, 50);
+    assert(strcmp(mochi.state().message, "Our bond feels cozy.") == 0);
+    pixel.interact(PetMode::Work, 9, 25);
+    assert(strcmp(pixel.state().message, "Familiar human detected.") == 0);
+}
+
 static void testInvalidPersonalityFallsBackSafely()
 {
     PetBehavior fallback(0);
@@ -392,6 +422,7 @@ int main()
     testEnergyLowerBoundAndRecovery();
     testInvalidPersonalityFallsBackSafely();
     testPetInteractionReactionsAndExpiry();
+    testBondRelationshipTiers();
     testQuietHoursSuppressSpontaneousEvents();
     puts("PetBehavior native tests: PASS");
     return 0;

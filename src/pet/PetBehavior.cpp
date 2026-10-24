@@ -348,7 +348,6 @@ void PetBehavior::selectMessage(PetMode mode, uint32_t now, int8_t hour)
 
 void PetBehavior::interact(PetMode mode, uint32_t now, uint8_t bond)
 {
-    (void)bond;
     _interactionActive = true;
     _interactionUntil = now + 6000UL;
 
@@ -365,11 +364,38 @@ void PetBehavior::interact(PetMode mode, uint32_t now, uint8_t bond)
         return;
     }
 
+    // Relationship tiers make each persisted bond milestone visible in the
+    // pet's own voice. Boundaries match the dashboard labels.
+    const uint8_t tier = bond >= 75 ? 3 : bond >= 50 ? 2 : bond >= 25 ? 1 : 0;
     switch (_personalityId)
     {
-    case 1: _interactionMessage = bond >= 70 ? "My favorite human!" : "Thanks for being here!"; break;
-    case 2: _interactionMessage = bond >= 70 ? "Best-friend protocol!" : "Bond++: friend detected!"; break;
-    default: _interactionMessage = bond >= 70 ? "You're my best friend!" : "Happy tail wag for you!"; break;
+    case 1:
+        switch (tier)
+        {
+        case 3: _interactionMessage = "My favorite human!"; break;
+        case 2: _interactionMessage = "Our bond feels cozy."; break;
+        case 1: _interactionMessage = "You're becoming a familiar face!"; break;
+        default: _interactionMessage = "Thanks for being here!"; break;
+        }
+        break;
+    case 2:
+        switch (tier)
+        {
+        case 3: _interactionMessage = "Best-friend protocol!"; break;
+        case 2: _interactionMessage = "Trust level: strong."; break;
+        case 1: _interactionMessage = "Familiar human detected."; break;
+        default: _interactionMessage = "Bond++: friend detected!"; break;
+        }
+        break;
+    default:
+        switch (tier)
+        {
+        case 3: _interactionMessage = "You're my best friend!"; break;
+        case 2: _interactionMessage = "We make a great team!"; break;
+        case 1: _interactionMessage = "I'm happy to see you again!"; break;
+        default: _interactionMessage = "Happy tail wag for you!"; break;
+        }
+        break;
     }
     _state.message = _interactionMessage;
     if (_state.energy > 30)

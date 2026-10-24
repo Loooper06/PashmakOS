@@ -14,6 +14,8 @@ namespace
 
     constexpr uint16_t BG = 0x1082;
     constexpr uint16_t PANEL = 0x2127;
+    constexpr uint16_t STAGE_LINE = 0x2947;
+    constexpr uint16_t STAGE_ACCENT = 0x39A7;
     constexpr uint16_t WHITE = 0xFFFF;
     constexpr uint16_t PURPLE = 0xB81F;
     constexpr uint16_t PINK = 0xF2B5;
@@ -270,6 +272,14 @@ void PetRenderer::drawDog(Display &d, PetMode mode, uint32_t frame, uint8_t petI
     const int16_t rx = pose.rightEarX;
 
     d.beginDogFrame(BG);
+
+    // Keep the stage baseline fixed on the LCD while the pet moves inside
+    // the sprite canvas. The offset compensation prevents the backdrop from
+    // travelling with the character.
+    const int16_t stageCompensation = static_cast<int16_t>(160 - pose.travelX);
+    d.drawLine(24 + stageCompensation, 188, 296 + stageCompensation, 188, STAGE_LINE);
+    d.fillCircle(24 + stageCompensation, 188, 2, STAGE_ACCENT);
+    d.fillCircle(296 + stageCompensation, 188, 2, STAGE_ACCENT);
 
     d.fillEllipse(cx, 185, pose.action == PetAction::LieDown ? 48 : 43, 5, SHADOW);
 

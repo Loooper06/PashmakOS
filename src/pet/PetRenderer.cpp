@@ -312,8 +312,27 @@ void PetRenderer::drawDog(Display &d, PetMode mode, uint32_t frame, uint8_t petI
 
     d.fillTriangle(cx - 12, cy - 37, cx - 5, cy - 29, cx - 17, cy - 27, furLight);
     d.fillTriangle(cx + 3, cy - 38, cx + 12, cy - 29, cx + 1, cy - 27, furLight);
-    d.fillEllipse(cx - 16, cy - 13, 7, 2, furDark);
-    d.fillEllipse(cx + 16, cy - 13, 7, 2, furDark);
+    // Eyebrows make the behavior engine's mood visible, not just its message.
+    if (mood == PetMood::Focused)
+    {
+        d.drawLine(cx - 25, cy - 17, cx - 12, cy - 13, furDark);
+        d.drawLine(cx + 12, cy - 13, cx + 25, cy - 17, furDark);
+    }
+    else if (mood == PetMood::Curious)
+    {
+        d.drawLine(cx - 25, cy - 15, cx - 12, cy - 17, furDark);
+        d.drawLine(cx + 12, cy - 22, cx + 25, cy - 18, furDark);
+    }
+    else if (mood == PetMood::Tired || mood == PetMood::Exhausted)
+    {
+        d.drawLine(cx - 25, cy - 15, cx - 12, cy - 13, furDark);
+        d.drawLine(cx + 12, cy - 13, cx + 25, cy - 15, furDark);
+    }
+    else
+    {
+        d.fillEllipse(cx - 16, cy - 13, 7, 2, furDark);
+        d.fillEllipse(cx + 16, cy - 13, 7, 2, furDark);
+    }
 
     if (pose.blinking)
     {
@@ -327,10 +346,12 @@ void PetRenderer::drawDog(Display &d, PetMode mode, uint32_t frame, uint8_t petI
     }
     else
     {
-        const int8_t eyeHeight = sleepyEyes ? 6 : 11;
-        const int8_t eyeTop = sleepyEyes ? 0 : -4;
-        d.fillEllipse(cx - 17 + pose.gazeX, cy - 3, 10, sleepyEyes ? 8 : 13, furDark);
-        d.fillEllipse(cx + 17 + pose.gazeX, cy - 3, 10, sleepyEyes ? 8 : 13, furDark);
+        const bool curiousMood = mood == PetMood::Curious;
+        const int8_t eyeHeight = sleepyEyes ? 6 : (curiousMood ? 13 : 11);
+        const int8_t eyeTop = sleepyEyes ? 0 : (curiousMood ? -5 : -4);
+        const int8_t eyeRadiusY = sleepyEyes ? 8 : (curiousMood ? 14 : 13);
+        d.fillEllipse(cx - 17 + pose.gazeX, cy - 3, 10, eyeRadiusY, furDark);
+        d.fillEllipse(cx + 17 + pose.gazeX, cy - 3, 10, eyeRadiusY, furDark);
         d.fillEllipse(cx - 17 + pose.gazeX, cy + eyeTop, 8, eyeHeight, EYE);
         d.fillEllipse(cx + 17 + pose.gazeX, cy + eyeTop, 8, eyeHeight, EYE);
         d.fillEllipse(cx - 17 + pose.gazeX, cy - 3, 5, 8, MOUTH);
@@ -379,12 +400,25 @@ void PetRenderer::drawDog(Display &d, PetMode mode, uint32_t frame, uint8_t petI
     d.fillCircle(muzzleX, cy + 11, 3, NOSE);
     d.fillCircle(muzzleX - 1, cy + 10, 1, WHITE);
 
-    // Keep the mouth in a stable closed shape while walking; no panting animation.
-    d.drawLine(muzzleX, cy + 16, muzzleX, cy + 21, MOUTH);
-    d.drawLine(muzzleX, cy + 21, muzzleX - 5, cy + 18, MOUTH);
-    d.drawLine(muzzleX - 5, cy + 18, muzzleX - 8, cy + 18, MOUTH);
-    d.drawLine(muzzleX, cy + 21, muzzleX + 5, cy + 18, MOUTH);
-    d.drawLine(muzzleX + 5, cy + 18, muzzleX + 8, cy + 18, MOUTH);
+    if (mood == PetMood::Excited)
+    {
+        // A small open smile is reserved for high-energy excitement.
+        d.fillEllipse(muzzleX, cy + 20, 7, 7, MOUTH);
+        d.fillEllipse(muzzleX, cy + 24, 4, 2, TONGUE);
+    }
+    else if (mood == PetMood::Exhausted)
+    {
+        // Keep the mouth neutral when energy is critically low.
+        d.drawLine(muzzleX - 6, cy + 20, muzzleX + 6, cy + 20, MOUTH);
+    }
+    else
+    {
+        d.drawLine(muzzleX, cy + 16, muzzleX, cy + 21, MOUTH);
+        d.drawLine(muzzleX, cy + 21, muzzleX - 5, cy + 18, MOUTH);
+        d.drawLine(muzzleX - 5, cy + 18, muzzleX - 8, cy + 18, MOUTH);
+        d.drawLine(muzzleX, cy + 21, muzzleX + 5, cy + 18, MOUTH);
+        d.drawLine(muzzleX + 5, cy + 18, muzzleX + 8, cy + 18, MOUTH);
+    }
 
     if (playing)
     {

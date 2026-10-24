@@ -53,6 +53,7 @@ This checklist is intended for the ESP32-WROOM-32 + ILI9341 TFT + DS3231 RTC tar
 - [ ] Confirm Work → Play → Work transitions occur at the configured durations. Allow enough time for the configured session duration; do not infer timing from a short observation.
 - [ ] Confirm energy remains within 0–100 and changes at the documented mode-specific rates.
 - [ ] Confirm Pashmak, Mochi, and Pixel have distinguishable message/personality profiles.
+- [ ] Observe focused, curious, excited, tired, and exhausted moods on the TFT; confirm eyebrow/eye/mouth cues change without clipping or leaving drawing artifacts.
 - [ ] Confirm spontaneous messages appear and expire, returning to the current mode's baseline message.
 - [ ] With a valid RTC, observe time-aware messages/reminders at relevant hours and confirm they expire back to the current pet message.
 - [ ] Check that display updates remain responsive while dashboard requests and CSV exports are being served.

@@ -57,7 +57,7 @@ checks = {
     "dashboard exposes bond meter and interaction button": 'id="pet-bond-progress"' in web and 'id="pet-interact"' in web,
     "dashboard validates bond range and selected-pet consistency": "Number.isInteger(Number(p.bond))" in js and "Number(data.pet.bond)!==Number(selected.bond)" in js,
     "dashboard POSTs interaction and handles cooldown": "fetch('/api/pet/interact',{method:'POST'" in js and "response.status===429" in js,
-    "quiet hours are passed to both behavior and RTC reminder paths": "update(_mode, now, currentHour, quietHours)" in app and "_rtc.update(now, quietHours)" in app,
+    "quiet hours and configured intervals are passed to the RTC reminder path": "update(_mode, now, currentHour, quietHours)" in app and "_rtc.update(" in app and "_reminderSettings.waterMinutes, _reminderSettings.movementMinutes" in app,
     "quiet-hours endpoints are registered": '_server.on("/api/quiet-hours", HTTP_GET' in web and '_server.on("/api/quiet-hours", HTTP_POST' in web,
     "quiet-hours API validates distinct hour bounds": "startHour == endHour" in quiet_post and "startHour > 23 || endHour > 23" in quiet_post,
     "quiet-hours settings are persisted in a versioned blob": '_statsPreferences.putBytes("quietCfg", &stored, sizeof(stored))' in quiet_setter and 'stored.version != 1' in quiet_load,

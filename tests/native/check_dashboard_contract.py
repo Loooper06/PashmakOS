@@ -8,6 +8,7 @@ web = (ROOT / "src" / "web" / "WebDashboard.cpp").read_text(encoding="utf-8")
 header = (ROOT / "src" / "web" / "WebDashboard.h").read_text(encoding="utf-8")
 app = (ROOT / "src" / "app" / "PashmakApp.cpp").read_text(encoding="utf-8")
 
+
 def function_body(source: str, signature: str, next_signature: str) -> str:
     start = source.find(signature)
     end = source.find(next_signature, start + len(signature))
@@ -15,9 +16,11 @@ def function_body(source: str, signature: str, next_signature: str) -> str:
         raise SystemExit(f"Could not isolate function: {signature}")
     return source[start:end]
 
+
 stats = function_body(web, "void WebDashboard::handleStats()", "void WebDashboard::handlePetSelection()")
 select = function_body(web, "void WebDashboard::handlePetSelection()", "void WebDashboard::handleNotFound()")
 setter = function_body(app, "bool PashmakApp::setActivePet(", "uint8_t PashmakApp::activePetId()")
+begin = function_body(app, "void PashmakApp::begin()", "void PashmakApp::setMode(")
 client = re.search(r"<script>\s*(.*?)\s*</script>", web, flags=re.DOTALL)
 if not client:
     raise SystemExit("Embedded dashboard script block not found")
@@ -33,6 +36,8 @@ checks = {
     "successful selection returns JSON acknowledgement": '_server.send(200, "application/json", "{\\\"ok\\\":true}")' in select,
     "app setter rejects out-of-range pet IDs": "if (petId >= PET_COUNT)" in setter and "return false;" in setter,
     "app setter persists valid selection when Preferences are ready": '_statsPreferences.putUChar("activePet", _activePetId)' in setter,
+    "stored active-pet ID is loaded with a safe default": '_statsPreferences.getUChar("activePet", 0)' in begin,
+    "invalid stored active-pet ID falls back to pet 0 before use": "if (_activePetId >= 3) _activePetId = 0;" in begin and begin.find("if (_activePetId >= 3) _activePetId = 0;") < begin.find("_renderer.draw("),
     "dashboard POSTs selection and checks HTTP status": "fetch('/api/pet/select',{method:'POST'" in js and "if(!response.ok)throw new Error('HTTP '+response.status)" in js,
     "dashboard times out statistics requests": "setTimeout(()=>controller.abort(),5000)" in js,
     "dashboard validates payload before rendering": "if(!isValidStats(data))throw new Error('Invalid statistics payload')" in js,

@@ -50,9 +50,10 @@ Acceptance: no new physical-display flicker/frame stalls; reminders and messages
 - [x] Persist each pet's energy in a versioned Preferences blob; validate schema version, record count, stable pet IDs, and energy range, with safe defaults on invalid data.
 - [x] Bound profile persistence to one blob write per minute, independent of the number of pets.
 - [ ] Verify per-pet energy survives reboot and invalid profile data safely falls back on physical hardware.
-2. Validate selected pet IDs on load and API requests.
-3. Decide/document whether lifetime totals are global or per-pet; current lifetime and history counters remain global and are intentionally unchanged.
-4. Add migration/version handling before changing Preferences layouts; profile storage starts at version 1 and existing statistics/history keys are untouched.
+- [x] Add source-level regression coverage that an invalid persisted active-pet ID falls back to pet 0 before renderer access; API selection range checks are also covered in CI.
+- [ ] Verify selected-pet persistence across reboot and invalid stored ID recovery on physical hardware.
+- Decide/document whether lifetime totals are global or per-pet; current lifetime and history counters remain global and are intentionally unchanged.
+- Add migration/version handling before changing Preferences layouts; profile storage starts at version 1 and existing statistics/history keys are untouched.
 Acceptance: intended state survives restart; invalid data falls back safely; no excessive flash writes.
 
 ## Phase 5 — Dashboard quality and API contract (in progress)

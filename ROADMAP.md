@@ -15,6 +15,7 @@ Target: ESP32-WROOM-32 + ILI9341 TFT (320x240 landscape), DS3231 RTC
 
 ## Phase 1 — Data integrity and runtime resilience (in progress)
 - [x] Shared JSON string escaping handles quotes, backslashes, common escapes, and remaining control bytes; native edge-case tests cover UTF-8 preservation and null input.
+- [x] Persisted daily/monthly history rejects impossible calendar keys; native tests cover leap years, month lengths, and year/month bounds.
 - [x] Dashboard validates the versioned response, counters, selected-pet consistency, and calendar keys before rendering.
 - [x] Last valid dashboard snapshot survives request failures; requests time out and retries use bounded backoff.
 - [x] Behavior timing uses rollover-safe elapsed/deadline arithmetic and a wide energy-time accumulator.
@@ -64,7 +65,7 @@ Acceptance: documented schema; failures do not erase useful data; dashboard read
 Acceptance: no cloud dependency or undisclosed telemetry; reminders respect quiet hours.
 
 ## Phase 7 — Testability and release readiness
-1. Native host-side tests now cover energy rates/bounds, mode changes, millis() rollover, distinct message profiles, and spontaneous-message expiry. JSON serialization and statistics aggregation tests remain to be added.
+1. Native host-side tests cover energy rates/bounds, mode changes, millis() rollover, distinct message profiles, spontaneous-message expiry, JSON escaping, and history calendar validation. Full JSON serialization and statistics aggregation tests remain to be added.
 2. Add API contract checks and a documented serial smoke-test procedure.
 3. Document wiring, pin conflicts, first boot, AP credentials, RTC setup, and troubleshooting.
 4. Record measured RAM/flash usage and TFT frame timing.

@@ -553,7 +553,7 @@ void PetRenderer::drawFooter(Display &d, PetMode mode, uint8_t petId, const char
     // Reserve separate left/right zones so the build label and clock cannot
     // overwrite each other. The footer is fully cleared before each redraw.
     d.drawText("PashmakOS v0.1", 8, 228, 1, WHITE);
-    if (dateTime != nullptr && dateTime[0] != '\\0')
+    if (dateTime != nullptr && dateTime[0] != '\0')
     {
         constexpr size_t MAX_DATETIME_CHARS = 24;
         const size_t dateTimeLength = strlen(dateTime);

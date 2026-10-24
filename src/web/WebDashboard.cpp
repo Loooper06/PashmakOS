@@ -1,6 +1,7 @@
 #include "WebDashboard.h"
 #include "../app/PashmakApp.h"
 #include <WiFi.h>
+#include <esp_system.h>
 #include <Preferences.h>
 #include <cstring>
 namespace
@@ -147,6 +148,21 @@ footer{margin-top:18px;color:var(--muted);font-size:.82rem}
 <p class="muted">Allowed intervals: water 15–240 minutes; movement 15–180 minutes, or 0 to disable.</p>
 <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:14px"><button id="reminder-save" type="button">Save reminder schedule</button><span id="reminder-status" class="muted" role="status" aria-live="polite">Loading saved settings…</span></div>
 </section>
+<section class="card section" aria-labelledby="diagnostics-heading">
+<h2 id="diagnostics-heading">System diagnostics</h2>
+<p class="muted">Live device health information. Values are read-only and are not stored in flash.</p>
+<div class="grid">
+<div class="card"><div class="label">Uptime</div><div id="diag-uptime" class="metric">—</div></div>
+<div class="card"><div class="label">Free heap</div><div id="diag-heap" class="metric">—</div></div>
+<div class="card"><div class="label">Minimum free heap</div><div id="diag-min-heap" class="metric">—</div></div>
+<div class="card"><div class="label">Largest heap block</div><div id="diag-max-block" class="metric">—</div></div>
+<div class="card"><div class="label">Free PSRAM</div><div id="diag-psram" class="metric">—</div></div>
+<div class="card"><div class="label">Connected clients</div><div id="diag-clients" class="metric">—</div></div>
+<div class="card"><div class="label">CPU frequency</div><div id="diag-cpu" class="metric">—</div></div>
+<div class="card"><div class="label">Reset reason code</div><div id="diag-reset" class="metric">—</div></div>
+</div>
+<div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap"><button id="diagnostics-refresh" type="button">Refresh diagnostics</button><span id="diagnostics-status" class="muted" role="status" aria-live="polite">Loading device health…</span></div>
+</section>
 <section class="card section" aria-labelledby="wifi-settings-heading">
 <h2 id="wifi-settings-heading">Wi-Fi access point</h2>
 <p class="muted">Set the network name and password for this device. Saving changes restarts the access point and disconnects this browser. Reconnect using the new credentials. Leave the password blank to keep the current password.</p>
@@ -255,6 +271,9 @@ if(!monthly.children.length)monthly.appendChild(row(['No monthly records yet','�
 $('export-daily').disabled=!(data.dailyHistory||[]).length;$('export-monthly').disabled=!(data.monthlyHistory||[]).length;}
 async function loadQuietHours(){try{const response=await fetch('/api/quiet-hours',{cache:'no-store'});if(!response.ok)throw new Error('HTTP '+response.status);const settings=await response.json();if(typeof settings.enabled!=='boolean'||!Number.isInteger(settings.startHour)||settings.startHour<0||settings.startHour>23||!Number.isInteger(settings.endHour)||settings.endHour<0||settings.endHour>23||settings.startHour===settings.endHour)throw new Error('Invalid quiet-hours payload');quietHoursSnapshot={enabled:settings.enabled,startHour:settings.startHour,endHour:settings.endHour};$('quiet-enabled').checked=settings.enabled;$('quiet-start').value=settings.startHour;$('quiet-end').value=settings.endHour;$('quiet-status').textContent='Loaded from device.'}catch(e){$('quiet-status').textContent='Could not load quiet hours · '+(e.message||'connection error')}}
 async function saveQuietHours(){const values={enabled:$('quiet-enabled').checked?1:0,startHour:Number($('quiet-start').value),endHour:Number($('quiet-end').value)};if(!Number.isInteger(values.startHour)||values.startHour<0||values.startHour>23||!Number.isInteger(values.endHour)||values.endHour<0||values.endHour>23||values.startHour===values.endHour){$('quiet-status').textContent='Choose different whole hours between 0 and 23.';return}const button=$('quiet-save');button.disabled=true;$('quiet-status').textContent='Saving…';try{const response=await fetch('/api/quiet-hours',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams(values)});if(!response.ok)throw new Error('HTTP '+response.status);quietHoursSnapshot={enabled:Boolean(values.enabled),startHour:values.startHour,endHour:values.endHour};$('quiet-status').textContent=values.enabled?'Saved · quiet hours are active immediately.':'Saved · quiet hours are disabled.'}catch(e){$('quiet-status').textContent='Save failed · '+(e.message||'connection error')}finally{button.disabled=false}}
+function formatBytes(value){if(!Number.isFinite(value)||value<0)return '—';if(value<1024)return value+' B';return (value/1024).toFixed(1)+' KB'}
+function formatUptime(seconds){if(!Number.isFinite(seconds)||seconds<0)return '—';const days=Math.floor(seconds/86400);const hours=Math.floor(seconds%86400/3600);const minutes=Math.floor(seconds%3600/60);const secs=Math.floor(seconds%60);return (days?days+'d ':'')+(hours?hours+'h ':'')+(minutes?minutes+'m ':'')+secs+'s'}
+async function loadDiagnostics(){const button=$('diagnostics-refresh');button.disabled=true;$('diagnostics-status').textContent='Reading device health…';try{const response=await fetch('/api/diagnostics',{cache:'no-store'});if(!response.ok)throw new Error('HTTP '+response.status);const d=await response.json();for(const key of ['uptimeSeconds','freeHeapBytes','minFreeHeapBytes','maxAllocHeapBytes','freePsramBytes','wifiClients','cpuMHz','resetReasonCode'])if(!Number.isFinite(d[key])||d[key]<0)throw new Error('Invalid diagnostics payload');$('diag-uptime').textContent=formatUptime(d.uptimeSeconds);$('diag-heap').textContent=formatBytes(d.freeHeapBytes);$('diag-min-heap').textContent=formatBytes(d.minFreeHeapBytes);$('diag-max-block').textContent=formatBytes(d.maxAllocHeapBytes);$('diag-psram').textContent=formatBytes(d.freePsramBytes);$('diag-clients').textContent=String(d.wifiClients);$('diag-cpu').textContent=d.cpuMHz+' MHz';$('diag-reset').textContent=String(d.resetReasonCode);$('diagnostics-status').textContent='Updated just now.'}catch(e){$('diagnostics-status').textContent='Diagnostics unavailable · '+(e.message||'connection error')}finally{button.disabled=false}}
 async function loadWifiSettings(){try{const response=await fetch('/api/wifi-settings',{cache:'no-store'});if(!response.ok)throw new Error('HTTP '+response.status);const settings=await response.json();if(typeof settings.ssid!=='string'||settings.ssid.length<1||settings.ssid.length>32||settings.passwordConfigured!==true)throw new Error('Invalid Wi-Fi settings payload');$('wifi-ssid').value=settings.ssid;$('wifi-status').textContent='Loaded from device. Password is not exposed by the API.'}catch(e){$('wifi-status').textContent='Could not load Wi-Fi settings · '+(e.message||'connection error')}}
 async function saveWifiSettings(){const ssid=$('wifi-ssid').value;const password=$('wifi-password').value;if(ssid.length<1||ssid.length>32||/[^\x20-\x7e]|["\\]/.test(ssid)){$('wifi-status').textContent='SSID must use 1–32 printable ASCII characters and cannot contain quotes or backslashes.';return}if(password.length>0&&(password.length<8||password.length>63||/[^\x20-\x7e]/.test(password))){$('wifi-status').textContent='Password must be 8–63 printable ASCII characters, or blank to keep the current password.';return}const button=$('wifi-save');button.disabled=true;$('wifi-status').textContent='Saving settings and restarting the access point…';try{const response=await fetch('/api/wifi-settings',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams({ssid,password})});if(!response.ok){const result=await response.json().catch(()=>({}));throw new Error(result.error||('HTTP '+response.status))}$('wifi-password').value='';$('wifi-status').textContent='Saved. Wi-Fi is restarting; reconnect using the configured SSID and password.'}catch(e){$('wifi-status').textContent='Save may have disconnected the browser. Reconnect to the configured network and reload if needed. '+(e.message||'')}finally{button.disabled=false}}
 async function loadReminderSettings(){try{const response=await fetch('/api/reminder-settings',{cache:'no-store'});if(!response.ok)throw new Error('HTTP '+response.status);const settings=await response.json();if(!Number.isInteger(settings.waterMinutes)||(settings.waterMinutes!==0&&(settings.waterMinutes<15||settings.waterMinutes>240))||!Number.isInteger(settings.movementMinutes)||(settings.movementMinutes!==0&&(settings.movementMinutes<15||settings.movementMinutes>180)))throw new Error('Invalid reminder settings payload');reminderSettingsSnapshot={waterMinutes:settings.waterMinutes,movementMinutes:settings.movementMinutes};$('reminder-water').value=settings.waterMinutes;$('reminder-movement').value=settings.movementMinutes;$('reminder-status').textContent='Loaded from device.'}catch(e){$('reminder-status').textContent='Could not load reminder settings · '+(e.message||'connection error')}}
@@ -290,6 +309,8 @@ $('pet-interact').addEventListener('click',interactWithPet);
 $('settings-save').addEventListener('click',saveTimerSettings);
 $('quiet-save').addEventListener('click',saveQuietHours);$('reminder-save').addEventListener('click',saveReminderSettings);
 $('wifi-save').addEventListener('click',saveWifiSettings);
+$('diagnostics-refresh').addEventListener('click',loadDiagnostics);
+loadDiagnostics();
 $('daily-goal-target').value=String(dailySessionGoal);$('daily-goal-target').addEventListener('change',saveDailyGoal);$('daily-goal-target').addEventListener('keydown',event=>{if(event.key==='Enter'){event.preventDefault();saveDailyGoal()}});
 loadTimerSettings();
 loadQuietHours();
@@ -328,6 +349,7 @@ void WebDashboard::begin(PashmakApp &app)
     _server.on("/api/quiet-hours", HTTP_POST, [this]() { handleQuietHoursPost(); });
     _server.on("/api/reminder-settings", HTTP_GET, [this]() { handleReminderSettingsGet(); });
     _server.on("/api/reminder-settings", HTTP_POST, [this]() { handleReminderSettingsPost(); });
+    _server.on("/api/diagnostics", HTTP_GET, [this]() { handleDiagnostics(); });
     _server.on("/api/wifi-settings", HTTP_GET, [this]() { handleWifiSettingsGet(); });
     _server.on("/api/wifi-settings", HTTP_POST, [this]() { handleWifiSettingsPost(); });
     _server.onNotFound([this]() { handleNotFound(); });
@@ -598,6 +620,23 @@ void WebDashboard::handleReminderSettingsPost()
     _server.sendHeader("Cache-Control", "no-store");
     _server.send(200, "application/json", "{\"ok\":true}");
 }
+void WebDashboard::handleDiagnostics()
+{
+    char response[256];
+    snprintf(response, sizeof(response),
+             "{\"uptimeSeconds\":%lu,\"freeHeapBytes\":%u,\"minFreeHeapBytes\":%u,\"maxAllocHeapBytes\":%u,\"freePsramBytes\":%u,\"wifiClients\":%u,\"cpuMHz\":%u,\"resetReasonCode\":%u}",
+             static_cast<unsigned long>(millis() / 1000UL),
+             static_cast<unsigned>(ESP.getFreeHeap()),
+             static_cast<unsigned>(ESP.getMinFreeHeap()),
+             static_cast<unsigned>(ESP.getMaxAllocHeap()),
+             static_cast<unsigned>(ESP.getFreePsram()),
+             static_cast<unsigned>(WiFi.softAPgetStationNum()),
+             static_cast<unsigned>(ESP.getCpuFreqMHz()),
+             static_cast<unsigned>(esp_reset_reason()));
+    _server.sendHeader("Cache-Control", "no-store");
+    _server.send(200, "application/json; charset=utf-8", response);
+}
+
 void WebDashboard::handleWifiSettingsGet()
 {
     char ssid[WIFI_AP_SSID_CAPACITY]{};

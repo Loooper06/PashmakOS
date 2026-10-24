@@ -50,6 +50,7 @@ private:
     PetMood _lastDogMood = PetMood::Focused;
     bool _lastAttentionActive = false;
     uint8_t _lastAttentionPhase = 255;
+    uint8_t _lastSleepEffectPhase = 255;
     int8_t _lastDogLeftEarX;
     int8_t _lastDogRightEarX;
 };

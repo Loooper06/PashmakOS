@@ -77,6 +77,45 @@ uint8_t PashmakApp::petBond(uint8_t petId) const
     return petId < PET_COUNT ? _petBond[petId] : 0;
 }
 
+PashmakApp::QuietHoursSettings PashmakApp::quietHoursSettings() const
+{
+    return _quietHours;
+}
+
+bool PashmakApp::setQuietHoursSettings(const QuietHoursSettings &settings)
+{
+    if (settings.startHour > 23 || settings.endHour > 23 ||
+        settings.startHour == settings.endHour)
+        return false;
+    if (!_statsReady)
+        return false;
+
+    QuietHoursStorage stored{};
+    stored.version = 1;
+    stored.settings = settings;
+    if (_statsPreferences.putBytes("quietCfg", &stored, sizeof(stored)) != sizeof(stored))
+    {
+        Serial.println("[QUIET] Failed to persist quiet hours.");
+        return false;
+    }
+    _quietHours = settings;
+    Serial.printf("[QUIET] %s, %02u:00-%02u:00.\n",
+                  _quietHours.enabled ? "Enabled" : "Disabled",
+                  _quietHours.startHour, _quietHours.endHour);
+    return true;
+}
+
+bool PashmakApp::isQuietHour(int8_t hour) const
+{
+    if (!_quietHours.enabled || hour < 0 || hour > 23 ||
+        _quietHours.startHour == _quietHours.endHour)
+        return false;
+
+    if (_quietHours.startHour < _quietHours.endHour)
+        return hour >= _quietHours.startHour && hour < _quietHours.endHour;
+    return hour >= _quietHours.startHour || hour < _quietHours.endHour;
+}
+
 PashmakApp::TimerSettings PashmakApp::timerSettings() const
 {
     return _timerSettings;
@@ -270,6 +309,7 @@ void PashmakApp::begin()
     }
 
     loadTimerSettings();
+    loadQuietHoursSettings();
     loadPetProfiles();
     for (uint8_t i = 0; i < PET_COUNT; ++i)
     {
@@ -381,6 +421,29 @@ void PashmakApp::loadTimerSettings()
     Serial.printf("[TIMER] Loaded settings: work=%u min, play=%u min, nap=%u min, long-rest every %u work sessions.\n",
                   _timerSettings.workMinutes, _timerSettings.playMinutes,
                   _timerSettings.napMinutes, _timerSettings.workCyclesBeforeLongRest);
+}
+
+void PashmakApp::loadQuietHoursSettings()
+{
+    _quietHours = QuietHoursSettings{};
+    if (!_statsReady)
+        return;
+
+    QuietHoursStorage stored{};
+    if (_statsPreferences.getBytesLength("quietCfg") != sizeof(stored) ||
+        _statsPreferences.getBytes("quietCfg", &stored, sizeof(stored)) != sizeof(stored) ||
+        stored.version != 1 || stored.settings.startHour > 23 ||
+        stored.settings.endHour > 23 ||
+        stored.settings.startHour == stored.settings.endHour)
+    {
+        Serial.println("[QUIET] Using default quiet hours (21:00-09:00).");
+        return;
+    }
+
+    _quietHours = stored.settings;
+    Serial.printf("[QUIET] Loaded %s, %02u:00-%02u:00.\n",
+                  _quietHours.enabled ? "enabled" : "disabled",
+                  _quietHours.startHour, _quietHours.endHour);
 }
 
 void PashmakApp::loadPetProfiles()
@@ -789,9 +852,9 @@ void PashmakApp::persistMonthlyHistory(uint32_t now, bool force)
     }
 }
 
-void PashmakApp::updateRtcReminder(uint32_t now)
+void PashmakApp::updateRtcReminder(uint32_t now, bool quietHours)
 {
-    const ReminderType reminder = _rtc.update(now);
+    const ReminderType reminder = _rtc.update(now, quietHours);
     if (reminder == ReminderType::None)
         return;
 
@@ -945,10 +1008,11 @@ void PashmakApp::update()
     if (_rtc.isAvailable())
         currentHour = static_cast<int8_t>(_rtc.now().hour());
 
+    const bool quietHours = isQuietHour(currentHour);
     for (uint8_t i = 0; i < PET_COUNT; ++i)
-        _behaviors[i].update(_mode, now, currentHour);
+        _behaviors[i].update(_mode, now, currentHour, quietHours);
     persistPetProfiles(now);
-    updateRtcReminder(now);
+    updateRtcReminder(now, quietHours);
 
     if (_reminderMessage != nullptr &&
         static_cast<uint32_t>(now - _reminderShownAt) >= Config::REMINDER_DISPLAY_DURATION_MS)

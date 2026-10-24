@@ -120,3 +120,8 @@ The `daily_csv` and `monthly_csv` commands print header rows and comma-separated
 ## System diagnostics API
 
 `GET /api/diagnostics` returns a non-persistent, read-only snapshot of runtime health. The response includes uptime in seconds, current/minimum free heap, largest allocatable heap block, free PSRAM, connected access-point clients, CPU frequency in MHz, and the ESP-IDF reset-reason code. Responses use `Cache-Control: no-store`. These values are live measurements; they are not a historical log and may change between requests. Reset-reason codes follow the ESP-IDF `esp_reset_reason()` enum for the target framework version.
+
+
+## Settings backup and restore
+
+The dashboard can export a versioned JSON backup containing timer-cycle settings, quiet-hours settings, and reminder intervals. Restore validates the file schema and all supported ranges before submitting values through the existing settings APIs. Because each settings group is persisted by its own endpoint, a network or storage error during restore can leave earlier groups restored; the UI reports this possibility. Files larger than 16 KiB are rejected. Wi-Fi SSID/password and activity history are intentionally excluded; the backup does not contain secrets or historical records.

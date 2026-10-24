@@ -155,7 +155,7 @@ void PetBehavior::update(PetMode mode, uint32_t now, int8_t hour, bool quietHour
 
     if (modeChanged || messageDue)
     {
-        selectMessage(mode, now, hour);
+        selectMessage(mode, now, hour, quietHours);
         updateMood(mode);
         _lastMode = mode;
         _lastMessageAt = now;

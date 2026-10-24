@@ -9,7 +9,7 @@ root = Path(__file__).resolve().parents[2]
 source = (root / "src" / "app" / "PashmakApp.cpp").read_text(encoding="utf-8")
 header = (root / "src" / "core" / "StatsJson.h").read_text(encoding="utf-8")
 method_start = source.find("String PashmakApp::statisticsToJson(")
-method_end = source.find("\\nvoid PashmakApp::begin()", method_start)
+method_end = source.find("\nvoid PashmakApp::begin()", method_start)
 if method_start < 0 or method_end < 0:
     raise SystemExit("statisticsToJson() implementation not found")
 method = source[method_start:method_end]
@@ -36,7 +36,7 @@ with tempfile.TemporaryDirectory(prefix="pashmak-stats-json-") as temp_dir:
     )
     if compile_result.returncode != 0:
         raise SystemExit(
-            "Statistics JSON fixture compilation failed:\\n"
+            "Statistics JSON fixture compilation failed:\n"
             + compile_result.stdout + compile_result.stderr
         )
     run_result = subprocess.run(
@@ -55,12 +55,12 @@ assert data["activePetId"] == 1
 assert len(data["pets"]) == 3
 assert data["pets"][0] == {
     "id": 0, "name": "Pashmak", "energy": 91, "mood": "happy",
-    "message": 'hello "friend"\\\\path\\nnext',
+    "message": 'hello "friend"\\path\nnext',
 }
-assert data["pets"][1]["message"] == "quiet\\tmode"
-assert data["pets"][2]["message"] == "control\\x01byte".replace("\\x01", "\\u0001")
+assert data["pets"][1]["message"] == "quiet\tmode"
+assert data["pets"][2]["message"] == "control\x01byte"
 assert data["pet"] == {
-    "energy": 64, "mood": "sleepy", "message": "quiet\\tmode"
+    "energy": 64, "mood": "sleepy", "message": "quiet\tmode"
 }
 assert data["totals"] == {
     "workMs": 9000000000, "playMs": 2000000000, "napMs": 300000000,

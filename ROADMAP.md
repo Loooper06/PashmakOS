@@ -54,6 +54,7 @@ Acceptance: intended state survives restart; invalid data falls back safely; no 
 - [x] Add stale-data status and bounded retry/backoff.
 - [x] Validate incoming statistics defensively and preserve the last valid snapshot.
 - [x] Quote CSV cells and neutralize formula-like values during export.
+- [x] Source review confirms responsive viewport/grid behavior, horizontally scrollable history tables, empty-state messages, and accessible pet-picker labels; activity trend and each duration bar now have assistive-technology labels.
 - [ ] Review mobile layout, accessible labels, empty states, and chart explanations on a phone.
 - [ ] Verify pet selection and history exports on a small screen.
 Acceptance: documented schema; failures do not erase useful data; dashboard readable on mobile.

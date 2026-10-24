@@ -23,7 +23,7 @@ The `stats` response is a single JSON object with `version: 1`. The dashboard va
 
 - `activePetId`: selected pet ID (0–2).
 - `pets`: exactly three pet profiles. Each profile has `id`, `name`, `energy` (0–100), `bond` (0–100), `mood`, and `message`.
-- `pet`: the selected pet's `energy`, `mood`, and `message`. This duplicates the selected profile for convenient dashboard rendering.
+- `pet`: the selected pet's `energy`, `mood`, and `message`. This duplicates the selected profile's `energy`, `bond`, `mood`, and `message` for convenient dashboard rendering.
 - `totals`: lifetime counters currently stored in Preferences.
 - `recent`: aggregate of the most recent available daily records, up to the requested number of days (the serial command currently requests 7; the dashboard requests 14).
 - `dailyHistory`: retained daily records, each with `dateKey` in `YYYYMMDD` format. The dashboard expects no more than 14 records.

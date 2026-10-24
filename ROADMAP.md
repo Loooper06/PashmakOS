@@ -26,9 +26,11 @@ Target: ESP32-WROOM-32 + ILI9341 TFT (320x240 landscape), DS3231 RTC
 Acceptance: valid API JSON for all message contents; intended energy rates; dashboard usable through brief disconnects; CI passes and hardware checks are recorded.
 
 ## Phase 2 — Behavior quality and pet personality
+
+Progress update (2026-10-24): the repeated time-aware-message case is fixed on `feature/pet-message-quality`; native regression coverage has been added. Full phase acceptance is still pending.
 1. Give each pet a distinct message pool/personality profile without duplicating the behavior engine.
 2. Add RTC time-aware, non-intrusive messages based on hour and current mode.
-3. Prevent repeated messages and overlapping spontaneous events/reminders.
+3. [x] Prevent the same RTC time-aware base message from repeating on consecutive message intervals; add a native regression test. Event/reminder overlap still needs a device-level review.
 4. Improve/document energy and mood thresholds.
 5. Add deterministic checks for timing, energy bounds, event expiry, and mode changes.
 Acceptance: no blocking delays, energy stays 0–100, no event spam, stable timing over millis() rollover.

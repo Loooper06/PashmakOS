@@ -73,6 +73,35 @@ namespace
         preferences.end();
         return written == sizeof(stored);
     }
+
+    constexpr char EVENT_LOG_NAMESPACE[] = "pashmak_log";
+    constexpr char EVENT_LOG_KEY[] = "evtlog";
+    constexpr uint8_t EVENT_LOG_VERSION = 1;
+    constexpr size_t EVENT_LOG_CAPACITY = 24;
+    enum EventCode : uint8_t { EVENT_BOOT=1, EVENT_AP_START_FAILED=2, EVENT_PET_SELECTED=3, EVENT_TIMER_SETTINGS_SAVED=4, EVENT_QUIET_HOURS_SAVED=5, EVENT_REMINDERS_SAVED=6, EVENT_WIFI_SETTINGS_SAVED=7 };
+    struct EventRecord { uint32_t sequence; uint32_t uptimeSeconds; uint8_t code; uint8_t detail; uint16_t reserved; };
+    struct StoredEventLog { uint8_t version; uint8_t nextIndex; uint8_t count; uint8_t reserved; uint32_t nextSequence; EventRecord records[EVENT_LOG_CAPACITY]; };
+    bool readEventLog(StoredEventLog &log) {
+        memset(&log, 0, sizeof(log)); log.version=EVENT_LOG_VERSION; log.nextSequence=1;
+        Preferences preferences;
+        if (!preferences.begin(EVENT_LOG_NAMESPACE, true)) return false;
+        const size_t size=preferences.getBytes(EVENT_LOG_KEY,&log,sizeof(log)); preferences.end();
+        if(size!=sizeof(log)||log.version!=EVENT_LOG_VERSION||log.nextIndex>=EVENT_LOG_CAPACITY||log.count>EVENT_LOG_CAPACITY||log.nextSequence==0){
+            memset(&log,0,sizeof(log));log.version=EVENT_LOG_VERSION;log.nextSequence=1;return false;
+        }
+        return true;
+    }
+    bool appendEvent(uint8_t code,uint8_t detail=0) {
+        StoredEventLog log{}; readEventLog(log);
+        EventRecord &record=log.records[log.nextIndex];record.sequence=log.nextSequence++;
+        if(log.nextSequence==0)log.nextSequence=1;
+        record.uptimeSeconds=millis()/1000UL;record.code=code;record.detail=detail;record.reserved=0;
+        log.nextIndex=static_cast<uint8_t>((log.nextIndex+1U)%EVENT_LOG_CAPACITY);
+        if(log.count<EVENT_LOG_CAPACITY)++log.count;
+        Preferences preferences;if(!preferences.begin(EVENT_LOG_NAMESPACE,false))return false;
+        const size_t written=preferences.putBytes(EVENT_LOG_KEY,&log,sizeof(log));preferences.end();return written==sizeof(log);
+    }
+
     const char DASHBOARD_HTML[] PROGMEM = R"HTML(
 <!doctype html>
 <html lang="en">
@@ -157,6 +186,12 @@ footer{margin-top:18px;color:var(--muted);font-size:.82rem}
 </div>
 <p class="muted">Allowed intervals: water 15–240 minutes; movement 15–180 minutes, or 0 to disable.</p>
 <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:14px"><button id="reminder-save" type="button">Save reminder schedule</button><span id="reminder-status" class="muted" role="status" aria-live="polite">Loading saved settings…</span></div>
+</section>
+<section class="card section" aria-labelledby="event-log-heading">
+<h2 id="event-log-heading">Recent event log</h2>
+<p class="muted">The latest 24 important events are retained across reboots. Frequent pet interactions are not logged to reduce flash writes.</p>
+<div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap"><button id="event-log-refresh" type="button">Refresh event log</button><span id="event-log-status" class="muted" role="status" aria-live="polite">Loading events…</span></div>
+<div id="event-log-list" style="display:grid;gap:8px;margin-top:12px"><p class="muted">Loading…</p></div>
 </section>
 <section class="card section" aria-labelledby="diagnostics-heading">
 <h2 id="diagnostics-heading">System diagnostics</h2>
@@ -287,6 +322,8 @@ async function fetchSettings(path){const response=await fetch(path,{cache:'no-st
 async function postSettings(path,values){const response=await fetch(path,{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams(values)});if(!response.ok)throw new Error(path+' returned HTTP '+response.status)}
 async function downloadSettingsBackup(){const button=$('backup-download');button.disabled=true;$('backup-status').textContent='Collecting saved settings…';try{const [timer,quietHours,reminders]=await Promise.all([fetchSettings('/api/timer-settings'),fetchSettings('/api/quiet-hours'),fetchSettings('/api/reminder-settings')]);const backup={format:'PashmakOS-settings-backup',schemaVersion:1,createdAt:new Date().toISOString(),settings:{timer,quietHours,reminders}};if(!validBackupSettings({schemaVersion:backup.schemaVersion,settings:backup.settings}))throw new Error('Device returned invalid settings');const blob=new Blob([JSON.stringify(backup,null,2)],{type:'application/json'});const url=URL.createObjectURL(blob);const link=document.createElement('a');link.href=url;link.download='pashmakos-settings-backup.json';document.body.appendChild(link);link.click();link.remove();URL.revokeObjectURL(url);$('backup-status').textContent='Backup downloaded. Wi-Fi credentials and activity history are not included.'}catch(e){$('backup-status').textContent='Backup failed · '+(e.message||'connection error')}finally{button.disabled=false}}
 async function restoreSettingsBackup(){if(!selectedBackupFile)return;const button=$('backup-restore');button.disabled=true;$('backup-status').textContent='Validating backup file…';try{if(selectedBackupFile.size>16384)throw new Error('File is too large (maximum 16 KB)');const backup=JSON.parse(await selectedBackupFile.text());if(backup.format!=='PashmakOS-settings-backup'||!validBackupSettings(backup))throw new Error('Unsupported backup or invalid setting values');if(!window.confirm('Restore timer, quiet-hours, and reminder settings from this file? Existing settings will be overwritten.'))return;const s=backup.settings;$('backup-status').textContent='Restoring settings…';await postSettings('/api/timer-settings',s.timer);await postSettings('/api/quiet-hours',{enabled:s.quietHours.enabled?1:0,startHour:s.quietHours.startHour,endHour:s.quietHours.endHour});await postSettings('/api/reminder-settings',s.reminders);await Promise.all([loadTimerSettings(),loadQuietHours(),loadReminderSettings()]);$('backup-status').textContent='Restore complete. Timer, quiet-hours, and reminder settings were saved.'}catch(e){$('backup-status').textContent='Restore failed; some earlier settings may already have been restored. '+(e.message||'invalid backup')}finally{button.disabled=!selectedBackupFile}}
+const EVENT_NAMES={1:'Device boot',2:'Wi-Fi access point failed to start',3:'Pet selected',4:'Timer settings saved',5:'Quiet hours saved',6:'Reminder settings saved',7:'Wi-Fi settings saved'};
+async function loadEventLog(){const button=$('event-log-refresh');button.disabled=true;$('event-log-status').textContent='Loading event history…';try{const response=await fetch('/api/events',{cache:'no-store'});if(!response.ok)throw new Error('HTTP '+response.status);const data=await response.json();if(!Array.isArray(data.events))throw new Error('Invalid event log response');const list=$('event-log-list');list.replaceChildren();if(data.events.length===0){const empty=document.createElement('p');empty.className='muted';empty.textContent='No events recorded yet.';list.appendChild(empty)}for(const item of data.events){if(!Number.isInteger(item.sequence)||!Number.isInteger(item.uptimeSeconds)||!Number.isInteger(item.code)||!Number.isInteger(item.detail))continue;const row=document.createElement('div');row.className='card';row.style.padding='10px 12px';const title=document.createElement('strong');title.textContent=EVENT_NAMES[item.code]||'Unknown event';const meta=document.createElement('div');meta.className='muted';meta.textContent='#'+item.sequence+' · uptime '+formatUptime(item.uptimeSeconds)+(item.code===3?' · pet '+item.detail:'');row.append(title,meta);list.appendChild(row)}$('event-log-status').textContent=data.events.length+' event(s) · newest first'}catch(e){$('event-log-status').textContent='Event log unavailable · '+(e.message||'connection error')}finally{button.disabled=false}}
 function formatBytes(value){if(!Number.isFinite(value)||value<0)return '—';if(value<1024)return value+' B';return (value/1024).toFixed(1)+' KB'}
 function formatUptime(seconds){if(!Number.isFinite(seconds)||seconds<0)return '—';const days=Math.floor(seconds/86400);const hours=Math.floor(seconds%86400/3600);const minutes=Math.floor(seconds%3600/60);const secs=Math.floor(seconds%60);return (days?days+'d ':'')+(hours?hours+'h ':'')+(minutes?minutes+'m ':'')+secs+'s'}
 async function loadDiagnostics(){const button=$('diagnostics-refresh');button.disabled=true;$('diagnostics-status').textContent='Reading device health…';try{const response=await fetch('/api/diagnostics',{cache:'no-store'});if(!response.ok)throw new Error('HTTP '+response.status);const d=await response.json();for(const key of ['uptimeSeconds','freeHeapBytes','minFreeHeapBytes','maxAllocHeapBytes','freePsramBytes','wifiClients','cpuMHz','resetReasonCode'])if(!Number.isFinite(d[key])||d[key]<0)throw new Error('Invalid diagnostics payload');$('diag-uptime').textContent=formatUptime(d.uptimeSeconds);$('diag-heap').textContent=formatBytes(d.freeHeapBytes);$('diag-min-heap').textContent=formatBytes(d.minFreeHeapBytes);$('diag-max-block').textContent=formatBytes(d.maxAllocHeapBytes);$('diag-psram').textContent=formatBytes(d.freePsramBytes);$('diag-clients').textContent=String(d.wifiClients);$('diag-cpu').textContent=d.cpuMHz+' MHz';$('diag-reset').textContent=String(d.resetReasonCode);$('diagnostics-status').textContent='Updated just now.'}catch(e){$('diagnostics-status').textContent='Diagnostics unavailable · '+(e.message||'connection error')}finally{button.disabled=false}}
@@ -329,6 +366,8 @@ $('settings-save').addEventListener('click',saveTimerSettings);
 $('quiet-save').addEventListener('click',saveQuietHours);$('reminder-save').addEventListener('click',saveReminderSettings);
 $('wifi-save').addEventListener('click',saveWifiSettings);
 $('diagnostics-refresh').addEventListener('click',loadDiagnostics);
+$('event-log-refresh').addEventListener('click',loadEventLog);
+loadEventLog();
 loadDiagnostics();
 $('daily-goal-target').value=String(dailySessionGoal);$('daily-goal-target').addEventListener('change',saveDailyGoal);$('daily-goal-target').addEventListener('keydown',event=>{if(event.key==='Enter'){event.preventDefault();saveDailyGoal()}});
 loadTimerSettings();
@@ -356,8 +395,10 @@ void WebDashboard::begin(PashmakApp &app)
     if (!apStarted)
     {
         Serial.println("[WEB] Failed to start Wi-Fi access point.");
+        appendEvent(EVENT_AP_START_FAILED);
         return;
     }
+    appendEvent(EVENT_BOOT);
     _server.on("/", HTTP_GET, [this]() { handleRoot(); });
     _server.on("/api/stats", HTTP_GET, [this]() { handleStats(); });
     _server.on("/api/pet/select", HTTP_POST, [this]() { handlePetSelection(); });
@@ -368,6 +409,7 @@ void WebDashboard::begin(PashmakApp &app)
     _server.on("/api/quiet-hours", HTTP_POST, [this]() { handleQuietHoursPost(); });
     _server.on("/api/reminder-settings", HTTP_GET, [this]() { handleReminderSettingsGet(); });
     _server.on("/api/reminder-settings", HTTP_POST, [this]() { handleReminderSettingsPost(); });
+    _server.on("/api/events", HTTP_GET, [this]() { handleEventLog(); });
     _server.on("/api/diagnostics", HTTP_GET, [this]() { handleDiagnostics(); });
     _server.on("/api/wifi-settings", HTTP_GET, [this]() { handleWifiSettingsGet(); });
     _server.on("/api/wifi-settings", HTTP_POST, [this]() { handleWifiSettingsPost(); });
@@ -410,6 +452,7 @@ void WebDashboard::handlePetSelection()
         _server.send(400, "application/json", "{\"error\":\"invalid pet id\"}");
         return;
     }
+    appendEvent(EVENT_PET_SELECTED, _app->activePetId());
     _server.send(200, "application/json", "{\"ok\":true}");
 }
 void WebDashboard::handlePetInteraction()
@@ -500,6 +543,7 @@ void WebDashboard::handleTimerSettingsPost()
         return;
     }
     _server.sendHeader("Cache-Control", "no-store");
+    appendEvent(EVENT_TIMER_SETTINGS_SAVED);
     _server.send(200, "application/json", "{\"ok\":true}");
 }
 void WebDashboard::handleQuietHoursGet()
@@ -572,6 +616,7 @@ void WebDashboard::handleQuietHoursPost()
         return;
     }
     _server.sendHeader("Cache-Control", "no-store");
+    appendEvent(EVENT_QUIET_HOURS_SAVED);
     _server.send(200, "application/json", "{\"ok\":true}");
 }
 void WebDashboard::handleReminderSettingsGet()
@@ -637,8 +682,28 @@ void WebDashboard::handleReminderSettingsPost()
         return;
     }
     _server.sendHeader("Cache-Control", "no-store");
+    appendEvent(EVENT_REMINDERS_SAVED);
     _server.send(200, "application/json", "{\"ok\":true}");
 }
+void WebDashboard::handleEventLog()
+{
+    StoredEventLog log{}; readEventLog(log);
+    String json; json.reserve(2200); json = "{\"events\":[";
+    bool first=true;
+    for(uint8_t i=0;i<log.count;++i){
+        const uint8_t index=static_cast<uint8_t>((log.nextIndex+EVENT_LOG_CAPACITY-1U-i)%EVENT_LOG_CAPACITY);
+        const EventRecord &event=log.records[index];if(event.sequence==0||event.code==0)continue;
+        if(!first)json+=',';first=false;
+        char item[128];
+        snprintf(item,sizeof(item),"{\"sequence\":%lu,\"uptimeSeconds\":%lu,\"code\":%u,\"detail\":%u}",
+          static_cast<unsigned long>(event.sequence),static_cast<unsigned long>(event.uptimeSeconds),
+          static_cast<unsigned>(event.code),static_cast<unsigned>(event.detail));
+        json+=item;
+    }
+    json+="]}";_server.sendHeader("Cache-Control","no-store");
+    _server.send(200,"application/json; charset=utf-8",json);
+}
+
 void WebDashboard::handleDiagnostics()
 {
     char response[256];
@@ -719,6 +784,7 @@ void WebDashboard::handleWifiSettingsPost()
         return;
     }
 
+    appendEvent(EVENT_WIFI_SETTINGS_SAVED);
     _server.sendHeader("Cache-Control", "no-store");
     _server.send(200, "application/json; charset=utf-8", "{\"ok\":true,\"restarting\":true}");
     delay(700);

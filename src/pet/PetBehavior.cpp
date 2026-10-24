@@ -139,18 +139,25 @@ void PetBehavior::updateEnergy(PetMode mode, uint32_t now)
         delta = 1;
     }
 
-    while (_energyRemainderMs >= stepMs)
+    // Use a wider accumulator so a delayed update cannot overflow when
+    // elapsed time is large (for example after a long pause or debugger stop).
+    const uint64_t accumulatedMs =
+        static_cast<uint64_t>(_energyRemainderMs) + elapsed;
+    const uint64_t steps = accumulatedMs / stepMs;
+    _energyRemainderMs = static_cast<uint32_t>(accumulatedMs % stepMs);
+
+    if (delta < 0)
     {
-        _energyRemainderMs -= stepMs;
-        if (delta < 0)
-        {
-            if (_state.energy > 0)
-                --_state.energy;
-        }
-        else if (_state.energy < 100)
-        {
-            ++_state.energy;
-        }
+        _state.energy = steps >= _state.energy
+                            ? 0
+                            : static_cast<uint8_t>(_state.energy - steps);
+    }
+    else
+    {
+        const uint8_t missingEnergy = static_cast<uint8_t>(100 - _state.energy);
+        _state.energy = steps >= missingEnergy
+                            ? 100
+                            : static_cast<uint8_t>(_state.energy + steps);
     }
 
     if ((_state.energy == 0 && delta < 0) ||

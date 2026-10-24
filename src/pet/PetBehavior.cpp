@@ -87,6 +87,7 @@ PetBehavior::PetBehavior(uint8_t personalityId)
       _eventActive(false),
       _interactionActive(false),
       _interactionUntil(0),
+      _interactionMessage(nullptr),
       _initialized(false)
 {
 }
@@ -104,6 +105,7 @@ void PetBehavior::begin(uint32_t now)
     _eventActive = false;
     _interactionActive = false;
     _interactionUntil = now;
+    _interactionMessage = nullptr;
     _eventUntil = now;
     _nextEventAt = now + EVENT_MIN_INTERVAL_MS;
     const MessageProfile &profile = PROFILES[_personalityId];
@@ -176,12 +178,7 @@ void PetBehavior::update(PetMode mode, uint32_t now, int8_t hour)
     if (_interactionActive)
     {
         // Keep the direct interaction reaction visible above spontaneous events.
-        switch (_personalityId)
-        {
-        case 1: _state.message = "Thanks for being here!"; break;
-        case 2: _state.message = "Bond++: friend detected!"; break;
-        default: _state.message = "Happy tail wag for you!"; break;
-        }
+        _state.message = _interactionMessage != nullptr ? _interactionMessage : _baseMessage;
     }
 }
 
@@ -355,9 +352,9 @@ void PetBehavior::interact(PetMode mode, uint32_t now, uint8_t bond)
     {
         switch (_personalityId)
         {
-        case 1: _state.message = "A gentle hello, friend."; break;
-        case 2: _state.message = "Quiet ping received."; break;
-        default: _state.message = "A soft hello back."; break;
+        case 1: _interactionMessage = "A gentle hello, friend."; break;
+        case 2: _interactionMessage = "Quiet ping received."; break;
+        default: _interactionMessage = "A soft hello back."; break;
         }
         _state.mood = PetMood::Happy;
         return;
@@ -365,10 +362,11 @@ void PetBehavior::interact(PetMode mode, uint32_t now, uint8_t bond)
 
     switch (_personalityId)
     {
-    case 1: _state.message = bond >= 70 ? "My favorite human!" : "Thanks for being here!"; break;
-    case 2: _state.message = bond >= 70 ? "Best-friend protocol!" : "Bond++: friend detected!"; break;
-    default: _state.message = bond >= 70 ? "You're my best friend!" : "Happy tail wag for you!"; break;
+    case 1: _interactionMessage = bond >= 70 ? "My favorite human!" : "Thanks for being here!"; break;
+    case 2: _interactionMessage = bond >= 70 ? "Best-friend protocol!" : "Bond++: friend detected!"; break;
+    default: _interactionMessage = bond >= 70 ? "You're my best friend!" : "Happy tail wag for you!"; break;
     }
+    _state.message = _interactionMessage;
     if (_state.energy > 30)
         _state.mood = PetMood::Excited;
     else if (_state.energy > 10)

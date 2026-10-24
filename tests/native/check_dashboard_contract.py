@@ -56,7 +56,7 @@ checks = {
     "pet interaction endpoint applies cooldown and returns 429": "_app->interactWithActivePet(millis())" in interaction and "_server.send(429" in interaction,
     "dashboard exposes bond meter and interaction button": 'id="pet-bond-progress"' in web and 'id="pet-interact"' in web,
     "dashboard shows bond relationship tier and next milestone": 'id="pet-bond-stage"' in web and 'id="pet-bond-next"' in web and "function bondTier(value)" in js,
-    "interaction acknowledgement reports the current bond tier": "tier.remaining+' more to '+tier.next" in js and "'maximum bond'" in js,
+    "interaction acknowledgement reports the current bond tier": "' · '+tier.remaining+' more to '+tier.next" in js and "'maximum bond'" in js,
     "dashboard validates bond range and selected-pet consistency": "Number.isInteger(Number(p.bond))" in js and "Number(data.pet.bond)!==Number(selected.bond)" in js,
     "dashboard POSTs interaction and handles cooldown": "fetch('/api/pet/interact',{method:'POST'" in js and "response.status===429" in js,
     "quiet hours and configured intervals are passed to the RTC reminder path": "update(_mode, now, currentHour, quietHours)" in app and "_rtc.update(" in app and "_reminderSettings.waterMinutes, _reminderSettings.movementMinutes" in app,

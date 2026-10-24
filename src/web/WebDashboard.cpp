@@ -127,13 +127,14 @@ button{border:1px solid var(--line);background:#292e3e;color:var(--text);padding
 .goal-layout{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:16px}.goal-progress{height:12px;background:var(--line);border-radius:99px;overflow:hidden;margin-top:12px}.goal-progress-fill{height:100%;width:0;background:linear-gradient(90deg,#8fe0d0,#b9a0ff);border-radius:99px;transition:width .25s}.goal-number{width:92px;border:1px solid var(--line);background:#11131b;color:var(--text);border-radius:10px;padding:10px;font:inherit}.goal-status{margin-top:10px;font-size:.9rem;color:var(--muted)}@media(max-width:480px){.goal-layout{grid-template-columns:1fr}.goal-number{width:100%}}
 .insight-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(165px,1fr));gap:10px}.comparison-delta{font-size:.82rem;margin-top:5px;font-weight:650}.comparison-positive{color:#8fe0d0}.comparison-negative{color:#ffbf86}.comparison-neutral{color:var(--muted)}.insight-card{background:#202432;border:1px solid var(--line);border-radius:13px;padding:13px;min-width:0}.insight-value{font-size:1.35rem;font-weight:700;margin-top:6px;overflow-wrap:anywhere}.insight-caption{font-size:.8rem;color:var(--muted);margin-top:4px}.insight-summary{margin:0 0 12px;color:var(--muted)}
 .achievement-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:10px}.achievement{display:flex;gap:12px;align-items:center;border:1px solid var(--line);background:#202432;border-radius:14px;padding:12px;min-width:0}.achievement-icon{display:grid;place-items:center;flex:0 0 44px;height:44px;border-radius:13px;background:#302b43;font-size:1.45rem}.achievement.unlocked .achievement-icon{background:#3d365b}.achievement.locked{opacity:.58}.achievement-copy{min-width:0}.achievement-title{font-weight:700}.achievement-description{color:var(--muted);font-size:.8rem}.achievement-state{font-size:.72rem;color:#8fe0d0;font-weight:700;margin-top:3px}.achievement.locked .achievement-state{color:var(--muted)}.bond-row{display:flex;align-items:center;gap:12px;flex-wrap:wrap}.bond-stage{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-top:8px}.bond-stage-name{font-weight:700;color:#d7caff}.bond-stage-next{font-size:.82rem;color:var(--muted)}.bond-track{height:9px;min-width:100px;flex:1;background:var(--line);border-radius:99px;overflow:hidden}.bond-fill{height:100%;width:0;background:linear-gradient(90deg,#8fe0d0,#b9a0ff);transition:width .25s}.bond-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap}.bond-actions button{background:#3b3156;border-color:#65518e}.bond-actions button:disabled{opacity:.55;cursor:wait}
+.setup-overlay{position:fixed;inset:0;z-index:1000;background:rgba(5,9,18,.78);display:flex;align-items:center;justify-content:center;padding:16px}.setup-overlay[hidden]{display:none}.setup-dialog{width:min(560px,100%);max-height:min(90vh,720px);overflow:auto;background:var(--card);border:1px solid var(--line);border-radius:18px;padding:22px;box-shadow:0 24px 80px rgba(0,0,0,.4)}.setup-progress{height:5px;background:#303746;border-radius:999px;overflow:hidden;margin:14px 0 20px}.setup-progress-fill{height:100%;width:0;background:var(--accent);transition:width .2s}.setup-actions{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-top:22px}.setup-actions>div{display:flex;gap:8px;flex-wrap:wrap}.setup-step-label{color:var(--muted);font-size:.85rem}.setup-link{background:transparent;border:1px solid var(--line)}
 @media(max-width:600px){main{padding:14px 10px 28px}header{align-items:flex-start;gap:10px;margin-bottom:14px}header>div:last-child{display:grid;grid-template-columns:1fr 1fr;align-items:center;gap:8px;width:100%}header .status{grid-column:1/-1}.grid>article[style*="grid-column:span 2"]{grid-column:1/-1!important}.card{padding:13px;border-radius:13px}.pet-picker{grid-template-columns:minmax(0,1fr);gap:8px}.pet-option{padding:11px;gap:10px}.trend-row{grid-template-columns:76px minmax(0,1fr);gap:8px}.settings-grid{grid-template-columns:minmax(0,1fr)}.bond-track{min-width:80px}button{min-height:44px}.table-wrap{max-width:100%}footer{overflow-wrap:anywhere}}@media(max-width:380px){h2{font-size:1rem}.metric{font-size:1.35rem}.pet-avatar{flex-basis:40px;height:40px}.trend-date{font-size:.75rem}.bond-actions{align-items:stretch;flex-direction:column}.bond-actions button{width:100%}}
 footer{margin-top:18px;color:var(--muted);font-size:.82rem}
 </style>
 </head>
 <body><main>
-<header><div><h1>PashmakOS</h1><div class="muted">Pet activity dashboard</div></div><div><span id="connection" class="status">Connecting…</span> <button id="export-json" type="button" disabled>Export JSON</button> <button id="refresh">Refresh</button></div></header>
-<section class="card section"><h2>Choose your pet</h2><div id="pet-picker" class="pet-picker" role="group" aria-label="Choose active pet"></div><div class="muted">Choose a companion to view its current energy, mood and message. Each pet has an independent behavior state.</div></section>
+<header><div><h1>PashmakOS</h1><div class="muted">Pet activity dashboard</div></div><div><span id="connection" class="status">Connecting…</span> <button id="setup-open" type="button" class="setup-link">Setup guide</button> <button id="export-json" type="button" disabled>Export JSON</button> <button id="refresh">Refresh</button></div></header>
+<section id="setup-pet-section" class="card section"><h2>Choose your pet</h2><div id="pet-picker" class="pet-picker" role="group" aria-label="Choose active pet"></div><div class="muted">Choose a companion to view its current energy, mood and message. Each pet has an independent behavior state.</div></section>
 <section class="card section" id="pet-status"><h2 id="pet-heading">Pet status</h2><div class="grid">
  <article><div class="label">Energy</div><div id="pet-energy" class="metric">—</div><div style="height:8px;background:var(--line);border-radius:99px;overflow:hidden;margin-top:10px"><div id="pet-energy-bar" style="height:100%;width:0%;background:var(--accent);transition:width .25s"></div></div></article>
  <article><div class="label">Mood</div><div id="pet-mood" class="metric">—</div></article>
@@ -156,7 +157,7 @@ footer{margin-top:18px;color:var(--muted);font-size:.82rem}
 </div>
 <p id="backup-status" class="muted" role="status" aria-live="polite">No backup file selected.</p>
 </section>
-<section class="card section" aria-labelledby="timer-settings-heading">
+<section id="setup-timer-section" class="card section" aria-labelledby="timer-settings-heading">
 <h2 id="timer-settings-heading">Focus cycle settings</h2>
 <p class="muted">Customize the automatic work and rest cycle. Changes apply immediately and are saved on the ESP32.</p>
 <div class="settings-grid">
@@ -167,7 +168,7 @@ footer{margin-top:18px;color:var(--muted);font-size:.82rem}
 </div>
 <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:14px"><button id="settings-save" type="button">Save settings</button><span id="settings-status" class="muted" role="status" aria-live="polite">Loading saved settings…</span></div>
 </section>
-<section class="card section" aria-labelledby="quiet-hours-heading">
+<section id="setup-quiet-section" class="card section" aria-labelledby="quiet-hours-heading">
 <h2 id="quiet-hours-heading">Quiet hours</h2>
 <p class="muted">Pause spontaneous pet messages and RTC reminders during your chosen hours. Uses the device's DS3231 clock.</p>
 <div class="settings-grid">
@@ -209,7 +210,7 @@ footer{margin-top:18px;color:var(--muted);font-size:.82rem}
 </div>
 <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap"><button id="diagnostics-refresh" type="button">Refresh diagnostics</button><span id="diagnostics-status" class="muted" role="status" aria-live="polite">Loading device health…</span></div>
 </section>
-<section class="card section" aria-labelledby="wifi-settings-heading">
+<section id="setup-wifi-section" class="card section" aria-labelledby="wifi-settings-heading">
 <h2 id="wifi-settings-heading">Wi-Fi access point</h2>
 <p class="muted">Set the network name and password for this device. Saving changes restarts the access point and disconnects this browser. Reconnect using the new credentials. Leave the password blank to keep the current password.</p>
 <div class="settings-grid">
@@ -271,8 +272,55 @@ footer{margin-top:18px;color:var(--muted);font-size:.82rem}
 <div id="ota-progress" class="muted" role="status" aria-live="polite" style="margin-top:10px">Choose a firmware binary to begin.</div>
 </section>
 <footer>Data is read from the ESP32's local statistics API. Keep this page open while connected to the PashmakOS Wi-Fi network.</footer>
+<div id="setup-overlay" class="setup-overlay" hidden>
+<section class="setup-dialog" role="dialog" aria-modal="true" aria-labelledby="setup-title" aria-describedby="setup-description">
+<div class="setup-step-label" id="setup-step-label">Step 1 of 4</div>
+<h2 id="setup-title">Welcome to PashmakOS</h2>
+<div class="setup-progress" role="progressbar" aria-label="Setup progress" aria-valuemin="0" aria-valuemax="4" aria-valuenow="1" id="setup-progress"><div id="setup-progress-fill" class="setup-progress-fill"></div></div>
+<p id="setup-description" class="muted">Let's configure your companion and focus routine. You can change these options later.</p>
+<div id="setup-detail" class="setup-detail"></div>
+<div class="setup-actions"><button id="setup-skip" type="button" class="setup-link">Skip for now</button><div><button id="setup-back" type="button" class="setup-link">Back</button><button id="setup-go" type="button" class="setup-link">Open this setting</button><button id="setup-next" type="button">Next</button></div></div>
+</section>
+</div>
 </main>
 <script>
+const setupSteps=[
+ {title:'Choose your companion',description:'Select Pashmak, Mochi, or Pixel in the pet section. The selected companion is used by the dashboard and device behavior.',target:'setup-pet-section',action:'Choose a pet'},
+ {title:'Set your focus cycle',description:'Review work and play durations and save the cycle settings to match your routine.',target:'setup-timer-section',action:'Configure focus cycle'},
+ {title:'Quiet hours and reminders',description:'Choose when messages should pause, then adjust water and movement reminder intervals if needed.',target:'setup-quiet-section',action:'Configure quiet hours'},
+ {title:'Secure your Wi-Fi access point',description:'Change the default access-point password before relying on the dashboard. Saving Wi-Fi settings restarts the access point and disconnects this browser.',target:'setup-wifi-section',action:'Secure Wi-Fi'}
+];
+let setupStep=0;
+function renderSetupStep(){
+ const step=setupSteps[setupStep];const total=setupSteps.length;
+ $('setup-step-label').textContent='Step '+(setupStep+1)+' of '+total;
+ $('setup-title').textContent=step.title;
+ $('setup-description').textContent=step.description;
+ $('setup-progress-fill').style.width=((setupStep+1)/total*100)+'%';
+ $('setup-progress').setAttribute('aria-valuenow',String(setupStep+1));
+ $('setup-back').disabled=setupStep===0;
+ $('setup-next').textContent=setupStep===total-1?'Finish setup':'Next';
+ $('setup-go').textContent=step.action;
+ $('setup-detail').textContent='This guide does not change settings automatically. Open the relevant section, make your choices, and use that section’s Save button.';
+}
+function openSetup(){
+ setupStep=0;renderSetupStep();$('setup-overlay').hidden=false;$('setup-next').focus();
+}
+function closeSetup(completed){
+ $('setup-overlay').hidden=true;
+ if(completed){try{localStorage.setItem('pashmakSetupWizardCompleted','1')}catch(e){}}
+}
+function initSetupWizard(){
+ $('setup-open').addEventListener('click',openSetup);
+ $('setup-skip').addEventListener('click',()=>closeSetup(false));
+ $('setup-back').addEventListener('click',()=>{if(setupStep>0){setupStep--;renderSetupStep()}});
+ $('setup-next').addEventListener('click',()=>{if(setupStep<setupSteps.length-1){setupStep++;renderSetupStep()}else closeSetup(true)});
+ $('setup-go').addEventListener('click',()=>{const target=$(setupSteps[setupStep].target);if(target){$('setup-overlay').hidden=true;target.scrollIntoView({behavior:'smooth',block:'start'});const heading=target.querySelector('h2');if(heading){heading.setAttribute('tabindex','-1');heading.focus({preventScroll:true})}}});
+ $('setup-overlay').addEventListener('click',event=>{if(event.target===$('setup-overlay'))closeSetup(false)});
+ document.addEventListener('keydown',event=>{if(event.key==='Escape'&&!$('setup-overlay').hidden)closeSetup(false)});
+ let completed=false;try{completed=localStorage.getItem('pashmakSetupWizardCompleted')==='1'}catch(e){}
+ if(!completed)openSetup();
+}
 const $=id=>document.getElementById(id);let snapshot=null;let timerSettingsSnapshot=null;let quietHoursSnapshot=null;let reminderSettingsSnapshot=null;let selectedDays=7;let refreshInFlight=false;let lastUpdatedAt=0;let dailySessionGoal=4;try{const savedGoal=Number(localStorage.getItem('pashmakDailySessionGoal'));if(Number.isInteger(savedGoal)&&savedGoal>=1&&savedGoal<=20)dailySessionGoal=savedGoal}catch(e){}
 const duration=ms=>{const mins=Math.floor(Number(ms||0)/60000);const d=Math.floor(mins/1440),h=Math.floor((mins%1440)/60),m=mins%60;return d?d+'d '+h+'h':h?h+'h '+m+'m':m+'m'};
 const dateLabel=n=>{const s=String(n);return s.length===8?s.slice(0,4)+'-'+s.slice(4,6)+'-'+s.slice(6,8):s};
@@ -406,6 +454,7 @@ $('backup-restore').addEventListener('click',restoreSettingsBackup);
 $('export-json').addEventListener('click',downloadJsonExport);
 $('pet-interact').addEventListener('click',interactWithPet);
 $('settings-save').addEventListener('click',saveTimerSettings);
+initSetupWizard();
 $('quiet-save').addEventListener('click',saveQuietHours);$('reminder-save').addEventListener('click',saveReminderSettings);
 $('wifi-save').addEventListener('click',saveWifiSettings);
 $('diagnostics-refresh').addEventListener('click',loadDiagnostics);

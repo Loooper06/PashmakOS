@@ -77,3 +77,15 @@ Record the firmware commit, board, test date/time, RTC status, observed serial o
 | Behavior transitions / energy | Pass / Fail |
 | RTC reminders | Pass / Fail |
 | Notes / logs | |
+
+
+## Per-pet persistence check
+
+1. Select each pet in turn and let its energy reach visibly different values; use the dashboard/API to record each value.
+2. Leave the device powered for at least 60 seconds after the last energy change so the versioned `petProfile` Preferences blob can be saved.
+3. Restart the ESP32 and confirm all three pet energy values are restored independently, and that the selected pet is restored as before.
+4. Confirm `[PET_PROFILE] Loaded version 1 energy for all pets.` appears on a valid saved profile and `[PET_PROFILE] Saved energy for all pets.` appears after a save interval.
+5. Confirm existing global work/play/nap totals and daily/monthly history remain unchanged by the profile-storage change.
+6. If testing malformed stored data, do so only with a deliberate test fixture; verify invalid version/count/ID/energy causes all pet energies to fall back to 80 rather than partially applying a profile.
+
+Profile writes are intentionally limited to one Preferences blob per minute. A sudden power loss may lose energy changes made since the most recent successful save; this is the trade-off used to bound NVS write frequency.

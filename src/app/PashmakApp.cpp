@@ -243,7 +243,7 @@ String PashmakApp::statisticsToJson(uint8_t recentDays) const
     {
         const PetBehaviorState &profile = _behaviors[i].state();
         pets[i] = StatsJson::Pet{
-            i, profile.energy, _petBond[i], petNames[i], moodName(profile.mood), profile.message};
+            i, profile.energy, profile.happiness, _petBond[i], petNames[i], moodName(profile.mood), profile.message};
     }
 
     const PetBehaviorState &active = _behaviors[_activePetId].state();
@@ -286,7 +286,7 @@ String PashmakApp::statisticsToJson(uint8_t recentDays) const
         _activePetId,
         pets,
         PET_COUNT,
-        StatsJson::Pet{_activePetId, active.energy, _petBond[_activePetId], nullptr, moodName(active.mood), active.message},
+        StatsJson::Pet{_activePetId, active.energy, active.happiness, _petBond[_activePetId], nullptr, moodName(active.mood), active.message},
         totals,
         recentView,
         daily,

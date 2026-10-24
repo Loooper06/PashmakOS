@@ -4,6 +4,7 @@
 #include <stdint.h>
 #include "../core/PetState.h"
 #include "PetBehavior.h"
+#include "PetEffectController.h"
 
 class Display;
 
@@ -52,6 +53,9 @@ private:
     uint8_t _lastAttentionPhase = 255;
     uint8_t _lastSleepEffectPhase = 255;
     uint8_t _lastMoodEffectPhase = 255;
+    PetVisualEffect _lastVisualEffect = PetVisualEffect::None;
+    uint8_t _lastEffectPhase = 255;
+    PetEffectController _effectController;
     int8_t _lastDogLeftEarX;
     int8_t _lastDogRightEarX;
 };

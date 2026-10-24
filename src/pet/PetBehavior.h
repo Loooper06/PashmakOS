@@ -27,7 +27,7 @@ public:
     explicit PetBehavior(uint8_t personalityId = 0);
 
     void begin(uint32_t now);
-    void update(PetMode mode, uint32_t now);
+    void update(PetMode mode, uint32_t now, int8_t hour = -1);
 
     const PetBehaviorState &state() const;
 
@@ -49,7 +49,7 @@ private:
     bool _eventActive;
     bool _initialized;
 
-    void selectMessage(PetMode mode, uint32_t now);
+    void selectMessage(PetMode mode, uint32_t now, int8_t hour);
     void updateEnergy(PetMode mode, uint32_t now);
     void updateMood(PetMode mode);
     void updateSpontaneousEvent(uint32_t now);

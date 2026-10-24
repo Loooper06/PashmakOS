@@ -74,6 +74,7 @@ Acceptance: documented schema; failures do not erase useful data; dashboard read
 3. [x] Derive lightweight focus insights from the latest seven retained daily records locally; do not transmit personal data.
    - Shows average daily focus, strongest focus day, days with recorded work, and completed sessions.
    - Values are derived from the existing statistics API; no new persistence fields or API schema changes.
+   - [x] Show a daily-goal streak using the browser's configured session target and consecutive recorded calendar days (history is limited to 14 days).
 4. Keep behavior local-first and document what is stored in Preferences.
 Acceptance: no cloud dependency or undisclosed telemetry; reminders respect quiet hours.
 

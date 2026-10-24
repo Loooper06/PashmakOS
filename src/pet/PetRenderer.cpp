@@ -195,13 +195,6 @@ void PetRenderer::drawMessage(Display &d, const char *message)
     if (message == nullptr)
         message = "";
 
-    if (_messageInitialized &&
-        _lastMessage != nullptr &&
-        strcmp(_lastMessage, message) == 0)
-    {
-        return;
-    }
-
     // Header layout: title on the left, status text in the middle,
     // and the decorative icon on the right. Built-in font is 6 px wide.
     constexpr int16_t MESSAGE_X = 142;
@@ -209,8 +202,6 @@ void PetRenderer::drawMessage(Display &d, const char *message)
     constexpr int16_t MESSAGE_W = 142;
     constexpr int16_t MESSAGE_H = 28;
     constexpr int16_t FONT_W = 6;
-
-    d.fillRect(MESSAGE_X, MESSAGE_Y, MESSAGE_W, MESSAGE_H, PANEL);
 
     // Keep status text within its reserved area, even for long messages.
     constexpr size_t MAX_MESSAGE_CHARS = (MESSAGE_W - 8) / FONT_W;
@@ -232,11 +223,18 @@ void PetRenderer::drawMessage(Display &d, const char *message)
     }
     visibleMessage[len] = '\0';
 
+    // Compare the rendered text, not the caller's pointer. Messages may
+    // reuse one mutable buffer while their contents change over time.
+    if (_messageInitialized && strcmp(_lastMessage, visibleMessage) == 0)
+        return;
+
+    d.fillRect(MESSAGE_X, MESSAGE_Y, MESSAGE_W, MESSAGE_H, PANEL);
+
     const int16_t textWidth = static_cast<int16_t>(len * FONT_W);
     const int16_t textX = MESSAGE_X + MESSAGE_W - 4 - textWidth;
     d.drawText(visibleMessage, textX, 9, 1, WHITE);
 
-    _lastMessage = message;
+    memcpy(_lastMessage, visibleMessage, len + 1);
     _messageInitialized = true;
 }
 
@@ -576,14 +574,30 @@ void PetRenderer::draw(Display &d, PetMode mode, uint32_t frame, uint8_t petId, 
         _initialized = true;
     }
 
-    const bool dateTimeChanged = dateTime != nullptr && strcmp(_lastDateTime, dateTime) != 0;
+    constexpr size_t MAX_DATETIME_CHARS = 24;
+    const char *visibleDateTime = dateTime;
+    size_t visibleDateTimeLength = dateTime != nullptr ? strlen(dateTime) : 0;
+    if (visibleDateTimeLength > MAX_DATETIME_CHARS)
+    {
+        visibleDateTime += visibleDateTimeLength - MAX_DATETIME_CHARS;
+        visibleDateTimeLength = MAX_DATETIME_CHARS;
+    }
+
+    const bool dateTimeChanged = dateTime == nullptr
+        ? _lastDateTime[0] != '\0'
+        : strlen(_lastDateTime) != visibleDateTimeLength ||
+          strncmp(_lastDateTime, visibleDateTime, visibleDateTimeLength) != 0;
     if (!_footerInitialized || mode != _lastMode || petId != _lastPetId || dateTimeChanged)
     {
         drawFooter(d, mode, petId, dateTime);
         if (dateTime != nullptr)
         {
-            strncpy(_lastDateTime, dateTime, sizeof(_lastDateTime) - 1);
-            _lastDateTime[sizeof(_lastDateTime) - 1] = '\0';
+            memcpy(_lastDateTime, visibleDateTime, visibleDateTimeLength);
+            _lastDateTime[visibleDateTimeLength] = '\0';
+        }
+        else
+        {
+            _lastDateTime[0] = '\0';
         }
         _lastMode = mode;
         _lastPetId = petId;

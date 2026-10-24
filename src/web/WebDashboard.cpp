@@ -75,6 +75,37 @@ namespace
         return written == sizeof(stored);
     }
 
+    constexpr char DASHBOARD_PREFS_NAMESPACE[] = "pashmak_dash";
+    constexpr char DAILY_GOAL_KEY[] = "dailyGoal";
+    constexpr uint8_t DASHBOARD_PREFS_VERSION = 1;
+    constexpr uint8_t DEFAULT_DAILY_SESSION_GOAL = 4;
+    struct StoredDashboardPreferences { uint8_t version; uint8_t dailySessionGoal; };
+    bool readDashboardPreferences(StoredDashboardPreferences &stored)
+    {
+        stored = {DASHBOARD_PREFS_VERSION, DEFAULT_DAILY_SESSION_GOAL};
+        Preferences preferences;
+        if (!preferences.begin(DASHBOARD_PREFS_NAMESPACE, true)) return false;
+        const size_t size = preferences.getBytes(DAILY_GOAL_KEY, &stored, sizeof(stored));
+        preferences.end();
+        if (size != sizeof(stored) || stored.version != DASHBOARD_PREFS_VERSION ||
+            stored.dailySessionGoal < 1 || stored.dailySessionGoal > 20)
+        {
+            stored = {DASHBOARD_PREFS_VERSION, DEFAULT_DAILY_SESSION_GOAL};
+            return false;
+        }
+        return true;
+    }
+    bool writeDashboardPreferences(uint8_t dailySessionGoal)
+    {
+        if (dailySessionGoal < 1 || dailySessionGoal > 20) return false;
+        StoredDashboardPreferences stored{DASHBOARD_PREFS_VERSION, dailySessionGoal};
+        Preferences preferences;
+        if (!preferences.begin(DASHBOARD_PREFS_NAMESPACE, false)) return false;
+        const size_t written = preferences.putBytes(DAILY_GOAL_KEY, &stored, sizeof(stored));
+        preferences.end();
+        return written == sizeof(stored);
+    }
+
     constexpr char EVENT_LOG_NAMESPACE[] = "pashmak_log";
     constexpr char EVENT_LOG_KEY[] = "evtlog";
     constexpr uint8_t EVENT_LOG_VERSION = 1;
@@ -377,7 +408,8 @@ function renderAchievements(data){
  metric('achievement-summary',unlocked+' of '+definitions.length+' achievements unlocked · '+pet.name+' progress');
 }
 function renderDailyGoal(data){const records=Array.isArray(data.dailyHistory)?data.dailyHistory:[];const latest=records.length?records[records.length-1]:null;const completed=latest?Number(latest.completedWorkSessions||0):0;const goal=dailySessionGoal;const progress=Math.min(100,Math.round(completed/goal*100));$('daily-goal-target').value=String(goal);metric('daily-goal-count',completed+' / '+goal+' sessions');$('daily-goal-fill').style.width=progress+'%';const bar=$('daily-goal-progress');bar.setAttribute('aria-valuemax',String(goal));bar.setAttribute('aria-valuenow',String(Math.min(completed,goal)));if(!latest){$('daily-goal-status').textContent='No daily activity recorded yet.';return}const date=dateLabel(latest.dateKey);$('daily-goal-status').textContent=completed>=goal?'Goal completed for '+date+' — great work!':(goal-completed)+' more completed session'+(goal-completed===1?'':'s')+' to reach the goal for '+date+'.'}
-function saveDailyGoal(){const value=Number($('daily-goal-target').value);if(!Number.isInteger(value)||value<1||value>20){$('daily-goal-status').textContent='Choose a goal between 1 and 20 sessions.';$('daily-goal-target').value=String(dailySessionGoal);return}dailySessionGoal=value;try{localStorage.setItem('pashmakDailySessionGoal',String(value))}catch(e){}if(snapshot)renderDailyGoal(snapshot);else $('daily-goal-status').textContent='Goal set. Waiting for activity data.'}
+async function saveDailyGoal(){const value=Number($('daily-goal-target').value);if(!Number.isInteger(value)||value<1||value>20){$('daily-goal-status').textContent='Choose a goal between 1 and 20 sessions.';$('daily-goal-target').value=String(dailySessionGoal);return}const button=$('daily-goal-save');if(button)button.disabled=true;$('daily-goal-status').textContent='Saving goal to device…';try{const response=await fetch('/api/dashboard-settings',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:'dailySessionGoal='+encodeURIComponent(String(value)),cache:'no-store'});const result=await response.json();if(!response.ok)throw new Error(result.error||('HTTP '+response.status));dailySessionGoal=result.dailySessionGoal;try{localStorage.setItem('pashmakDailySessionGoal',String(dailySessionGoal))}catch(e){}if(snapshot)renderDailyGoal(snapshot);else $('daily-goal-status').textContent='Goal saved on device.'}catch(e){$('daily-goal-status').textContent='Could not save goal to device · '+(e.message||'connection error')}finally{if(button)button.disabled=false}}
+async function loadDailyGoalFromDevice(){try{const response=await fetch('/api/dashboard-settings',{cache:'no-store'});if(!response.ok)throw new Error('HTTP '+response.status);const settings=await response.json();if(settings.schemaVersion!==1||!Number.isInteger(settings.dailySessionGoal)||settings.dailySessionGoal<1||settings.dailySessionGoal>20)throw new Error('Invalid settings payload');dailySessionGoal=settings.dailySessionGoal;try{localStorage.setItem('pashmakDailySessionGoal',String(dailySessionGoal))}catch(e){}const input=$('daily-goal-target');if(input)input.value=String(dailySessionGoal);if(snapshot)renderDailyGoal(snapshot)}catch(e){$('daily-goal-status').textContent='Using browser-cached goal; device settings unavailable.'}}
 function downloadCsv(filename,headers,records){const quote=value=>{let text=String(value??'');if(/^[\s\u0000-\u001f]*[=+@-]/.test(text))text="'"+text;return '"'+text.replace(/"/g,'""')+'"'};const csv=[headers,...records].map(record=>record.map(quote).join(',')).join('\r\n');const blob=new Blob(['\ufeff',csv],{type:'text/csv;charset=utf-8;'});const url=URL.createObjectURL(blob);const link=document.createElement('a');link.href=url;link.download=filename;document.body.appendChild(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),1000)}
 function downloadJsonExport(){if(!snapshot)return;const payload={schemaVersion:1,exportedAt:new Date().toISOString(),source:'PashmakOS local dashboard',dailySessionGoal,settings:{timer:timerSettingsSnapshot,quietHours:quietHoursSnapshot,reminders:reminderSettingsSnapshot},statistics:snapshot};const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json;charset=utf-8'});const url=URL.createObjectURL(blob);const link=document.createElement('a');link.href=url;link.download='pashmakos-export-'+new Date().toISOString().replace(/[:.]/g,'-')+'.json';document.body.appendChild(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),1000)}
 function row(values){const tr=document.createElement('tr');values.forEach(v=>{const td=document.createElement('td');td.textContent=v;tr.appendChild(td)});return tr}
@@ -537,7 +569,7 @@ otaButton.addEventListener('click',()=>{
 });
 loadDiagnostics();
 $('daily-goal-target').value=String(dailySessionGoal);$('daily-goal-target').addEventListener('change',saveDailyGoal);$('daily-goal-target').addEventListener('keydown',event=>{if(event.key==='Enter'){event.preventDefault();saveDailyGoal()}});
-loadTimerSettings();
+loadDailyGoalFromDevice();loadTimerSettings();
 loadTimerStatus();
 loadQuietHours();
 loadReminderSettings();
@@ -586,6 +618,8 @@ void WebDashboard::begin(PashmakApp &app)
     _server.on("/api/diagnostics", HTTP_GET, [this]() { handleDiagnostics(); });
     _server.on("/api/wifi-settings", HTTP_GET, [this]() { handleWifiSettingsGet(); });
     _server.on("/api/wifi-settings", HTTP_POST, [this]() { handleWifiSettingsPost(); });
+    _server.on("/api/dashboard-settings", HTTP_GET, [this]() { handleDashboardSettingsGet(); });
+    _server.on("/api/dashboard-settings", HTTP_POST, [this]() { handleDashboardSettingsPost(); });
     _server.onNotFound([this]() { handleNotFound(); });
     _server.begin();
     _started = true;
@@ -964,6 +998,53 @@ void WebDashboard::handleDiagnostics()
              static_cast<unsigned>(esp_reset_reason()));
     _server.sendHeader("Cache-Control", "no-store");
     _server.send(200, "application/json; charset=utf-8", response);
+}
+
+void WebDashboard::handleDashboardSettingsGet()
+{
+    StoredDashboardPreferences settings{};
+    readDashboardPreferences(settings);
+    char response[64];
+    snprintf(response, sizeof(response), "{\"schemaVersion\":%u,\"dailySessionGoal\":%u}",
+             static_cast<unsigned>(settings.version), static_cast<unsigned>(settings.dailySessionGoal));
+    _server.sendHeader("Cache-Control", "no-store");
+    _server.send(200, "application/json; charset=utf-8", response);
+}
+void WebDashboard::handleDashboardSettingsPost()
+{
+    if (!_server.hasArg("dailySessionGoal"))
+    {
+        _server.send(400, "application/json", "{\"error\":\"missing dailySessionGoal\"}");
+        return;
+    }
+    const String value = _server.arg("dailySessionGoal");
+    if (value.length() == 0 || value.length() > 2)
+    {
+        _server.send(400, "application/json", "{\"error\":\"dailySessionGoal must be an integer from 1 to 20\"}");
+        return;
+    }
+    for (size_t i = 0; i < value.length(); ++i)
+    {
+        if (value[i] < '0' || value[i] > '9')
+        {
+            _server.send(400, "application/json", "{\"error\":\"dailySessionGoal must be an integer from 1 to 20\"}");
+            return;
+        }
+    }
+    const long goal = value.toInt();
+    if (goal < 1 || goal > 20)
+    {
+        _server.send(400, "application/json", "{\"error\":\"dailySessionGoal must be an integer from 1 to 20\"}");
+        return;
+    }
+    if (!writeDashboardPreferences(static_cast<uint8_t>(goal)))
+    {
+        _server.send(500, "application/json", "{\"error\":\"could not persist dashboard settings\"}");
+        return;
+    }
+    _server.sendHeader("Cache-Control", "no-store");
+    _server.send(200, "application/json; charset=utf-8",
+                 String("{\"schemaVersion\":1,\"dailySessionGoal\":") + String(goal) + "}");
 }
 
 void WebDashboard::handleWifiSettingsGet()

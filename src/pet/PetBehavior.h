@@ -35,6 +35,7 @@ private:
     uint8_t _personalityId;
     PetBehaviorState _state;
     const char *_baseMessage;
+    const char *_lastBaseMessage;
 
     PetMode _lastMode;
     uint32_t _lastMessageAt;

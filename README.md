@@ -63,7 +63,7 @@ Open the serial monitor at **115200 baud**. Supported commands are documented in
 
 ## Hardware validation and release status
 
-The v1.0.0 release notes are recorded in [CHANGELOG.md](CHANGELOG.md), and the project version is tracked in [VERSION](VERSION). The firmware build and automated host-side checks passed in GitHub Actions. The project owner also reported that all checks in the [hardware smoke-test checklist](docs/HARDWARE_SMOKE_TEST.md) passed. CI alone cannot verify physical TFT behavior, RTC accuracy, Wi-Fi recovery, or persistence after power interruption.
+The v1.0.0 release notes are recorded in [CHANGELOG.md](CHANGELOG.md), and the project version is tracked in [VERSION](VERSION). The project owner confirmed that the latest CI build and device test succeeded. The [hardware smoke-test checklist](docs/HARDWARE_SMOKE_TEST.md) remains the source of truth for recording individual scenarios and timing measurements; unchecked items must not be treated as verified. CI alone cannot verify physical TFT behavior, RTC accuracy, Wi-Fi recovery, or persistence after power interruption.
 
 See [ROADMAP.md](ROADMAP.md) for remaining enhancements and performance measurements. Change the default access-point password before sharing or deploying the device.
 

@@ -196,14 +196,14 @@ void WebDashboard::handleTimerSettingsGet()
 {
     if (_app == nullptr)
     {
-        _server.send(503, "application/json", "{\\"error\\":\\"settings unavailable\\"}");
+        _server.send(503, "application/json", "{\"error\":\"settings unavailable\"}");
         return;
     }
 
     const PashmakApp::TimerSettings settings = _app->timerSettings();
     char json[128];
     snprintf(json, sizeof(json),
-             "{\\"workMinutes\\":%u,\\"playMinutes\\":%u,\\"napMinutes\\":%u,\\"workCyclesBeforeLongRest\\":%u}",
+             "{\"workMinutes\":%u,\"playMinutes\":%u,\"napMinutes\":%u,\"workCyclesBeforeLongRest\":%u}",
              settings.workMinutes, settings.playMinutes, settings.napMinutes,
              settings.workCyclesBeforeLongRest);
     _server.sendHeader("Cache-Control", "no-store");
@@ -214,7 +214,7 @@ void WebDashboard::handleTimerSettingsPost()
 {
     if (_app == nullptr)
     {
-        _server.send(503, "application/json", "{\\"error\\":\\"settings unavailable\\"}");
+        _server.send(503, "application/json", "{\"error\":\"settings unavailable\"}");
         return;
     }
 
@@ -224,13 +224,13 @@ void WebDashboard::handleTimerSettingsPost()
     {
         if (!_server.hasArg(keys[i]))
         {
-            _server.send(400, "application/json", "{\\"error\\":\\"missing setting\\"}");
+            _server.send(400, "application/json", "{\"error\":\"missing setting\"}");
             return;
         }
         const String raw = _server.arg(keys[i]);
         if (raw.length() == 0 || raw.length() > 3)
         {
-            _server.send(400, "application/json", "{\\"error\\":\\"invalid setting\\"}");
+            _server.send(400, "application/json", "{\"error\":\"invalid setting\"}");
             return;
         }
         uint32_t parsed = 0;
@@ -238,7 +238,7 @@ void WebDashboard::handleTimerSettingsPost()
         {
             if (raw[j] < '0' || raw[j] > '9')
             {
-                _server.send(400, "application/json", "{\\"error\\":\\"invalid setting\\"}");
+                _server.send(400, "application/json", "{\"error\":\"invalid setting\"}");
                 return;
             }
             parsed = parsed * 10U + static_cast<uint32_t>(raw[j] - '0');
@@ -251,7 +251,7 @@ void WebDashboard::handleTimerSettingsPost()
         values[2] < 1 || values[2] > 120 ||
         values[3] < 1 || values[3] > 8)
     {
-        _server.send(400, "application/json", "{\\"error\\":\\"setting out of range\\"}");
+        _server.send(400, "application/json", "{\"error\":\"setting out of range\"}");
         return;
     }
 
@@ -262,12 +262,12 @@ void WebDashboard::handleTimerSettingsPost()
         static_cast<uint8_t>(values[3])};
     if (!_app->setTimerSettings(settings))
     {
-        _server.send(500, "application/json", "{\\"error\\":\\"could not persist settings\\"}");
+        _server.send(500, "application/json", "{\"error\":\"could not persist settings\"}");
         return;
     }
 
     _server.sendHeader("Cache-Control", "no-store");
-    _server.send(200, "application/json", "{\\"ok\\":true}");
+    _server.send(200, "application/json", "{\"ok\":true}");
 }
 
 void WebDashboard::handleNotFound()

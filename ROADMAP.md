@@ -23,6 +23,7 @@ Target: ESP32-WROOM-32 + ILI9341 TFT (320x240 landscape), DS3231 RTC
 - [x] Extract recent-day and monthly statistics aggregation into portable core helpers; native tests cover latest-N selection, full-range aggregation, empty/zero requests, missing months, and invalid month inputs.
 - [x] Extract the JSON encoder into a portable serializer shared by firmware and native tests; compile a fixture, parse its emitted JSON, and validate the complete payload shape, wide counters, and escaped message contents.
 - [ ] Complete a physical Wi-Fi disconnect/reconnect smoke test after the latest dashboard changes; procedure is documented in `docs/HARDWARE_SMOKE_TEST.md`.
+- [x] Add CI regression checks for the dashboard HTTP/API contract and client-side failure recovery.
 - [ ] Measure full-loop cadence under dashboard idle/request/export load using `[LOOP_TIMING]` reports; frame draw duration alone does not capture time spent serving network requests.
 Acceptance: valid API JSON for all message contents; intended energy rates; dashboard usable through brief disconnects; CI passes and hardware checks are recorded.
 
@@ -60,6 +61,7 @@ Acceptance: intended state survives restart; invalid data falls back safely; no 
 - [x] Validate incoming statistics defensively and preserve the last valid snapshot.
 - [x] Quote CSV cells and neutralize formula-like values during export.
 - [x] Source review confirms responsive viewport/grid behavior, horizontally scrollable history tables, empty-state messages, and accessible pet-picker labels; activity trend and each duration bar now have assistive-technology labels.
+- [x] Add native source-level regression checks for HTTP status codes, strict pet-ID validation, selection acknowledgement, request timeout, stale snapshot retention, bounded retries, and refresh overlap protection; run them in CI.
 - [ ] Review mobile layout, accessible labels, empty states, and chart explanations on a phone.
 - [ ] Verify pet selection and history exports on a small screen.
 Acceptance: documented schema; failures do not erase useful data; dashboard readable on mobile.

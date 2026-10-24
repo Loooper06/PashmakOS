@@ -64,3 +64,6 @@ jobs:
 
       - name: Check statistics JSON API contract
         run: python3 tests/native/check_stats_api.py
+
+      - name: Check dashboard HTTP/API contract
+        run: python3 tests/native/check_dashboard_contract.py

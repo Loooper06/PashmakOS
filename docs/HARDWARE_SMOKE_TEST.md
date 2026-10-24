@@ -39,11 +39,13 @@ This checklist is intended for the ESP32-WROOM-32 + ILI9341 TFT + DS3231 RTC tar
 
 1. Connect a phone or computer to the device AP documented in `docs/STATISTICS_API.md`, then open `http://192.168.4.1/`.
 2. Confirm the page loads, current pet selection matches serial `stats`, and totals/history/chart data appear.
-3. Change the selected pet and confirm the visible pet details update without an inconsistent API snapshot.
-4. Export daily and monthly CSV files; open them in a spreadsheet or text editor and verify headers, dates, and numeric values.
-5. Temporarily disconnect the client from the AP, wait through at least one refresh timeout, reconnect, and reload or wait for refresh.
-6. Confirm the UI indicates stale/failed updates while disconnected and recovers to fresh data after reconnection. The last valid snapshot should not be replaced with empty or malformed data.
-7. Repeat with a browser on a narrow mobile viewport. Check for horizontal overflow, clipped controls, unreadable chart labels, and inaccessible buttons.
+3. Change the selected pet and confirm the visible pet details update without an inconsistent API snapshot; repeat for IDs 0, 1, and 2.
+4. Check `GET /api/stats` in browser developer tools: it should return HTTP 200, `Content-Type: application/json`, and `Cache-Control: no-store`.
+5. If a client capable of sending form POSTs is available, send `POST /api/pet/select` with form body `id=0`, `id=1`, and `id=2`; each should return HTTP 200 with `{"ok":true}`. Test missing `id`, `id=3`, `id=01`, and `id=abc`; each must return HTTP 400 and must not change the active pet. Do not treat source-level CI checks as a substitute for this device check.
+6. Export daily and monthly CSV files; open them in a spreadsheet or text editor and verify headers, dates, and numeric values.
+7. Temporarily disconnect the client from the AP, wait through at least one refresh timeout, reconnect, and reload or wait for refresh.
+8. Confirm the UI indicates stale/failed updates while disconnected and recovers to fresh data after reconnection. The last valid snapshot should not be replaced with empty or malformed data.
+9. Repeat with a browser on a narrow mobile viewport. Check for horizontal overflow, clipped controls, unreadable chart labels, and inaccessible buttons.
 
 **Pass criteria:** dashboard loads reliably, exports remain valid, temporary client disconnects do not erase the last valid snapshot, and a reconnect restores live updates. For loop timing, compare idle vs. refresh/export windows; investigate repeatable `maxGap` values at or above 100 ms and any increase in `overBudget`. These are investigation thresholds, not automatic proof of a visible fault.
 

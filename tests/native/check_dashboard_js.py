@@ -17,6 +17,11 @@ required_fragments = (
     r"new Blob(['\ufeff',csv]",
     "function isValidDateKey",
     "refreshRequested?250:retryDelay",
+    "pet-option-state",
+    "pet-option-energy-track",
+    "pet-option-energy-fill",
+    "Mood · '+mood",
+    "energyFill.style.width=energy+'%'",
 )
 for fragment in required_fragments:
     if fragment not in match.group(1):

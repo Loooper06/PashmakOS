@@ -14,6 +14,7 @@ First consolidated stable candidate after firmware integration, automated CI val
 - Configurable daily focus-session goal with progress feedback, completion status, and browser-local persistence.
 - Dashboard achievement badges for focus-session milestones, daily goal completion, and balanced activity.
 - Interactive pet bonding: personality-specific TFT reactions, per-pet bond progression (0–100), dashboard bond meter, and Preferences persistence with an 8-second per-pet cooldown.
+- Configurable quiet hours in the dashboard, with persistent start/end hours and suppression of spontaneous pet messages and RTC reminders.
 - CSV export and serial statistics/diagnostic commands.
 - Preferences/NVS persistence for counters and bounded history.
 - Native tests for behavior timing, calendar validation, statistics aggregation, and JSON serialization.

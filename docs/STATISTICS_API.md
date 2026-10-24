@@ -87,3 +87,11 @@ The `daily_csv` and `monthly_csv` commands print header rows and comma-separated
 - Each pet has an independent 8-second cooldown; requests during cooldown return HTTP 429 with `Retry-After: 8`. An unavailable app returns HTTP 503.
 - Bond is stored in ESP32 Preferences under a per-pet key and loaded after reboot. Each accepted interaction persists only that pet's bond value; the cooldown limits write frequency.
 - Reactions are temporary (about 6 seconds) and the pet's normal behavior message resumes afterward.
+
+## Quiet-hours API
+
+- `GET /api/quiet-hours`: returns `enabled`, `startHour`, and `endHour`.
+- `POST /api/quiet-hours` accepts URL-encoded `enabled` (`0` or `1`), `startHour`, and `endHour` fields. Hours are integers from 0 through 23; start and end must differ.
+- Quiet hours are persisted in the `petstats` Preferences namespace using a separate versioned blob; this does not alter the timer-settings or statistics schema. Invalid or incompatible saved settings fall back to enabled 21:00–09:00 quiet hours.
+- Quiet hours suppress spontaneous pet messages and RTC reminders, including clearing an already visible spontaneous event. Ranges that cross midnight are supported (for example, 21 to 9). With quiet hours disabled, the existing RTC daytime restriction is not applied.
+- Invalid requests return HTTP 400, persistence failures return HTTP 500, and an unavailable app returns HTTP 503. RTC-dependent behavior requires a working DS3231.

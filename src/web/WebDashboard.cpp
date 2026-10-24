@@ -60,6 +60,17 @@ footer{margin-top:18px;color:var(--muted);font-size:.82rem}
 </div>
 <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:14px"><button id="settings-save" type="button">Save settings</button><span id="settings-status" class="muted" role="status" aria-live="polite">Loading saved settings…</span></div>
 </section>
+<section class="card section" aria-labelledby="quiet-hours-heading">
+<h2 id="quiet-hours-heading">Quiet hours</h2>
+<p class="muted">Pause spontaneous pet messages and RTC reminders during your chosen hours. Uses the device's DS3231 clock.</p>
+<div class="settings-grid">
+<label style="display:flex;align-items:center;gap:10px"><input id="quiet-enabled" type="checkbox" checked> Enable quiet hours</label>
+<label>Start hour (0–23)<input id="quiet-start" type="number" min="0" max="23" value="21" inputmode="numeric"></label>
+<label>End hour (0–23)<input id="quiet-end" type="number" min="0" max="23" value="9" inputmode="numeric"></label>
+</div>
+<p class="muted">Hours are whole-hour boundaries; for example, 21 to 9 means 9 PM through 9 AM, including midnight.</p>
+<div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:14px"><button id="quiet-save" type="button">Save quiet hours</button><span id="quiet-status" class="muted" role="status" aria-live="polite">Loading saved settings…</span></div>
+</section>
 <section class="card section" aria-labelledby="daily-goal-heading">
 <h2 id="daily-goal-heading">Daily focus goal</h2>
 <div class="goal-layout"><div><div id="daily-goal-count" class="metric">— / 4 sessions</div><div class="goal-progress" role="progressbar" aria-label="Daily focus goal progress" aria-valuemin="0" aria-valuemax="4" aria-valuenow="0" id="daily-goal-progress"><div id="daily-goal-fill" class="goal-progress-fill"></div></div><div id="daily-goal-status" class="goal-status" role="status" aria-live="polite">Waiting for activity data…</div></div><label for="daily-goal-target" class="label">Target sessions<br><input id="daily-goal-target" class="goal-number" type="number" min="1" max="20" value="4" inputmode="numeric"></label></div>
@@ -98,6 +109,8 @@ if(!daily.children.length)daily.appendChild(row(['No daily records yet','—','�
 const monthly=$('monthly');monthly.replaceChildren();(data.monthlyHistory||[]).slice().reverse().forEach(m=>monthly.appendChild(row([monthLabel(m.monthKey),duration(m.workMs),duration(m.playMs),duration(m.napMs),m.completedWorkSessions])));
 if(!monthly.children.length)monthly.appendChild(row(['No monthly records yet','—','—','—','—']));
 $('export-daily').disabled=!(data.dailyHistory||[]).length;$('export-monthly').disabled=!(data.monthlyHistory||[]).length;}
+async function loadQuietHours(){try{const response=await fetch('/api/quiet-hours',{cache:'no-store'});if(!response.ok)throw new Error('HTTP '+response.status);const settings=await response.json();if(typeof settings.enabled!=='boolean'||!Number.isInteger(settings.startHour)||settings.startHour<0||settings.startHour>23||!Number.isInteger(settings.endHour)||settings.endHour<0||settings.endHour>23||settings.startHour===settings.endHour)throw new Error('Invalid quiet-hours payload');$('quiet-enabled').checked=settings.enabled;$('quiet-start').value=settings.startHour;$('quiet-end').value=settings.endHour;$('quiet-status').textContent='Loaded from device.'}catch(e){$('quiet-status').textContent='Could not load quiet hours · '+(e.message||'connection error')}}
+async function saveQuietHours(){const values={enabled:$('quiet-enabled').checked?1:0,startHour:Number($('quiet-start').value),endHour:Number($('quiet-end').value)};if(!Number.isInteger(values.startHour)||values.startHour<0||values.startHour>23||!Number.isInteger(values.endHour)||values.endHour<0||values.endHour>23||values.startHour===values.endHour){$('quiet-status').textContent='Choose different whole hours between 0 and 23.';return}const button=$('quiet-save');button.disabled=true;$('quiet-status').textContent='Saving…';try{const response=await fetch('/api/quiet-hours',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams(values)});if(!response.ok)throw new Error('HTTP '+response.status);$('quiet-status').textContent=values.enabled?'Saved · quiet hours are active immediately.':'Saved · quiet hours are disabled.'}catch(e){$('quiet-status').textContent='Save failed · '+(e.message||'connection error')}finally{button.disabled=false}}
 async function loadTimerSettings(){try{const response=await fetch('/api/timer-settings',{cache:'no-store'});if(!response.ok)throw new Error('HTTP '+response.status);const settings=await response.json();if(!Number.isInteger(settings.workMinutes)||settings.workMinutes<1||settings.workMinutes>180||!Number.isInteger(settings.playMinutes)||settings.playMinutes<1||settings.playMinutes>60||!Number.isInteger(settings.napMinutes)||settings.napMinutes<1||settings.napMinutes>120||!Number.isInteger(settings.workCyclesBeforeLongRest)||settings.workCyclesBeforeLongRest<1||settings.workCyclesBeforeLongRest>8)throw new Error('Invalid settings payload');$('setting-work').value=settings.workMinutes;$('setting-play').value=settings.playMinutes;$('setting-nap').value=settings.napMinutes;$('setting-cycles').value=settings.workCyclesBeforeLongRest;$('settings-status').textContent='Loaded from device.'}catch(e){$('settings-status').textContent='Could not load settings. Defaults are shown; try refresh.'}}
 async function saveTimerSettings(){const values={workMinutes:Number($('setting-work').value),playMinutes:Number($('setting-play').value),napMinutes:Number($('setting-nap').value),workCyclesBeforeLongRest:Number($('setting-cycles').value)};if(!Number.isInteger(values.workMinutes)||values.workMinutes<1||values.workMinutes>180||!Number.isInteger(values.playMinutes)||values.playMinutes<1||values.playMinutes>60||!Number.isInteger(values.napMinutes)||values.napMinutes<1||values.napMinutes>120||!Number.isInteger(values.workCyclesBeforeLongRest)||values.workCyclesBeforeLongRest<1||values.workCyclesBeforeLongRest>8){$('settings-status').textContent='Check the allowed ranges before saving.';return}const button=$('settings-save');button.disabled=true;$('settings-status').textContent='Saving…';try{const response=await fetch('/api/timer-settings',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams(values)});if(!response.ok)throw new Error('HTTP '+response.status);$('settings-status').textContent='Saved. New durations are active immediately.';await refresh()}catch(e){$('settings-status').textContent='Save failed · '+(e.message||'connection error')}finally{button.disabled=false}}
 function isCounter(value){return value!==null&&value!==undefined&&value!==''&&Number.isFinite(Number(value))&&Number(value)>=0}
@@ -126,8 +139,10 @@ async function refresh(){if(refreshInFlight){refreshRequested=true;return}refres
 $('refresh').addEventListener('click',refresh);
 $('pet-interact').addEventListener('click',interactWithPet);
 $('settings-save').addEventListener('click',saveTimerSettings);
+$('quiet-save').addEventListener('click',saveQuietHours);
 $('daily-goal-target').value=String(dailySessionGoal);$('daily-goal-target').addEventListener('change',saveDailyGoal);$('daily-goal-target').addEventListener('keydown',event=>{if(event.key==='Enter'){event.preventDefault();saveDailyGoal()}});
 loadTimerSettings();
+loadQuietHours();
 $('export-daily').disabled=true;$('export-monthly').disabled=true;$('export-daily').addEventListener('click',()=>{if(!snapshot?.dailyHistory?.length)return;const records=(snapshot?.dailyHistory||[]).map(d=>[dateLabel(d.dateKey),d.workMs,d.playMs,d.napMs,d.completedWorkSessions]);downloadCsv('pashmak-daily-history.csv',['Date','Work ms','Play ms','Nap ms','Completed sessions'],records)});
 $('export-monthly').addEventListener('click',()=>{if(!snapshot?.monthlyHistory?.length)return;const records=(snapshot?.monthlyHistory||[]).map(m=>[monthLabel(m.monthKey),m.workMs,m.playMs,m.napMs,m.completedWorkSessions]);downloadCsv('pashmak-monthly-history.csv',['Month','Work ms','Play ms','Nap ms','Completed sessions'],records)});
 document.querySelectorAll('[data-days]').forEach(b=>b.addEventListener('click',()=>{selectedDays=Number(b.dataset.days);if(snapshot)render(snapshot)}));refresh();
@@ -156,6 +171,8 @@ void WebDashboard::begin(PashmakApp &app)
     _server.on("/api/pet/interact", HTTP_POST, [this]() { handlePetInteraction(); });
     _server.on("/api/timer-settings", HTTP_GET, [this]() { handleTimerSettingsGet(); });
     _server.on("/api/timer-settings", HTTP_POST, [this]() { handleTimerSettingsPost(); });
+    _server.on("/api/quiet-hours", HTTP_GET, [this]() { handleQuietHoursGet(); });
+    _server.on("/api/quiet-hours", HTTP_POST, [this]() { handleQuietHoursPost(); });
     _server.onNotFound([this]() { handleNotFound(); });
     _server.begin();
     _started = true;
@@ -303,6 +320,82 @@ void WebDashboard::handleTimerSettingsPost()
         return;
     }
 
+    _server.sendHeader("Cache-Control", "no-store");
+    _server.send(200, "application/json", "{\"ok\":true}");
+}
+
+void WebDashboard::handleQuietHoursGet()
+{
+    if (_app == nullptr)
+    {
+        _server.send(503, "application/json", "{\"error\":\"settings unavailable\"}");
+        return;
+    }
+    const PashmakApp::QuietHoursSettings settings = _app->quietHoursSettings();
+    char json[80];
+    snprintf(json, sizeof(json), "{\"enabled\":%s,\"startHour\":%u,\"endHour\":%u}",
+             settings.enabled ? "true" : "false", settings.startHour, settings.endHour);
+    _server.sendHeader("Cache-Control", "no-store");
+    _server.send(200, "application/json; charset=utf-8", json);
+}
+
+void WebDashboard::handleQuietHoursPost()
+{
+    if (_app == nullptr)
+    {
+        _server.send(503, "application/json", "{\"error\":\"settings unavailable\"}");
+        return;
+    }
+    if (!_server.hasArg("enabled") || !_server.hasArg("startHour") || !_server.hasArg("endHour"))
+    {
+        _server.send(400, "application/json", "{\"error\":\"missing setting\"}");
+        return;
+    }
+
+    const String enabled = _server.arg("enabled");
+    const String start = _server.arg("startHour");
+    const String end = _server.arg("endHour");
+    if ((enabled != "0" && enabled != "1") || start.length() == 0 || start.length() > 2 ||
+        end.length() == 0 || end.length() > 2)
+    {
+        _server.send(400, "application/json", "{\"error\":\"invalid setting\"}");
+        return;
+    }
+    uint8_t startHour = 0;
+    uint8_t endHour = 0;
+    for (size_t i = 0; i < start.length(); ++i)
+    {
+        if (start[i] < '0' || start[i] > '9')
+        {
+            _server.send(400, "application/json", "{\"error\":\"invalid hour\"}");
+            return;
+        }
+        startHour = static_cast<uint8_t>(startHour * 10U + start[i] - '0');
+    }
+    for (size_t i = 0; i < end.length(); ++i)
+    {
+        if (end[i] < '0' || end[i] > '9')
+        {
+            _server.send(400, "application/json", "{\"error\":\"invalid hour\"}");
+            return;
+        }
+        endHour = static_cast<uint8_t>(endHour * 10U + end[i] - '0');
+    }
+    if (startHour > 23 || endHour > 23 || startHour == endHour)
+    {
+        _server.send(400, "application/json", "{\"error\":\"hours must differ and be between 0 and 23\"}");
+        return;
+    }
+
+    PashmakApp::QuietHoursSettings settings;
+    settings.enabled = enabled == "1";
+    settings.startHour = startHour;
+    settings.endHour = endHour;
+    if (!_app->setQuietHoursSettings(settings))
+    {
+        _server.send(500, "application/json", "{\"error\":\"could not persist settings\"}");
+        return;
+    }
     _server.sendHeader("Cache-Control", "no-store");
     _server.send(200, "application/json", "{\"ok\":true}");
 }

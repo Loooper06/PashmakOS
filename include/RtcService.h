@@ -16,7 +16,7 @@ class RtcService
 {
 public:
     bool begin();
-    ReminderType update(uint32_t nowMs);
+    ReminderType update(uint32_t nowMs, bool quietHours = false);
     bool isAvailable() const;
     DateTime now();
 

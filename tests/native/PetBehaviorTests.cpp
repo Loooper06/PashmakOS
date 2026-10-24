@@ -208,6 +208,28 @@ static void testEnergyLowerBoundAndRecovery()
     assert(pet.state().energy <= 100);
 }
 
+static void testQuietHoursSuppressSpontaneousEvents()
+{
+    PetBehavior pet(0);
+    pet.begin(0);
+    pet.update(PetMode::Work, 90000UL);
+    assert(strcmp(pet.state().message, "Hey! Still there, Engineer?") == 0);
+
+    // Quiet hours immediately clear an already visible spontaneous interruption.
+    pet.update(PetMode::Work, 91000UL, 22, true);
+    assert(strcmp(pet.state().message, "Let's Focus, Engineer!") == 0);
+
+    // New spontaneous events remain suppressed for the entire quiet window.
+    pet.update(PetMode::Work, 300000UL, 23, true);
+    const char *message = pet.state().message;
+    assert(strcmp(message, "Hey! Still there, Engineer?") != 0);
+    assert(strcmp(message, "A tiny break can help.") != 0);
+    assert(strcmp(message, "How about a sip of water?") != 0);
+    assert(strcmp(message, "You're making progress!") != 0);
+    assert(strcmp(message, "Remember to relax your shoulders.") != 0);
+    assert(strcmp(message, "One step at a time.") != 0);
+}
+
 static void testPetInteractionReactionsAndExpiry()
 {
     PetBehavior pashmak(0);
@@ -370,6 +392,7 @@ int main()
     testEnergyLowerBoundAndRecovery();
     testInvalidPersonalityFallsBackSafely();
     testPetInteractionReactionsAndExpiry();
+    testQuietHoursSuppressSpontaneousEvents();
     puts("PetBehavior native tests: PASS");
     return 0;
 }

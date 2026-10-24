@@ -127,7 +127,7 @@ bool PetBehavior::restoreEnergy(uint8_t energy, uint32_t now)
     return true;
 }
 
-void PetBehavior::update(PetMode mode, uint32_t now, int8_t hour)
+void PetBehavior::update(PetMode mode, uint32_t now, int8_t hour, bool quietHours)
 {
     if (!_initialized)
     {
@@ -161,7 +161,7 @@ void PetBehavior::update(PetMode mode, uint32_t now, int8_t hour)
         _lastMessageAt = now;
     }
 
-    updateSpontaneousEvent(mode, now);
+    updateSpontaneousEvent(mode, now, quietHours);
 
     if (_interactionActive)
     {
@@ -378,8 +378,21 @@ void PetBehavior::interact(PetMode mode, uint32_t now, uint8_t bond)
         _state.mood = PetMood::Happy;
 }
 
-void PetBehavior::updateSpontaneousEvent(PetMode mode, uint32_t now)
+void PetBehavior::updateSpontaneousEvent(PetMode mode, uint32_t now, bool quietHours)
 {
+    // Quiet hours immediately suppress an already visible spontaneous event too.
+    if (quietHours)
+    {
+        if (_eventActive)
+        {
+            _eventActive = false;
+            if (!_interactionActive)
+                _state.message = _baseMessage;
+        }
+        _nextEventAt = now + EVENT_MIN_INTERVAL_MS;
+        return;
+    }
+
     // Signed subtraction keeps deadline checks safe across millis() rollover.
     if (_eventActive && static_cast<int32_t>(now - _eventUntil) >= 0)
     {

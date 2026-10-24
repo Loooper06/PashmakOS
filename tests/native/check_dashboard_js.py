@@ -36,9 +36,12 @@ required_fragments = (
     "pet-option-energy-track",
     "pet-happiness",
     "pet-happiness-bar",
+    "globalAchievementMask",
+    "achievementMask",
+    "renderAchievements(data)",
     "pet-option-energy-fill",
     "pet-happiness-bar",
-    "data.version!==2",
+    "data.version!==3",
     "Mood · '+mood",
     "energyFill.style.width=energy+'%'",
 )

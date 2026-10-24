@@ -30,7 +30,7 @@ Acceptance: valid API JSON for all message contents; intended energy rates; dash
 
 ## Phase 2 — Behavior quality and pet personality
 
-Progress update (2026-10-24): the repeated time-aware-message case is fixed on `feature/pet-message-quality`; native regression coverage has been added. Full phase acceptance is still pending.
+Progress update (2026-10-25): time-aware messages now respect quiet hours and Nap, and morning messages differ between Work and Play. Native regression coverage protects these rules. Full phase acceptance is still pending.
 1. Give each pet a distinct message pool/personality profile without duplicating the behavior engine.
 2. Add RTC time-aware, non-intrusive messages based on hour and current mode.
 3. [x] Prevent the same RTC time-aware base message from repeating on consecutive message intervals; add a native regression test. Spontaneous events are also deferred during Nap, with native coverage. Event/reminder overlap still needs a device-level review.

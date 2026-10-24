@@ -133,7 +133,7 @@ void PetBehavior::update(PetMode mode, uint32_t now, int8_t hour, bool quietHour
     {
         begin(now);
         _lastMode = mode;
-        selectMessage(mode, now, hour);
+        selectMessage(mode, now, hour, quietHours);
         updateMood(mode);
         return;
     }
@@ -155,7 +155,7 @@ void PetBehavior::update(PetMode mode, uint32_t now, int8_t hour, bool quietHour
 
     if (modeChanged || messageDue)
     {
-        selectMessage(mode, now, hour);
+        selectMessage(mode, now, hour, quietHours);
         updateMood(mode);
         _lastMode = mode;
         _lastMessageAt = now;
@@ -251,13 +251,14 @@ void PetBehavior::updateMood(PetMode mode)
     }
 }
 
-void PetBehavior::selectMessage(PetMode mode, uint32_t now, int8_t hour)
+void PetBehavior::selectMessage(PetMode mode, uint32_t now, int8_t hour, bool quietHours)
 {
     (void)now;
 
     const MessageProfile &profile = PROFILES[_personalityId];
-    // Add occasional time-aware lines without replacing each pet's personality.
-    const bool timeMessage = hour >= 0 && hour <= 23 &&
+    // Time-aware messages are context-sensitive: never override quiet hours or Nap.
+    const bool timeMessage = !quietHours && mode != PetMode::Nap &&
+                             hour >= 0 && hour <= 23 &&
                              (_workMessageIndex + _napMessageIndex + _playMessageIndex) % 3 == 0;
     if (_state.energy <= 10)
     {
@@ -269,11 +270,23 @@ void PetBehavior::selectMessage(PetMode mode, uint32_t now, int8_t hour)
     }
     else if (timeMessage && hour >= 6 && hour < 11)
     {
-        switch (_personalityId)
+        if (mode == PetMode::Play)
         {
-        case 1: _baseMessage = "Good morning. Take it gently."; break;
-        case 2: _baseMessage = "Boot sequence: good morning!"; break;
-        default: _baseMessage = "Good morning, Engineer!"; break;
+            switch (_personalityId)
+            {
+            case 1: _baseMessage = "Good morning, friend. A gentle stretch?"; break;
+            case 2: _baseMessage = "Morning side quest unlocked!"; break;
+            default: _baseMessage = "Good morning! Ready for a little movement?"; break;
+            }
+        }
+        else
+        {
+            switch (_personalityId)
+            {
+            case 1: _baseMessage = "Good morning. Take it gently."; break;
+            case 2: _baseMessage = "Boot sequence: good morning!"; break;
+            default: _baseMessage = "Good morning, Engineer!"; break;
+            }
         }
     }
     else if (timeMessage && hour >= 21)
@@ -317,8 +330,7 @@ void PetBehavior::selectMessage(PetMode mode, uint32_t now, int8_t hour)
         }
     }
 
-    // Time-aware lines are occasional, but the same line should never be
-    // shown twice in a row when the RTC hour has not changed.
+    // Do not let repeated time-aware lines suppress low-energy warnings.
     if (_state.energy > 30 && timeMessage && _baseMessage == _lastBaseMessage)
     {
         switch (mode)

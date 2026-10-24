@@ -73,6 +73,7 @@ PetBehavior::PetBehavior(uint8_t personalityId)
     : _personalityId(personalityId < PROFILE_COUNT ? personalityId : 0),
       _state{PetMood::Focused, PASHMAK_WORK[0], 80},
       _baseMessage(PASHMAK_WORK[0]),
+      _lastBaseMessage(nullptr),
       _lastMode(PetMode::Work),
       _lastMessageAt(0),
       _lastEnergyTickAt(0),
@@ -103,6 +104,7 @@ void PetBehavior::begin(uint32_t now)
     _nextEventAt = now + EVENT_MIN_INTERVAL_MS;
     const MessageProfile &profile = PROFILES[_personalityId];
     _baseMessage = profile.work[0];
+    _lastBaseMessage = nullptr;
     _state = {PetMood::Focused, _baseMessage, 80};
     _initialized = true;
 }
@@ -275,6 +277,31 @@ void PetBehavior::selectMessage(PetMode mode, uint32_t now, int8_t hour)
         }
     }
 
+    // Time-aware lines are occasional, but the same line should never be
+    // shown twice in a row when the RTC hour has not changed.
+    if (_baseMessage == _lastBaseMessage)
+    {
+        switch (mode)
+        {
+        case PetMode::Work:
+            _baseMessage = profile.work[_workMessageIndex % profile.workCount];
+            ++_workMessageIndex;
+            break;
+        case PetMode::Nap:
+            _baseMessage = profile.nap[_napMessageIndex % profile.napCount];
+            ++_napMessageIndex;
+            break;
+        case PetMode::Play:
+            _baseMessage = profile.play[_playMessageIndex % profile.playCount];
+            ++_playMessageIndex;
+            break;
+        default:
+            _baseMessage = "Hello, Engineer!";
+            break;
+        }
+    }
+
+    _lastBaseMessage = _baseMessage;
     if (!_eventActive)
         _state.message = _baseMessage;
 }

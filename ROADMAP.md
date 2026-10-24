@@ -107,8 +107,8 @@ This sequence supplements the existing engineering roadmap above. Each feature p
 | 3 | Pet needs: energy, happiness, and bond model | Completed (PR #47) |
 | 4 | Achievements and persistent progression | Completed (PR #48) |
 | 5 | Complete Pomodoro flow and work/rest cycle controls | Completed (PR #49) |
-| 6 | Persistent settings through the dashboard | In progress (PR pending) |
-| 7 | Activity statistics and history improvements | Planned |
+| 6 | Persistent settings through the dashboard | Completed (PR #50) |
+| 7 | Activity statistics and history improvements | In progress (PR pending) |
 | 8 | Day/night behavior using the RTC | Planned |
 | 9 | Dashboard health and network recovery improvements | Planned |
 | 10 | Customizable themes and accessories | Planned |
@@ -182,4 +182,27 @@ This sequence supplements the existing engineering roadmap above. Each feature p
 - [ ] Native tests cover validation, defaults, serialization, and persistence-related contracts; dashboard contract tests cover endpoints and UI wiring.
 - [ ] ESP32 firmware build and native/dashboard CI pass for the implementation PR.
 - [ ] User confirms settings survive dashboard reload and device reboot on physical ESP32/TFT.
+- [ ] Implementation PR merged; phase completed.
+
+
+### Feature phase 6 — persistent settings through the dashboard
+
+- [x] Persist the daily focus-session goal in versioned ESP32 Preferences storage with safe defaults and bounded validation (1–20; default 4).
+- [x] Provide validated `GET /api/dashboard-settings` and `POST /api/dashboard-settings` endpoints; malformed or out-of-range values are rejected.
+- [x] Synchronize the dashboard goal from device-authoritative settings after page load; browser storage is only a fallback cache.
+- [x] Keep the endpoint local-first and free of secrets or cloud dependencies.
+- [x] Native/dashboard contract checks and ESP32 firmware build passed for PR #50.
+- [x] User confirmed the physical ESP32 test, including persistence behavior.
+- [x] Implementation PR #50 merged; phase completed.
+
+### Feature phase 7 — activity statistics and history improvements
+
+- [ ] Review current activity counters, daily/monthly history, focus sessions, and CSV export; preserve existing API compatibility unless a documented schema version change is required.
+- [ ] Add useful activity-history summaries and filtering that are grounded in persisted device data; avoid duplicate counting from dashboard polling or page reloads.
+- [ ] Ensure empty, missing, malformed, and boundary-date history states render safely and clearly in the dashboard.
+- [ ] Keep history storage bounded and persistence writes controlled; do not introduce cloud dependencies or transmit personal activity data.
+- [ ] Document any API fields, aggregation windows, and export semantics.
+- [ ] Native tests cover aggregation, date boundaries, empty history, duplicate counting, and invalid data; dashboard contract tests cover rendering and API behavior.
+- [ ] ESP32 firmware build and native/dashboard CI pass for the implementation PR.
+- [ ] User confirms activity summaries, history views, and CSV export on physical ESP32/dashboard.
 - [ ] Implementation PR merged; phase completed.

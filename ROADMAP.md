@@ -21,7 +21,7 @@ Target: ESP32-WROOM-32 + ILI9341 TFT (320x240 landscape), DS3231 RTC
 - [x] Behavior timing uses rollover-safe elapsed/deadline arithmetic and a wide energy-time accumulator.
 - [x] PlatformIO CI and native behavior tests are enabled; latest verified CI run is linked from the development conversation.
 - [x] Extract recent-day and monthly statistics aggregation into portable core helpers; native tests cover latest-N selection, full-range aggregation, empty/zero requests, missing months, and invalid month inputs.
-- [ ] Add an end-to-end host test for the complete `statisticsToJson()` payload.
+- [x] Extract the JSON encoder into a portable serializer shared by firmware and native tests; compile a fixture, parse its emitted JSON, and validate the complete payload shape, wide counters, and escaped message contents.
 - [ ] Complete a physical Wi-Fi disconnect/reconnect smoke test after the latest dashboard changes.
 Acceptance: valid API JSON for all message contents; intended energy rates; dashboard usable through brief disconnects; CI passes and hardware checks are recorded.
 
@@ -66,7 +66,7 @@ Acceptance: documented schema; failures do not erase useful data; dashboard read
 Acceptance: no cloud dependency or undisclosed telemetry; reminders respect quiet hours.
 
 ## Phase 7 — Testability and release readiness
-1. Native host-side tests cover energy rates/bounds, mode changes, millis() rollover, distinct message profiles, spontaneous-message expiry, JSON escaping, and history calendar validation. Statistics aggregation is now covered by portable native tests; full `statisticsToJson()` serialization tests remain to be added.
+1. Native host-side tests cover energy rates/bounds, mode changes, millis() rollover, distinct message profiles, spontaneous-message expiry, JSON escaping, and history calendar validation. Statistics aggregation and the shared statistics JSON serializer are covered by portable native tests; a physical-device serialization check remains part of the hardware smoke test.
 2. Add API contract checks and a documented serial smoke-test procedure.
 3. Document wiring, pin conflicts, first boot, AP credentials, RTC setup, and troubleshooting.
 4. Record measured RAM/flash usage and TFT frame timing.

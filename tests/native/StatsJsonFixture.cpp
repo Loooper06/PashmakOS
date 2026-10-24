@@ -24,8 +24,8 @@ int main()
 {
     const StatsJson::Pet pets[] = {
         {0, 91, 76, 35, "Pashmak", "happy", "hello \"friend\"\\path\nnext"},
-        {1, 64, 62, 70, "Mochi", "sleepy", "quiet\tmode"},
-        {2, 12, 18, 5, "Pixel", "curious", "control\x01" "byte"}};
+        {1, 64, 62, 70, "Mochi", "sleepy", "quiet\tmode", 10, 3},
+        {2, 12, 18, 5, "Pixel", "curious", "control\x01" "byte", 0, 0}};
 
     const StatsJson::DailyRecord daily[] = {
         {20261023, 4294967000U, 200, 30, 7},
@@ -39,13 +39,14 @@ int main()
         1,
         pets,
         3,
-        StatsJson::Pet{1, 64, 62, 70, nullptr, "sleepy", "quiet\tmode"},
+        StatsJson::Pet{1, 64, 62, 70, nullptr, "sleepy", "quiet\tmode", 10, 3},
         StatsJson::Counters{9000000000ULL, 2000000000ULL, 300000000ULL, 1234},
         StatsJson::Recent{7, 2, StatsJson::Counters{5000, 600, 70, 3}},
         daily,
         2,
         monthly,
-        2};
+        2,
+        3};
 
     TestJsonString json;
     StatsJson::appendStatisticsJson(json, payload);

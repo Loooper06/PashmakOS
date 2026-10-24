@@ -7,17 +7,27 @@ static void testEnergyBoundsAndRates()
 {
     PetBehavior pet;
     pet.begin(0);
-    pet.update(PetMode::Work, 120000UL);
+    pet.update(PetMode::Work, 120000U);
     assert(pet.state().energy == 79);
 
-    pet.update(PetMode::Nap, 150000UL);
+    // Switch modes at the same timestamp so no elapsed time is charged
+    // to the newly selected mode before its interval actually begins.
+    pet.update(PetMode::Nap, 120000U);
+    assert(pet.state().energy == 79);
+    pet.update(PetMode::Nap, 150000U);
     assert(pet.state().energy == 80);
 
-    pet.update(PetMode::Play, 210000UL);
+    pet.update(PetMode::Play, 150000U);
+    assert(pet.state().energy == 80);
+    pet.update(PetMode::Play, 210000U);
     assert(pet.state().energy == 81);
 
-    pet.update(PetMode::Nap, 20UL * 60UL * 1000UL);
-    assert(pet.state().energy <= 100);
+    pet.update(PetMode::Nap, 210000U);
+    pet.update(PetMode::Nap, 240000U);
+    assert(pet.state().energy == 82);
+
+    pet.update(PetMode::Nap, 1200000U);
+    assert(pet.state().energy == 100);
 }
 
 static void testMillisRollover()
@@ -25,10 +35,16 @@ static void testMillisRollover()
     const uint32_t start = UINT32_MAX - 60000UL;
     PetBehavior pet;
     pet.begin(start);
-    pet.update(PetMode::Work, static_cast<uint32_t>(start + static_cast<uint32_t>(120000U)));
+    const uint32_t workElapsed = static_cast<uint32_t>(start + 120000U);
+    const uint32_t napStart = workElapsed;
+    const uint32_t napElapsed = static_cast<uint32_t>(napStart + 30000U);
+
+    pet.update(PetMode::Work, workElapsed);
     assert(pet.state().energy == 79);
 
-    pet.update(PetMode::Nap, static_cast<uint32_t>(start + static_cast<uint32_t>(150000U)));
+    pet.update(PetMode::Nap, napStart);
+    assert(pet.state().energy == 79);
+    pet.update(PetMode::Nap, napElapsed);
     assert(pet.state().energy == 80);
 }
 

@@ -3,7 +3,6 @@
 #include <WiFi.h>
 #include <Preferences.h>
 #include <cstring>
-
 namespace
 {
     constexpr char DEFAULT_WIFI_AP_SSID[] = "PashmakOS";
@@ -13,27 +12,24 @@ namespace
     constexpr char WIFI_AP_CONFIG_KEY[] = "apCfg";
     constexpr size_t WIFI_AP_SSID_CAPACITY = 33;
     constexpr size_t WIFI_AP_PASSWORD_CAPACITY = 64;
-
     struct StoredAccessPointConfig
     {
         uint8_t version;
         char ssid[WIFI_AP_SSID_CAPACITY];
         char password[WIFI_AP_PASSWORD_CAPACITY];
     };
-
     bool isValidAccessPointConfig(const StoredAccessPointConfig &config)
     {
         const size_t ssidLength = strnlen(config.ssid, sizeof(config.ssid));
         const size_t passwordLength = strnlen(config.password, sizeof(config.password));
         if (config.version != WIFI_AP_CONFIG_VERSION || ssidLength == 0 || ssidLength > 32 ||
             passwordLength < 8 || passwordLength > 63 ||
-            config.ssid[ssidLength] != '\\0' || config.password[passwordLength] != '\\0')
+            config.ssid[ssidLength] != '\0' || config.password[passwordLength] != '\0')
             return false;
-
         for (size_t i = 0; i < ssidLength; ++i)
         {
             const unsigned char ch = static_cast<unsigned char>(config.ssid[i]);
-            if (ch < 0x20 || ch > 0x7e || ch == '"' || ch == '\\\\')
+            if (ch < 0x20 || ch > 0x7e || ch == '"' || ch == '\\')
                 return false;
         }
         for (size_t i = 0; i < passwordLength; ++i)
@@ -44,17 +40,14 @@ namespace
         }
         return true;
     }
-
     void loadAccessPointConfig(char (&ssid)[WIFI_AP_SSID_CAPACITY],
                                char (&password)[WIFI_AP_PASSWORD_CAPACITY])
     {
         strlcpy(ssid, DEFAULT_WIFI_AP_SSID, sizeof(ssid));
         strlcpy(password, DEFAULT_WIFI_AP_PASSWORD, sizeof(password));
-
         Preferences preferences;
         if (!preferences.begin(WIFI_AP_CONFIG_NAMESPACE, true))
             return;
-
         StoredAccessPointConfig stored{};
         const size_t storedSize = preferences.getBytes(WIFI_AP_CONFIG_KEY, &stored, sizeof(stored));
         preferences.end();
@@ -64,7 +57,6 @@ namespace
             strlcpy(password, stored.password, sizeof(password));
         }
     }
-
     bool saveAccessPointConfig(const char *ssid, const char *password)
     {
         StoredAccessPointConfig stored{};
@@ -73,7 +65,6 @@ namespace
         strlcpy(stored.password, password, sizeof(stored.password));
         if (!isValidAccessPointConfig(stored))
             return false;
-
         Preferences preferences;
         if (!preferences.begin(WIFI_AP_CONFIG_NAMESPACE, false))
             return false;
@@ -81,7 +72,6 @@ namespace
         preferences.end();
         return written == sizeof(stored);
     }
-
     const char DASHBOARD_HTML[] PROGMEM = R"HTML(
 <!doctype html>
 <html lang="en">
@@ -311,7 +301,6 @@ document.querySelectorAll('[data-days]').forEach(b=>b.addEventListener('click',(
 </script></body></html>
 )HTML";
 }
-
 void WebDashboard::begin(PashmakApp &app)
 {
     _app = &app;
@@ -329,7 +318,6 @@ void WebDashboard::begin(PashmakApp &app)
         Serial.println("[WEB] Failed to start Wi-Fi access point.");
         return;
     }
-
     _server.on("/", HTTP_GET, [this]() { handleRoot(); });
     _server.on("/api/stats", HTTP_GET, [this]() { handleStats(); });
     _server.on("/api/pet/select", HTTP_POST, [this]() { handlePetSelection(); });
@@ -345,23 +333,18 @@ void WebDashboard::begin(PashmakApp &app)
     _server.onNotFound([this]() { handleNotFound(); });
     _server.begin();
     _started = true;
-
-    Serial.printf("[WEB] Wi-Fi SSID: %s\n", WIFI_AP_SSID);
-    Serial.printf("[WEB] Wi-Fi password (changes after reboot): %s\n", apPassword);
+    Serial.printf("[WEB] Wi-Fi SSID: %s\n", apSsid);
     Serial.printf("[WEB] Dashboard: http://%s/\n", WiFi.softAPIP().toString().c_str());
 }
-
 void WebDashboard::update()
 {
     if (_started)
         _server.handleClient();
 }
-
 void WebDashboard::handleRoot()
 {
     _server.send_P(200, "text/html; charset=utf-8", DASHBOARD_HTML);
 }
-
 void WebDashboard::handleStats()
 {
     if (_app == nullptr)
@@ -369,12 +352,9 @@ void WebDashboard::handleStats()
         _server.send(503, "application/json", "{\"error\":\"statistics unavailable\"}");
         return;
     }
-
     _server.sendHeader("Cache-Control", "no-store");
     _server.send(200, "application/json; charset=utf-8", _app->statisticsToJson(14));
 }
-
-
 void WebDashboard::handlePetSelection()
 {
     if (_app == nullptr || !_server.hasArg("id"))
@@ -382,7 +362,6 @@ void WebDashboard::handlePetSelection()
         _server.send(400, "application/json", "{\"error\":\"missing pet id\"}");
         return;
     }
-
     const String value = _server.arg("id");
     if (value.length() != 1 || value[0] < '0' || value[0] > '2' ||
         !_app->setActivePet(static_cast<uint8_t>(value[0] - '0')))
@@ -390,10 +369,8 @@ void WebDashboard::handlePetSelection()
         _server.send(400, "application/json", "{\"error\":\"invalid pet id\"}");
         return;
     }
-
     _server.send(200, "application/json", "{\"ok\":true}");
 }
-
 void WebDashboard::handlePetInteraction()
 {
     if (_app == nullptr)
@@ -401,21 +378,18 @@ void WebDashboard::handlePetInteraction()
         _server.send(503, "application/json", "{\"error\":\"pet interaction unavailable\"}");
         return;
     }
-
     if (!_app->interactWithActivePet(millis()))
     {
         _server.sendHeader("Retry-After", "8");
         _server.send(429, "application/json", "{\"error\":\"interaction cooldown active\"}");
         return;
     }
-
     char response[64];
     snprintf(response, sizeof(response), "{\"ok\":true,\"bond\":%u}",
              _app->petBond(_app->activePetId()));
     _server.sendHeader("Cache-Control", "no-store");
     _server.send(200, "application/json", response);
 }
-
 void WebDashboard::handleTimerSettingsGet()
 {
     if (_app == nullptr)
@@ -423,7 +397,6 @@ void WebDashboard::handleTimerSettingsGet()
         _server.send(503, "application/json", "{\"error\":\"settings unavailable\"}");
         return;
     }
-
     const PashmakApp::TimerSettings settings = _app->timerSettings();
     char json[128];
     snprintf(json, sizeof(json),
@@ -433,7 +406,6 @@ void WebDashboard::handleTimerSettingsGet()
     _server.sendHeader("Cache-Control", "no-store");
     _server.send(200, "application/json; charset=utf-8", json);
 }
-
 void WebDashboard::handleTimerSettingsPost()
 {
     if (_app == nullptr)
@@ -441,7 +413,6 @@ void WebDashboard::handleTimerSettingsPost()
         _server.send(503, "application/json", "{\"error\":\"settings unavailable\"}");
         return;
     }
-
     const char *keys[] = {"workMinutes", "playMinutes", "napMinutes", "workCyclesBeforeLongRest"};
     uint32_t values[4]{};
     for (uint8_t i = 0; i < 4; ++i)
@@ -469,7 +440,6 @@ void WebDashboard::handleTimerSettingsPost()
         }
         values[i] = parsed;
     }
-
     if (values[0] < 1 || values[0] > 180 ||
         values[1] < 1 || values[1] > 60 ||
         values[2] < 1 || values[2] > 120 ||
@@ -478,7 +448,6 @@ void WebDashboard::handleTimerSettingsPost()
         _server.send(400, "application/json", "{\"error\":\"setting out of range\"}");
         return;
     }
-
     PashmakApp::TimerSettings settings;
     settings.workMinutes = static_cast<uint16_t>(values[0]);
     settings.playMinutes = static_cast<uint16_t>(values[1]);
@@ -489,11 +458,9 @@ void WebDashboard::handleTimerSettingsPost()
         _server.send(500, "application/json", "{\"error\":\"could not persist settings\"}");
         return;
     }
-
     _server.sendHeader("Cache-Control", "no-store");
     _server.send(200, "application/json", "{\"ok\":true}");
 }
-
 void WebDashboard::handleQuietHoursGet()
 {
     if (_app == nullptr)
@@ -508,7 +475,6 @@ void WebDashboard::handleQuietHoursGet()
     _server.sendHeader("Cache-Control", "no-store");
     _server.send(200, "application/json; charset=utf-8", json);
 }
-
 void WebDashboard::handleQuietHoursPost()
 {
     if (_app == nullptr)
@@ -521,7 +487,6 @@ void WebDashboard::handleQuietHoursPost()
         _server.send(400, "application/json", "{\"error\":\"missing setting\"}");
         return;
     }
-
     const String enabled = _server.arg("enabled");
     const String start = _server.arg("startHour");
     const String end = _server.arg("endHour");
@@ -556,7 +521,6 @@ void WebDashboard::handleQuietHoursPost()
         _server.send(400, "application/json", "{\"error\":\"hours must differ and be between 0 and 23\"}");
         return;
     }
-
     PashmakApp::QuietHoursSettings settings;
     settings.enabled = enabled == "1";
     settings.startHour = startHour;
@@ -569,7 +533,6 @@ void WebDashboard::handleQuietHoursPost()
     _server.sendHeader("Cache-Control", "no-store");
     _server.send(200, "application/json", "{\"ok\":true}");
 }
-
 void WebDashboard::handleReminderSettingsGet()
 {
     if (_app == nullptr)
@@ -584,7 +547,6 @@ void WebDashboard::handleReminderSettingsGet()
     _server.sendHeader("Cache-Control", "no-store");
     _server.send(200, "application/json; charset=utf-8", json);
 }
-
 void WebDashboard::handleReminderSettingsPost()
 {
     if (_app == nullptr)
@@ -636,7 +598,6 @@ void WebDashboard::handleReminderSettingsPost()
     _server.sendHeader("Cache-Control", "no-store");
     _server.send(200, "application/json", "{\"ok\":true}");
 }
-
 void WebDashboard::handleWifiSettingsGet()
 {
     char ssid[WIFI_AP_SSID_CAPACITY]{};
@@ -644,7 +605,7 @@ void WebDashboard::handleWifiSettingsGet()
     loadAccessPointConfig(ssid, password);
 
     char response[96];
-    snprintf(response, sizeof(response), "{\\\"ssid\\\":\\\"%s\\\",\\\"passwordConfigured\\\":true}", ssid);
+    snprintf(response, sizeof(response), "{\"ssid\":\"%s\",\"passwordConfigured\":true}", ssid);
     _server.sendHeader("Cache-Control", "no-store");
     _server.send(200, "application/json; charset=utf-8", response);
 }
@@ -653,7 +614,7 @@ void WebDashboard::handleWifiSettingsPost()
 {
     if (!_server.hasArg("ssid") || !_server.hasArg("password"))
     {
-        _server.send(400, "application/json", "{\\\"error\\\":\\\"missing setting\\\"}");
+        _server.send(400, "application/json", "{\"error\":\"missing setting\"}");
         return;
     }
 
@@ -661,15 +622,15 @@ void WebDashboard::handleWifiSettingsPost()
     const String newPassword = _server.arg("password");
     if (ssidValue.length() == 0 || ssidValue.length() > 32)
     {
-        _server.send(400, "application/json", "{\\\"error\\\":\\\"SSID must contain 1 to 32 characters\\\"}");
+        _server.send(400, "application/json", "{\"error\":\"SSID must contain 1 to 32 characters\"}");
         return;
     }
     for (size_t i = 0; i < ssidValue.length(); ++i)
     {
         const unsigned char ch = static_cast<unsigned char>(ssidValue[i]);
-        if (ch < 0x20 || ch > 0x7e || ch == '"' || ch == '\\\\')
+        if (ch < 0x20 || ch > 0x7e || ch == '"' || ch == '\\')
         {
-            _server.send(400, "application/json", "{\\\"error\\\":\\\"SSID contains unsupported characters\\\"}");
+            _server.send(400, "application/json", "{\"error\":\"SSID contains unsupported characters\"}");
             return;
         }
     }
@@ -680,7 +641,7 @@ void WebDashboard::handleWifiSettingsPost()
     String passwordValue = newPassword.length() == 0 ? String(currentPassword) : newPassword;
     if (passwordValue.length() < 8 || passwordValue.length() > 63)
     {
-        _server.send(400, "application/json", "{\\\"error\\\":\\\"password must contain 8 to 63 characters\\\"}");
+        _server.send(400, "application/json", "{\"error\":\"password must contain 8 to 63 characters\"}");
         return;
     }
     for (size_t i = 0; i < passwordValue.length(); ++i)
@@ -688,7 +649,7 @@ void WebDashboard::handleWifiSettingsPost()
         const unsigned char ch = static_cast<unsigned char>(passwordValue[i]);
         if (ch < 0x20 || ch > 0x7e)
         {
-            _server.send(400, "application/json", "{\\\"error\\\":\\\"password contains unsupported characters\\\"}");
+            _server.send(400, "application/json", "{\"error\":\"password contains unsupported characters\"}");
             return;
         }
     }
@@ -696,19 +657,19 @@ void WebDashboard::handleWifiSettingsPost()
     const String ssid = ssidValue;
     if (!saveAccessPointConfig(ssid.c_str(), passwordValue.c_str()))
     {
-        _server.send(500, "application/json", "{\\\"error\\\":\\\"could not persist Wi-Fi settings\\\"}");
+        _server.send(500, "application/json", "{\"error\":\"could not persist Wi-Fi settings\"}");
         return;
     }
 
     _server.sendHeader("Cache-Control", "no-store");
-    _server.send(200, "application/json; charset=utf-8", "{\\\"ok\\\":true,\\\"restarting\\\":true}");
+    _server.send(200, "application/json; charset=utf-8", "{\"ok\":true,\"restarting\":true}");
     delay(700);
     WiFi.softAPdisconnect(true);
     delay(150);
     if (!WiFi.softAP(ssid.c_str(), passwordValue.c_str()))
         Serial.println("[WEB] Failed to restart access point with updated settings.");
     else
-        Serial.printf("[WEB] Wi-Fi settings updated; SSID: %s\\n", ssid.c_str());
+        Serial.printf("[WEB] Wi-Fi settings updated; SSID: %s\n", ssid.c_str());
 }
 
 void WebDashboard::handleNotFound()

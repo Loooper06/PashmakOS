@@ -3,41 +3,63 @@
 
 namespace
 {
-    const char *const WORK_MESSAGES[] = {
-        "Let's Focus, Engineer!",
-        "Step by Step Is Better",
-        "Improving Every Day!",
-        "Relax, Engineer!",
-        "Don't Forget to Blink!"};
+    struct MessageProfile
+    {
+        const char *const *work;
+        uint8_t workCount;
+        const char *const *nap;
+        uint8_t napCount;
+        const char *const *play;
+        uint8_t playCount;
+        const char *const *spontaneous;
+        uint8_t spontaneousCount;
+    };
 
-    const char *const NAP_MESSAGES[] = {
-        "Time for a Proper Break.",
-        "Give Your Eyes Some Rest.",
-        "Take a Deep Breath.",
-        "Stand Up and Stretch a Little."};
+    const char *const PASHMAK_WORK[] = {
+        "Let's Focus, Engineer!", "Step by Step Is Better",
+        "Improving Every Day!", "Relax, Engineer!", "Don't Forget to Blink!"};
+    const char *const PASHMAK_NAP[] = {
+        "Time for a Proper Break.", "Give Your Eyes Some Rest.",
+        "Take a Deep Breath.", "Stand Up and Stretch a Little."};
+    const char *const PASHMAK_PLAY[] = {
+        "Let's Get Moving!", "Stretch Your Neck Gently.",
+        "Time to Drink Some Water!", "A Short Walk Would Be Nice."};
+    const char *const PASHMAK_EVENTS[] = {
+        "Hey! Still there, Engineer?", "A tiny break can help.",
+        "How about a sip of water?", "You're making progress!",
+        "Remember to relax your shoulders.", "One step at a time."};
 
-    const char *const PLAY_MESSAGES[] = {
-        "Let's Get Moving!",
-        "Stretch Your Neck Gently.",
-        "Time to Drink Some Water!",
-        "A Short Walk Would Be Nice."};
+    const char *const MOCHI_WORK[] = {
+        "Slow and steady, okay?", "You are doing enough.",
+        "Let's make this a gentle session.", "Breathe; one thing at a time."};
+    const char *const MOCHI_NAP[] = {
+        "A cozy little pause.", "Rest is part of the work.",
+        "Let's soften the pace.", "Close your eyes for a moment."};
+    const char *const MOCHI_PLAY[] = {
+        "A little stretch together?", "Let's take a gentle walk.",
+        "Water break, friend?", "Move a little, no rush."};
+    const char *const MOCHI_EVENTS[] = {
+        "Just checking in, friend.", "It's okay to pause.",
+        "Your pace is your pace.", "A sip of water sounds nice."};
 
-    const char *const SPONTANEOUS_MESSAGES[] = {
-        "Hey! Still there, Engineer?",
-        "A tiny break can help.",
-        "How about a sip of water?",
-        "You're making progress!",
-        "Remember to relax your shoulders.",
-        "One step at a time."};
+    const char *const PIXEL_WORK[] = {
+        "Task mode: ON.", "Tiny steps. Big progress.",
+        "Checkpoint reached!", "Focus.exe is running."};
+    const char *const PIXEL_NAP[] = {
+        "Power-saving mode activated.", "Checkpoint: rest.",
+        "Buffering... take a breath.", "System cool-down time."};
+    const char *const PIXEL_PLAY[] = {
+        "Movement bonus unlocked!", "Side quest: stretch.",
+        "Hydration achievement available.", "Let's collect some fresh air."};
+    const char *const PIXEL_EVENTS[] = {
+        "Ping! Still with me?", "Achievement: take a sip of water.",
+        "Micro-break detected.", "One small commit at a time."};
 
-    constexpr uint8_t WORK_MESSAGE_COUNT =
-        sizeof(WORK_MESSAGES) / sizeof(WORK_MESSAGES[0]);
-    constexpr uint8_t NAP_MESSAGE_COUNT =
-        sizeof(NAP_MESSAGES) / sizeof(NAP_MESSAGES[0]);
-    constexpr uint8_t PLAY_MESSAGE_COUNT =
-        sizeof(PLAY_MESSAGES) / sizeof(PLAY_MESSAGES[0]);
-    constexpr uint8_t SPONTANEOUS_MESSAGE_COUNT =
-        sizeof(SPONTANEOUS_MESSAGES) / sizeof(SPONTANEOUS_MESSAGES[0]);
+    constexpr MessageProfile PROFILES[] = {
+        {PASHMAK_WORK, 5, PASHMAK_NAP, 4, PASHMAK_PLAY, 4, PASHMAK_EVENTS, 6},
+        {MOCHI_WORK, 4, MOCHI_NAP, 4, MOCHI_PLAY, 4, MOCHI_EVENTS, 4},
+        {PIXEL_WORK, 4, PIXEL_NAP, 4, PIXEL_PLAY, 4, PIXEL_EVENTS, 4}};
+    constexpr uint8_t PROFILE_COUNT = sizeof(PROFILES) / sizeof(PROFILES[0]);
 
     constexpr uint32_t WORK_ENERGY_STEP_MS = 120000UL;
     constexpr uint32_t PLAY_ENERGY_STEP_MS = 60000UL;
@@ -47,9 +69,10 @@ namespace
     constexpr uint32_t EVENT_INTERVAL_VARIATION_MS = 15000UL;
 }
 
-PetBehavior::PetBehavior()
-    : _state{PetMood::Focused, WORK_MESSAGES[0], 80},
-      _baseMessage(WORK_MESSAGES[0]),
+PetBehavior::PetBehavior(uint8_t personalityId)
+    : _personalityId(personalityId < PROFILE_COUNT ? personalityId : 0),
+      _state{PetMood::Focused, PASHMAK_WORK[0], 80},
+      _baseMessage(PASHMAK_WORK[0]),
       _lastMode(PetMode::Work),
       _lastMessageAt(0),
       _lastEnergyTickAt(0),
@@ -78,7 +101,8 @@ void PetBehavior::begin(uint32_t now)
     _eventActive = false;
     _eventUntil = now;
     _nextEventAt = now + EVENT_MIN_INTERVAL_MS;
-    _baseMessage = WORK_MESSAGES[0];
+    const MessageProfile &profile = PROFILES[_personalityId];
+    _baseMessage = profile.work[0];
     _state = {PetMood::Focused, _baseMessage, 80};
     _initialized = true;
 }
@@ -124,8 +148,6 @@ void PetBehavior::updateEnergy(PetMode mode, uint32_t now)
 {
     const uint32_t elapsed = static_cast<uint32_t>(now - _lastEnergyTickAt);
     _lastEnergyTickAt = now;
-    _energyRemainderMs += elapsed;
-
     uint32_t stepMs = WORK_ENERGY_STEP_MS;
     int8_t delta = -1;
     if (mode == PetMode::Play)
@@ -191,6 +213,7 @@ void PetBehavior::selectMessage(PetMode mode, uint32_t now)
 {
     (void)now;
 
+    const MessageProfile &profile = PROFILES[_personalityId];
     if (_state.energy <= 10)
     {
         _baseMessage = "I need a longer rest.";
@@ -204,15 +227,15 @@ void PetBehavior::selectMessage(PetMode mode, uint32_t now)
         switch (mode)
         {
         case PetMode::Work:
-            _baseMessage = WORK_MESSAGES[_workMessageIndex % WORK_MESSAGE_COUNT];
+            _baseMessage = profile.work[_workMessageIndex % profile.workCount];
             ++_workMessageIndex;
             break;
         case PetMode::Nap:
-            _baseMessage = NAP_MESSAGES[_napMessageIndex % NAP_MESSAGE_COUNT];
+            _baseMessage = profile.nap[_napMessageIndex % profile.napCount];
             ++_napMessageIndex;
             break;
         case PetMode::Play:
-            _baseMessage = PLAY_MESSAGES[_playMessageIndex % PLAY_MESSAGE_COUNT];
+            _baseMessage = profile.play[_playMessageIndex % profile.playCount];
             ++_playMessageIndex;
             break;
         default:
@@ -245,7 +268,8 @@ void PetBehavior::updateSpontaneousEvent(uint32_t now)
         return;
     }
 
-    _state.message = SPONTANEOUS_MESSAGES[_eventIndex % SPONTANEOUS_MESSAGE_COUNT];
+    const MessageProfile &profile = PROFILES[_personalityId];
+    _state.message = profile.spontaneous[_eventIndex % profile.spontaneousCount];
     ++_eventIndex;
     _eventActive = true;
     _eventUntil = now + EVENT_DURATION_MS;

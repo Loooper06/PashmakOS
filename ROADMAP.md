@@ -1,7 +1,7 @@
 # PashmakOS Development Roadmap
 
 Repository: Loooper06/PashmakOS
-Working branch: feature/auto-pet-behavior
+Integration base: `main`; implement changes on short-lived feature branches and merge through pull requests.
 Target: ESP32-WROOM-32 + ILI9341 TFT (320x240 landscape), DS3231 RTC
 
 ## Current baseline (2026-10-24)
@@ -12,7 +12,7 @@ Target: ESP32-WROOM-32 + ILI9341 TFT (320x240 landscape), DS3231 RTC
 - Local Wi-Fi dashboard with live status, energy, totals, daily/monthly history, activity trend, and CSV export.
 - Refresh overlap protection and connection/last-update status.
 - Preferences-backed totals/history, RTC-aware date/month tracking, serial diagnostics/export commands.
-- Latest dashboard commit at roadmap creation: 6d74bd2bc7b184cc54eb22d8599ef7054d386365.
+- Latest integrated dashboard baseline: `a3145ec7d5e10844a0edb2a83375a577e0b8308a` (mobile layout and responsive CSS regression-check fix).
 
 ## Phase 1 — Data integrity and runtime resilience (in progress)
 - [x] Shared JSON string escaping handles quotes, backslashes, common escapes, and remaining control bytes; native edge-case tests cover UTF-8 preservation and null input.

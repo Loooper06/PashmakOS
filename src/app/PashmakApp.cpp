@@ -55,7 +55,10 @@ namespace
 
 }
 
-PashmakApp::PashmakApp() = default;
+PashmakApp::PashmakApp()
+    : _behaviors{PetBehavior(0), PetBehavior(1), PetBehavior(2)}
+{
+}
 
 bool PashmakApp::setActivePet(uint8_t petId)
 {

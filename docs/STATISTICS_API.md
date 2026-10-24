@@ -60,9 +60,9 @@ Example shape (values are illustrative):
 ## Integration notes
 
 - The JSON snapshot is available over USB serial and the local Wi-Fi dashboard at `GET /api/stats`.
-- The ESP32 starts its own Wi-Fi access point named `PashmakOS`. On each boot it generates a fresh 16-character WPA2 password and prints it to the USB serial console at 115200 baud. Read `[WEB] Wi-Fi password (changes after reboot): ...`, connect to the AP, then open `http://192.168.4.1/`. Internet access is not required while connected to this access point.
+- The ESP32 starts its own Wi-Fi access point using credentials stored in Preferences. On a fresh device, the initial credentials are SSID `PashmakOS` and password `pashmak123`; change them in the dashboard's **Wi-Fi access point** section. SSIDs must be 1–32 printable ASCII characters (quotes and backslashes are not accepted); passwords must be 8–63 printable ASCII characters. Leave the password field blank to retain the current password. Saving credentials restarts the AP, disconnecting connected clients; reconnect using the new credentials and open `http://192.168.4.1/`. Internet access is not required.
 - The dashboard refreshes automatically every 10 seconds. The API returns lifetime totals plus up to 14 daily and 12 monthly records.
-- The access-point password is intentionally ephemeral and changes after every reboot. Anyone with access to the USB serial console can read the current password; do not leave an exposed serial console connected in an untrusted environment. The dashboard API is available to clients connected to the AP, so only share the current password with trusted users.
+- Wi-Fi credentials are stored in a versioned Preferences record and survive reboot. The current password is not returned by the settings API. Anyone connected to the AP can still access dashboard APIs, so choose a strong password and share it only with trusted users. The default credentials are intended for initial setup and should be changed.
 - History is retained in ESP32 Preferences. Daily history keeps up to 14 records and monthly history up to 12 records.
 - The current schema is versioned so a future dashboard can detect incompatible changes.
 

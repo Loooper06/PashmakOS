@@ -26,5 +26,7 @@ private:
     void handleQuietHoursPost();
     void handleReminderSettingsGet();
     void handleReminderSettingsPost();
+    void handleWifiSettingsGet();
+    void handleWifiSettingsPost();
     void handleNotFound();
 };

@@ -1,24 +1,77 @@
 #include "WebDashboard.h"
 #include "../app/PashmakApp.h"
 #include <WiFi.h>
-#include <esp_system.h>
-
+#include <Preferences.h>
+#include <cstring>
 namespace
 {
-    constexpr char WIFI_AP_SSID[] = "PashmakOS";
-    // A fresh 16-character WPA2 password is generated on every boot.
-    // The password is disclosed only through the local serial console.
-    constexpr char WIFI_AP_PASSWORD_CHARS[] = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789";
-    constexpr size_t WIFI_AP_PASSWORD_LENGTH = 16;
-
-    void generateAccessPointPassword(char (&password)[WIFI_AP_PASSWORD_LENGTH + 1])
+    constexpr char DEFAULT_WIFI_AP_SSID[] = "PashmakOS";
+    constexpr char DEFAULT_WIFI_AP_PASSWORD[] = "pashmak123";
+    constexpr uint8_t WIFI_AP_CONFIG_VERSION = 1;
+    constexpr char WIFI_AP_CONFIG_NAMESPACE[] = "pashmak_wifi";
+    constexpr char WIFI_AP_CONFIG_KEY[] = "apCfg";
+    constexpr size_t WIFI_AP_SSID_CAPACITY = 33;
+    constexpr size_t WIFI_AP_PASSWORD_CAPACITY = 64;
+    struct StoredAccessPointConfig
     {
-        constexpr size_t alphabetLength = sizeof(WIFI_AP_PASSWORD_CHARS) - 1;
-        for (size_t i = 0; i < WIFI_AP_PASSWORD_LENGTH; ++i)
-            password[i] = WIFI_AP_PASSWORD_CHARS[esp_random() % alphabetLength];
-        password[WIFI_AP_PASSWORD_LENGTH] = '\0';
+        uint8_t version;
+        char ssid[WIFI_AP_SSID_CAPACITY];
+        char password[WIFI_AP_PASSWORD_CAPACITY];
+    };
+    bool isValidAccessPointConfig(const StoredAccessPointConfig &config)
+    {
+        const size_t ssidLength = strnlen(config.ssid, sizeof(config.ssid));
+        const size_t passwordLength = strnlen(config.password, sizeof(config.password));
+        if (config.version != WIFI_AP_CONFIG_VERSION || ssidLength == 0 || ssidLength > 32 ||
+            passwordLength < 8 || passwordLength > 63 ||
+            config.ssid[ssidLength] != '\0' || config.password[passwordLength] != '\0')
+            return false;
+        for (size_t i = 0; i < ssidLength; ++i)
+        {
+            const unsigned char ch = static_cast<unsigned char>(config.ssid[i]);
+            if (ch < 0x20 || ch > 0x7e || ch == '"' || ch == '\\')
+                return false;
+        }
+        for (size_t i = 0; i < passwordLength; ++i)
+        {
+            const unsigned char ch = static_cast<unsigned char>(config.password[i]);
+            if (ch < 0x20 || ch > 0x7e)
+                return false;
+        }
+        return true;
     }
-
+    void loadAccessPointConfig(char (&ssid)[WIFI_AP_SSID_CAPACITY],
+                               char (&password)[WIFI_AP_PASSWORD_CAPACITY])
+    {
+        strlcpy(ssid, DEFAULT_WIFI_AP_SSID, sizeof(ssid));
+        strlcpy(password, DEFAULT_WIFI_AP_PASSWORD, sizeof(password));
+        Preferences preferences;
+        if (!preferences.begin(WIFI_AP_CONFIG_NAMESPACE, true))
+            return;
+        StoredAccessPointConfig stored{};
+        const size_t storedSize = preferences.getBytes(WIFI_AP_CONFIG_KEY, &stored, sizeof(stored));
+        preferences.end();
+        if (storedSize == sizeof(stored) && isValidAccessPointConfig(stored))
+        {
+            strlcpy(ssid, stored.ssid, sizeof(ssid));
+            strlcpy(password, stored.password, sizeof(password));
+        }
+    }
+    bool saveAccessPointConfig(const char *ssid, const char *password)
+    {
+        StoredAccessPointConfig stored{};
+        stored.version = WIFI_AP_CONFIG_VERSION;
+        strlcpy(stored.ssid, ssid, sizeof(stored.ssid));
+        strlcpy(stored.password, password, sizeof(stored.password));
+        if (!isValidAccessPointConfig(stored))
+            return false;
+        Preferences preferences;
+        if (!preferences.begin(WIFI_AP_CONFIG_NAMESPACE, false))
+            return false;
+        const size_t written = preferences.putBytes(WIFI_AP_CONFIG_KEY, &stored, sizeof(stored));
+        preferences.end();
+        return written == sizeof(stored);
+    }
     const char DASHBOARD_HTML[] PROGMEM = R"HTML(
 <!doctype html>
 <html lang="en">
@@ -93,6 +146,15 @@ footer{margin-top:18px;color:var(--muted);font-size:.82rem}
 </div>
 <p class="muted">Allowed intervals: water 15–240 minutes; movement 15–180 minutes, or 0 to disable.</p>
 <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:14px"><button id="reminder-save" type="button">Save reminder schedule</button><span id="reminder-status" class="muted" role="status" aria-live="polite">Loading saved settings…</span></div>
+</section>
+<section class="card section" aria-labelledby="wifi-settings-heading">
+<h2 id="wifi-settings-heading">Wi-Fi access point</h2>
+<p class="muted">Set the network name and password for this device. Saving changes restarts the access point and disconnects this browser. Reconnect using the new credentials. Leave the password blank to keep the current password.</p>
+<div class="settings-grid">
+<label>Network name (SSID; 1–32 ASCII characters)<input id="wifi-ssid" type="text" minlength="1" maxlength="32" autocomplete="off" spellcheck="false" value="PashmakOS"></label>
+<label>New password (8–63 characters; blank keeps current)<input id="wifi-password" type="password" minlength="8" maxlength="63" autocomplete="new-password" placeholder="Leave blank to keep current"></label>
+</div>
+<div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:14px"><button id="wifi-save" type="button">Save and restart Wi-Fi</button><span id="wifi-status" class="muted" role="status" aria-live="polite">Loading access-point settings…</span></div>
 </section>
 <section class="card section" aria-labelledby="daily-goal-heading">
 <h2 id="daily-goal-heading">Daily focus goal</h2>
@@ -193,6 +255,8 @@ if(!monthly.children.length)monthly.appendChild(row(['No monthly records yet','�
 $('export-daily').disabled=!(data.dailyHistory||[]).length;$('export-monthly').disabled=!(data.monthlyHistory||[]).length;}
 async function loadQuietHours(){try{const response=await fetch('/api/quiet-hours',{cache:'no-store'});if(!response.ok)throw new Error('HTTP '+response.status);const settings=await response.json();if(typeof settings.enabled!=='boolean'||!Number.isInteger(settings.startHour)||settings.startHour<0||settings.startHour>23||!Number.isInteger(settings.endHour)||settings.endHour<0||settings.endHour>23||settings.startHour===settings.endHour)throw new Error('Invalid quiet-hours payload');quietHoursSnapshot={enabled:settings.enabled,startHour:settings.startHour,endHour:settings.endHour};$('quiet-enabled').checked=settings.enabled;$('quiet-start').value=settings.startHour;$('quiet-end').value=settings.endHour;$('quiet-status').textContent='Loaded from device.'}catch(e){$('quiet-status').textContent='Could not load quiet hours · '+(e.message||'connection error')}}
 async function saveQuietHours(){const values={enabled:$('quiet-enabled').checked?1:0,startHour:Number($('quiet-start').value),endHour:Number($('quiet-end').value)};if(!Number.isInteger(values.startHour)||values.startHour<0||values.startHour>23||!Number.isInteger(values.endHour)||values.endHour<0||values.endHour>23||values.startHour===values.endHour){$('quiet-status').textContent='Choose different whole hours between 0 and 23.';return}const button=$('quiet-save');button.disabled=true;$('quiet-status').textContent='Saving…';try{const response=await fetch('/api/quiet-hours',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams(values)});if(!response.ok)throw new Error('HTTP '+response.status);quietHoursSnapshot={enabled:Boolean(values.enabled),startHour:values.startHour,endHour:values.endHour};$('quiet-status').textContent=values.enabled?'Saved · quiet hours are active immediately.':'Saved · quiet hours are disabled.'}catch(e){$('quiet-status').textContent='Save failed · '+(e.message||'connection error')}finally{button.disabled=false}}
+async function loadWifiSettings(){try{const response=await fetch('/api/wifi-settings',{cache:'no-store'});if(!response.ok)throw new Error('HTTP '+response.status);const settings=await response.json();if(typeof settings.ssid!=='string'||settings.ssid.length<1||settings.ssid.length>32||settings.passwordConfigured!==true)throw new Error('Invalid Wi-Fi settings payload');$('wifi-ssid').value=settings.ssid;$('wifi-status').textContent='Loaded from device. Password is not exposed by the API.'}catch(e){$('wifi-status').textContent='Could not load Wi-Fi settings · '+(e.message||'connection error')}}
+async function saveWifiSettings(){const ssid=$('wifi-ssid').value;const password=$('wifi-password').value;if(ssid.length<1||ssid.length>32||/[^\x20-\x7e]|["\\]/.test(ssid)){$('wifi-status').textContent='SSID must use 1–32 printable ASCII characters and cannot contain quotes or backslashes.';return}if(password.length>0&&(password.length<8||password.length>63||/[^\x20-\x7e]/.test(password))){$('wifi-status').textContent='Password must be 8–63 printable ASCII characters, or blank to keep the current password.';return}const button=$('wifi-save');button.disabled=true;$('wifi-status').textContent='Saving settings and restarting the access point…';try{const response=await fetch('/api/wifi-settings',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams({ssid,password})});if(!response.ok){const result=await response.json().catch(()=>({}));throw new Error(result.error||('HTTP '+response.status))}$('wifi-password').value='';$('wifi-status').textContent='Saved. Wi-Fi is restarting; reconnect using the configured SSID and password.'}catch(e){$('wifi-status').textContent='Save may have disconnected the browser. Reconnect to the configured network and reload if needed. '+(e.message||'')}finally{button.disabled=false}}
 async function loadReminderSettings(){try{const response=await fetch('/api/reminder-settings',{cache:'no-store'});if(!response.ok)throw new Error('HTTP '+response.status);const settings=await response.json();if(!Number.isInteger(settings.waterMinutes)||(settings.waterMinutes!==0&&(settings.waterMinutes<15||settings.waterMinutes>240))||!Number.isInteger(settings.movementMinutes)||(settings.movementMinutes!==0&&(settings.movementMinutes<15||settings.movementMinutes>180)))throw new Error('Invalid reminder settings payload');reminderSettingsSnapshot={waterMinutes:settings.waterMinutes,movementMinutes:settings.movementMinutes};$('reminder-water').value=settings.waterMinutes;$('reminder-movement').value=settings.movementMinutes;$('reminder-status').textContent='Loaded from device.'}catch(e){$('reminder-status').textContent='Could not load reminder settings · '+(e.message||'connection error')}}
 async function saveReminderSettings(){const values={waterMinutes:Number($('reminder-water').value),movementMinutes:Number($('reminder-movement').value)};if(!Number.isInteger(values.waterMinutes)||(values.waterMinutes!==0&&(values.waterMinutes<15||values.waterMinutes>240))||!Number.isInteger(values.movementMinutes)||(values.movementMinutes!==0&&(values.movementMinutes<15||values.movementMinutes>180))){$('reminder-status').textContent='Water: 0 or 15–240 min. Movement: 0 or 15–180 min.';return}const button=$('reminder-save');button.disabled=true;$('reminder-status').textContent='Saving…';try{const response=await fetch('/api/reminder-settings',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams(values)});if(!response.ok)throw new Error('HTTP '+response.status);reminderSettingsSnapshot={...values};$('reminder-status').textContent='Saved · new intervals are active immediately.'}catch(e){$('reminder-status').textContent='Save failed · '+(e.message||'connection error')}finally{button.disabled=false}}
 async function loadTimerSettings(){try{const response=await fetch('/api/timer-settings',{cache:'no-store'});if(!response.ok)throw new Error('HTTP '+response.status);const settings=await response.json();if(!Number.isInteger(settings.workMinutes)||settings.workMinutes<1||settings.workMinutes>180||!Number.isInteger(settings.playMinutes)||settings.playMinutes<1||settings.playMinutes>60||!Number.isInteger(settings.napMinutes)||settings.napMinutes<1||settings.napMinutes>120||!Number.isInteger(settings.workCyclesBeforeLongRest)||settings.workCyclesBeforeLongRest<1||settings.workCyclesBeforeLongRest>8)throw new Error('Invalid settings payload');timerSettingsSnapshot={workMinutes:settings.workMinutes,playMinutes:settings.playMinutes,napMinutes:settings.napMinutes,workCyclesBeforeLongRest:settings.workCyclesBeforeLongRest};$('setting-work').value=settings.workMinutes;$('setting-play').value=settings.playMinutes;$('setting-nap').value=settings.napMinutes;$('setting-cycles').value=settings.workCyclesBeforeLongRest;$('settings-status').textContent='Loaded from device.'}catch(e){$('settings-status').textContent='Could not load settings. Defaults are shown; try refresh.'}}
@@ -225,17 +289,18 @@ $('export-json').addEventListener('click',downloadJsonExport);
 $('pet-interact').addEventListener('click',interactWithPet);
 $('settings-save').addEventListener('click',saveTimerSettings);
 $('quiet-save').addEventListener('click',saveQuietHours);$('reminder-save').addEventListener('click',saveReminderSettings);
+$('wifi-save').addEventListener('click',saveWifiSettings);
 $('daily-goal-target').value=String(dailySessionGoal);$('daily-goal-target').addEventListener('change',saveDailyGoal);$('daily-goal-target').addEventListener('keydown',event=>{if(event.key==='Enter'){event.preventDefault();saveDailyGoal()}});
 loadTimerSettings();
 loadQuietHours();
 loadReminderSettings();
+loadWifiSettings();
 $('export-daily').disabled=true;$('export-monthly').disabled=true;$('export-daily').addEventListener('click',()=>{if(!snapshot?.dailyHistory?.length)return;const records=(snapshot?.dailyHistory||[]).map(d=>[dateLabel(d.dateKey),d.workMs,d.playMs,d.napMs,d.completedWorkSessions]);downloadCsv('pashmak-daily-history.csv',['Date','Work ms','Play ms','Nap ms','Completed sessions'],records)});
 $('export-monthly').addEventListener('click',()=>{if(!snapshot?.monthlyHistory?.length)return;const records=(snapshot?.monthlyHistory||[]).map(m=>[monthLabel(m.monthKey),m.workMs,m.playMs,m.napMs,m.completedWorkSessions]);downloadCsv('pashmak-monthly-history.csv',['Month','Work ms','Play ms','Nap ms','Completed sessions'],records)});
 document.querySelectorAll('[data-days]').forEach(b=>b.addEventListener('click',()=>{selectedDays=Number(b.dataset.days);if(snapshot)render(snapshot)}));refresh();
 </script></body></html>
 )HTML";
 }
-
 void WebDashboard::begin(PashmakApp &app)
 {
     _app = &app;
@@ -244,15 +309,15 @@ void WebDashboard::begin(PashmakApp &app)
     WiFi.mode(WIFI_AP);
     WiFi.setTxPower(WIFI_POWER_8_5dBm);
     WiFi.setSleep(true);
-    char apPassword[WIFI_AP_PASSWORD_LENGTH + 1]{};
-    generateAccessPointPassword(apPassword);
-    const bool apStarted = WiFi.softAP(WIFI_AP_SSID, apPassword);
+    char apSsid[WIFI_AP_SSID_CAPACITY]{};
+    char apPassword[WIFI_AP_PASSWORD_CAPACITY]{};
+    loadAccessPointConfig(apSsid, apPassword);
+    const bool apStarted = WiFi.softAP(apSsid, apPassword);
     if (!apStarted)
     {
         Serial.println("[WEB] Failed to start Wi-Fi access point.");
         return;
     }
-
     _server.on("/", HTTP_GET, [this]() { handleRoot(); });
     _server.on("/api/stats", HTTP_GET, [this]() { handleStats(); });
     _server.on("/api/pet/select", HTTP_POST, [this]() { handlePetSelection(); });
@@ -263,26 +328,23 @@ void WebDashboard::begin(PashmakApp &app)
     _server.on("/api/quiet-hours", HTTP_POST, [this]() { handleQuietHoursPost(); });
     _server.on("/api/reminder-settings", HTTP_GET, [this]() { handleReminderSettingsGet(); });
     _server.on("/api/reminder-settings", HTTP_POST, [this]() { handleReminderSettingsPost(); });
+    _server.on("/api/wifi-settings", HTTP_GET, [this]() { handleWifiSettingsGet(); });
+    _server.on("/api/wifi-settings", HTTP_POST, [this]() { handleWifiSettingsPost(); });
     _server.onNotFound([this]() { handleNotFound(); });
     _server.begin();
     _started = true;
-
-    Serial.printf("[WEB] Wi-Fi SSID: %s\n", WIFI_AP_SSID);
-    Serial.printf("[WEB] Wi-Fi password (changes after reboot): %s\n", apPassword);
+    Serial.printf("[WEB] Wi-Fi SSID: %s\n", apSsid);
     Serial.printf("[WEB] Dashboard: http://%s/\n", WiFi.softAPIP().toString().c_str());
 }
-
 void WebDashboard::update()
 {
     if (_started)
         _server.handleClient();
 }
-
 void WebDashboard::handleRoot()
 {
     _server.send_P(200, "text/html; charset=utf-8", DASHBOARD_HTML);
 }
-
 void WebDashboard::handleStats()
 {
     if (_app == nullptr)
@@ -290,12 +352,9 @@ void WebDashboard::handleStats()
         _server.send(503, "application/json", "{\"error\":\"statistics unavailable\"}");
         return;
     }
-
     _server.sendHeader("Cache-Control", "no-store");
     _server.send(200, "application/json; charset=utf-8", _app->statisticsToJson(14));
 }
-
-
 void WebDashboard::handlePetSelection()
 {
     if (_app == nullptr || !_server.hasArg("id"))
@@ -303,7 +362,6 @@ void WebDashboard::handlePetSelection()
         _server.send(400, "application/json", "{\"error\":\"missing pet id\"}");
         return;
     }
-
     const String value = _server.arg("id");
     if (value.length() != 1 || value[0] < '0' || value[0] > '2' ||
         !_app->setActivePet(static_cast<uint8_t>(value[0] - '0')))
@@ -311,10 +369,8 @@ void WebDashboard::handlePetSelection()
         _server.send(400, "application/json", "{\"error\":\"invalid pet id\"}");
         return;
     }
-
     _server.send(200, "application/json", "{\"ok\":true}");
 }
-
 void WebDashboard::handlePetInteraction()
 {
     if (_app == nullptr)
@@ -322,21 +378,18 @@ void WebDashboard::handlePetInteraction()
         _server.send(503, "application/json", "{\"error\":\"pet interaction unavailable\"}");
         return;
     }
-
     if (!_app->interactWithActivePet(millis()))
     {
         _server.sendHeader("Retry-After", "8");
         _server.send(429, "application/json", "{\"error\":\"interaction cooldown active\"}");
         return;
     }
-
     char response[64];
     snprintf(response, sizeof(response), "{\"ok\":true,\"bond\":%u}",
              _app->petBond(_app->activePetId()));
     _server.sendHeader("Cache-Control", "no-store");
     _server.send(200, "application/json", response);
 }
-
 void WebDashboard::handleTimerSettingsGet()
 {
     if (_app == nullptr)
@@ -344,7 +397,6 @@ void WebDashboard::handleTimerSettingsGet()
         _server.send(503, "application/json", "{\"error\":\"settings unavailable\"}");
         return;
     }
-
     const PashmakApp::TimerSettings settings = _app->timerSettings();
     char json[128];
     snprintf(json, sizeof(json),
@@ -354,7 +406,6 @@ void WebDashboard::handleTimerSettingsGet()
     _server.sendHeader("Cache-Control", "no-store");
     _server.send(200, "application/json; charset=utf-8", json);
 }
-
 void WebDashboard::handleTimerSettingsPost()
 {
     if (_app == nullptr)
@@ -362,7 +413,6 @@ void WebDashboard::handleTimerSettingsPost()
         _server.send(503, "application/json", "{\"error\":\"settings unavailable\"}");
         return;
     }
-
     const char *keys[] = {"workMinutes", "playMinutes", "napMinutes", "workCyclesBeforeLongRest"};
     uint32_t values[4]{};
     for (uint8_t i = 0; i < 4; ++i)
@@ -390,7 +440,6 @@ void WebDashboard::handleTimerSettingsPost()
         }
         values[i] = parsed;
     }
-
     if (values[0] < 1 || values[0] > 180 ||
         values[1] < 1 || values[1] > 60 ||
         values[2] < 1 || values[2] > 120 ||
@@ -399,7 +448,6 @@ void WebDashboard::handleTimerSettingsPost()
         _server.send(400, "application/json", "{\"error\":\"setting out of range\"}");
         return;
     }
-
     PashmakApp::TimerSettings settings;
     settings.workMinutes = static_cast<uint16_t>(values[0]);
     settings.playMinutes = static_cast<uint16_t>(values[1]);
@@ -410,11 +458,9 @@ void WebDashboard::handleTimerSettingsPost()
         _server.send(500, "application/json", "{\"error\":\"could not persist settings\"}");
         return;
     }
-
     _server.sendHeader("Cache-Control", "no-store");
     _server.send(200, "application/json", "{\"ok\":true}");
 }
-
 void WebDashboard::handleQuietHoursGet()
 {
     if (_app == nullptr)
@@ -429,7 +475,6 @@ void WebDashboard::handleQuietHoursGet()
     _server.sendHeader("Cache-Control", "no-store");
     _server.send(200, "application/json; charset=utf-8", json);
 }
-
 void WebDashboard::handleQuietHoursPost()
 {
     if (_app == nullptr)
@@ -442,7 +487,6 @@ void WebDashboard::handleQuietHoursPost()
         _server.send(400, "application/json", "{\"error\":\"missing setting\"}");
         return;
     }
-
     const String enabled = _server.arg("enabled");
     const String start = _server.arg("startHour");
     const String end = _server.arg("endHour");
@@ -477,7 +521,6 @@ void WebDashboard::handleQuietHoursPost()
         _server.send(400, "application/json", "{\"error\":\"hours must differ and be between 0 and 23\"}");
         return;
     }
-
     PashmakApp::QuietHoursSettings settings;
     settings.enabled = enabled == "1";
     settings.startHour = startHour;
@@ -490,7 +533,6 @@ void WebDashboard::handleQuietHoursPost()
     _server.sendHeader("Cache-Control", "no-store");
     _server.send(200, "application/json", "{\"ok\":true}");
 }
-
 void WebDashboard::handleReminderSettingsGet()
 {
     if (_app == nullptr)
@@ -505,7 +547,6 @@ void WebDashboard::handleReminderSettingsGet()
     _server.sendHeader("Cache-Control", "no-store");
     _server.send(200, "application/json; charset=utf-8", json);
 }
-
 void WebDashboard::handleReminderSettingsPost()
 {
     if (_app == nullptr)
@@ -556,6 +597,79 @@ void WebDashboard::handleReminderSettingsPost()
     }
     _server.sendHeader("Cache-Control", "no-store");
     _server.send(200, "application/json", "{\"ok\":true}");
+}
+void WebDashboard::handleWifiSettingsGet()
+{
+    char ssid[WIFI_AP_SSID_CAPACITY]{};
+    char password[WIFI_AP_PASSWORD_CAPACITY]{};
+    loadAccessPointConfig(ssid, password);
+
+    char response[96];
+    snprintf(response, sizeof(response), "{\"ssid\":\"%s\",\"passwordConfigured\":true}", ssid);
+    _server.sendHeader("Cache-Control", "no-store");
+    _server.send(200, "application/json; charset=utf-8", response);
+}
+
+void WebDashboard::handleWifiSettingsPost()
+{
+    if (!_server.hasArg("ssid") || !_server.hasArg("password"))
+    {
+        _server.send(400, "application/json", "{\"error\":\"missing setting\"}");
+        return;
+    }
+
+    const String ssidValue = _server.arg("ssid");
+    const String newPassword = _server.arg("password");
+    if (ssidValue.length() == 0 || ssidValue.length() > 32)
+    {
+        _server.send(400, "application/json", "{\"error\":\"SSID must contain 1 to 32 characters\"}");
+        return;
+    }
+    for (size_t i = 0; i < ssidValue.length(); ++i)
+    {
+        const unsigned char ch = static_cast<unsigned char>(ssidValue[i]);
+        if (ch < 0x20 || ch > 0x7e || ch == '"' || ch == '\\')
+        {
+            _server.send(400, "application/json", "{\"error\":\"SSID contains unsupported characters\"}");
+            return;
+        }
+    }
+
+    char currentSsid[WIFI_AP_SSID_CAPACITY]{};
+    char currentPassword[WIFI_AP_PASSWORD_CAPACITY]{};
+    loadAccessPointConfig(currentSsid, currentPassword);
+    String passwordValue = newPassword.length() == 0 ? String(currentPassword) : newPassword;
+    if (passwordValue.length() < 8 || passwordValue.length() > 63)
+    {
+        _server.send(400, "application/json", "{\"error\":\"password must contain 8 to 63 characters\"}");
+        return;
+    }
+    for (size_t i = 0; i < passwordValue.length(); ++i)
+    {
+        const unsigned char ch = static_cast<unsigned char>(passwordValue[i]);
+        if (ch < 0x20 || ch > 0x7e)
+        {
+            _server.send(400, "application/json", "{\"error\":\"password contains unsupported characters\"}");
+            return;
+        }
+    }
+
+    const String ssid = ssidValue;
+    if (!saveAccessPointConfig(ssid.c_str(), passwordValue.c_str()))
+    {
+        _server.send(500, "application/json", "{\"error\":\"could not persist Wi-Fi settings\"}");
+        return;
+    }
+
+    _server.sendHeader("Cache-Control", "no-store");
+    _server.send(200, "application/json; charset=utf-8", "{\"ok\":true,\"restarting\":true}");
+    delay(700);
+    WiFi.softAPdisconnect(true);
+    delay(150);
+    if (!WiFi.softAP(ssid.c_str(), passwordValue.c_str()))
+        Serial.println("[WEB] Failed to restart access point with updated settings.");
+    else
+        Serial.printf("[WEB] Wi-Fi settings updated; SSID: %s\n", ssid.c_str());
 }
 
 void WebDashboard::handleNotFound()

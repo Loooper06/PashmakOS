@@ -95,9 +95,12 @@ checks = {
     "invalid saved timer settings fall back to defaults": '_timerSettings = TimerSettings{};' in timer_load and 'Invalid saved settings; using defaults.' in timer_load,
     "automatic cycle uses runtime-configured durations": '_timerSettings.workMinutes' in automatic_mode and '_timerSettings.playMinutes' in automatic_mode and '_timerSettings.napMinutes' in automatic_mode and '_timerSettings.workCyclesBeforeLongRest' in automatic_mode,
     "dashboard exposes settings form and save action": 'id="setting-work"' in web and 'id="setting-cycles"' in web and "async function saveTimerSettings()" in js,
-    "dashboard generates a fresh 16-character AP password from the ESP32 RNG": "WIFI_AP_PASSWORD_LENGTH = 16" in web and "esp_random()" in web and "generateAccessPointPassword(apPassword)" in web,
-    "dashboard uses the generated password and logs it for local setup": "WiFi.softAP(WIFI_AP_SSID, apPassword)" in web and "Wi-Fi password (changes after reboot)" in web,
-    "dashboard no longer contains the shared default AP password": "pashmak123" not in web,
+    "dashboard loads persisted AP credentials instead of generating a random password": "loadAccessPointConfig(apSsid, apPassword)" in web and "WiFi.softAP(apSsid, apPassword)" in web and "esp_random()" not in web,
+    "dashboard exposes Wi-Fi settings GET and POST endpoints": '_server.on("/api/wifi-settings", HTTP_GET' in web and '_server.on("/api/wifi-settings", HTTP_POST' in web and "handleWifiSettingsGet()" in web and "handleWifiSettingsPost()" in web,
+    "Wi-Fi settings persist in a versioned Preferences blob": 'preferences.putBytes(WIFI_AP_CONFIG_KEY, &stored, sizeof(stored))' in web and 'WIFI_AP_CONFIG_VERSION = 1' in web and 'isValidAccessPointConfig(stored)' in web,
+    "Wi-Fi settings UI validates and submits SSID/password": 'id="wifi-ssid"' in web and 'id="wifi-password"' in web and "async function loadWifiSettings()" in js and "async function saveWifiSettings()" in js and "fetch('/api/wifi-settings',{method:'POST'" in js,
+    "Wi-Fi API does not expose the current password and restarts AP after saving": "passwordConfigured" in web and "WiFi.softAPdisconnect(true)" in web and "WiFi.softAP(ssid.c_str(), passwordValue.c_str())" in web,
+    "Wi-Fi credentials are validated and the default bootstrap credentials are documented": "password must contain 8 to 63 characters" in web and "DEFAULT_WIFI_AP_PASSWORD[] = \"pashmak123\"" in web,
     "dashboard validates and submits timer settings": "Check the allowed ranges before saving." in js and "fetch('/api/timer-settings',{method:'POST'" in js and "loadTimerSettings();" in js,
 
 }

@@ -2,6 +2,7 @@
 #include "../../src/core/JsonEscape.h"
 #include "../../src/core/HistoryDate.h"
 #include "../../src/core/StatsAggregation.h"
+#include "../../src/core/PetProfileValidation.h"
 #include <string>
 #include <assert.h>
 #include <stdio.h>
@@ -405,6 +406,35 @@ static void testMonthlyStatisticsAggregation()
     assert(empty.workMs == 0);
 }
 
+struct TestPetProfile
+{
+    uint32_t version;
+    uint8_t count;
+    uint8_t petIds[3];
+    uint8_t energy[3];
+};
+
+static void testPetProfileValidation()
+{
+    TestPetProfile valid{1, 3, {0, 1, 2}, {0, 80, 100}};
+    assert((PetProfileValidation::isValid<TestPetProfile, 3>(valid, 1)));
+
+    TestPetProfile invalidVersion{2, 3, {0, 1, 2}, {80, 80, 80}};
+    assert(!(PetProfileValidation::isValid<TestPetProfile, 3>(invalidVersion, 1)));
+
+    TestPetProfile invalidCount{1, 2, {0, 1, 2}, {80, 80, 80}};
+    assert(!(PetProfileValidation::isValid<TestPetProfile, 3>(invalidCount, 1)));
+
+    TestPetProfile invalidFirstId{1, 3, {1, 0, 2}, {80, 80, 80}};
+    assert(!(PetProfileValidation::isValid<TestPetProfile, 3>(invalidFirstId, 1)));
+
+    TestPetProfile invalidLastId{1, 3, {0, 1, 3}, {80, 80, 80}};
+    assert(!(PetProfileValidation::isValid<TestPetProfile, 3>(invalidLastId, 1)));
+
+    TestPetProfile invalidEnergy{1, 3, {0, 1, 2}, {80, 101, 80}};
+    assert(!(PetProfileValidation::isValid<TestPetProfile, 3>(invalidEnergy, 1)));
+}
+
 static void testHistoryDateValidation()
 {
     assert(HistoryDate::isValidDateKey(20261024));
@@ -427,6 +457,7 @@ int main()
 {
     testJsonStringEscaping();
     testHistoryDateValidation();
+    testPetProfileValidation();
     testRecentStatisticsAggregation();
     testMonthlyStatisticsAggregation();
     testEnergyBoundsAndRates();

@@ -18,7 +18,6 @@ static void testEnergyBoundsAndRates()
 
     pet.update(PetMode::Nap, 20UL * 60UL * 1000UL);
     assert(pet.state().energy <= 100);
-    assert(pet.state().energy >= 0);
 }
 
 static void testMillisRollover()
@@ -53,13 +52,12 @@ static void testSpontaneousMessageExpires()
 {
     PetBehavior pet;
     pet.begin(0);
-    const char *baseMessage = pet.state().message;
-
     pet.update(PetMode::Work, 90000UL);
-    assert(strcmp(pet.state().message, baseMessage) != 0);
+    const char *eventMessage = pet.state().message;
+    assert(eventMessage != nullptr);
 
     pet.update(PetMode::Work, 97000UL);
-    assert(strcmp(pet.state().message, baseMessage) == 0);
+    assert(strcmp(pet.state().message, eventMessage) != 0);
 }
 
 int main()

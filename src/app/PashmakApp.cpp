@@ -226,7 +226,8 @@ bool PashmakApp::controlTimer(TimerCommand command, uint32_t now)
         }
         else
         {
-            _modeStartedAt = now;
+            // Duplicate start requests must not restart a running phase; Reset is explicit.
+            return true;
         }
         _lastWorkTick = now;
         Serial.println("[TIMER] Started/resumed.");

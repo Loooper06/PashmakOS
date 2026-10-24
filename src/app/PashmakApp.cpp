@@ -105,6 +105,33 @@ bool PashmakApp::setQuietHoursSettings(const QuietHoursSettings &settings)
     return true;
 }
 
+PashmakApp::ReminderSettings PashmakApp::reminderSettings() const
+{
+    return _reminderSettings;
+}
+
+bool PashmakApp::setReminderSettings(const ReminderSettings &settings)
+{
+    if ((settings.waterMinutes != 0 && (settings.waterMinutes < 15 || settings.waterMinutes > 240)) ||
+        (settings.movementMinutes != 0 && (settings.movementMinutes < 15 || settings.movementMinutes > 180)))
+        return false;
+    if (!_statsReady)
+        return false;
+
+    ReminderSettingsStorage stored{};
+    stored.version = 1;
+    stored.settings = settings;
+    if (_statsPreferences.putBytes("reminderCfg", &stored, sizeof(stored)) != sizeof(stored))
+    {
+        Serial.println("[REMINDER] Failed to persist reminder settings.");
+        return false;
+    }
+    _reminderSettings = settings;
+    Serial.printf("[REMINDER] Water=%u min, movement=%u min.\\n",
+                  _reminderSettings.waterMinutes, _reminderSettings.movementMinutes);
+    return true;
+}
+
 bool PashmakApp::isQuietHour(int8_t hour) const
 {
     if (!_quietHours.enabled || hour < 0 || hour > 23 ||
@@ -310,6 +337,7 @@ void PashmakApp::begin()
 
     loadTimerSettings();
     loadQuietHoursSettings();
+    loadReminderSettings();
     loadPetProfiles();
     for (uint8_t i = 0; i < PET_COUNT; ++i)
     {
@@ -444,6 +472,28 @@ void PashmakApp::loadQuietHoursSettings()
     Serial.printf("[QUIET] Loaded %s, %02u:00-%02u:00.\n",
                   _quietHours.enabled ? "enabled" : "disabled",
                   _quietHours.startHour, _quietHours.endHour);
+}
+
+void PashmakApp::loadReminderSettings()
+{
+    _reminderSettings = ReminderSettings{};
+    if (!_statsReady)
+        return;
+
+    ReminderSettingsStorage stored{};
+    if (_statsPreferences.getBytesLength("reminderCfg") != sizeof(stored) ||
+        _statsPreferences.getBytes("reminderCfg", &stored, sizeof(stored)) != sizeof(stored) ||
+        stored.version != 1 ||
+        (stored.settings.waterMinutes != 0 && (stored.settings.waterMinutes < 15 || stored.settings.waterMinutes > 240)) ||
+        (stored.settings.movementMinutes != 0 && (stored.settings.movementMinutes < 15 || stored.settings.movementMinutes > 180)))
+    {
+        Serial.println("[REMINDER] Using default intervals (water 60 min, movement 45 min).");
+        return;
+    }
+
+    _reminderSettings = stored.settings;
+    Serial.printf("[REMINDER] Loaded water=%u min, movement=%u min.\\n",
+                  _reminderSettings.waterMinutes, _reminderSettings.movementMinutes);
 }
 
 void PashmakApp::loadPetProfiles()
@@ -854,7 +904,8 @@ void PashmakApp::persistMonthlyHistory(uint32_t now, bool force)
 
 void PashmakApp::updateRtcReminder(uint32_t now, bool quietHours)
 {
-    const ReminderType reminder = _rtc.update(now, quietHours);
+    const ReminderType reminder = _rtc.update(
+        now, quietHours, _reminderSettings.waterMinutes, _reminderSettings.movementMinutes);
     if (reminder == ReminderType::None)
         return;
 

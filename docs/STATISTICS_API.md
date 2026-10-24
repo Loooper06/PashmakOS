@@ -23,7 +23,7 @@ The `stats` response is a single JSON object with `version: 3`. The dashboard va
 
 - `activePetId`: selected pet ID (0–2).
 - `pets`: exactly three pet profiles. Each profile has `id`, `name`, `energy` (0–100), `happiness` (0–100), `bond` (0–100), `interactions` (0–65535), `achievementMask` (known per-pet achievement bits), `mood`, and `message`.
-- `pet`: the selected pet's `energy`, `mood`, and `message`. This duplicates the selected profile's `energy`, `happiness`, `bond`, `interactions`, `achievementMask`, `mood`, and `message` for convenient dashboard rendering.
+- `pet`: the selected pet's `energy`, `happiness`, `bond`, `interactions`, `achievementMask`, `mood`, and `message`. These values duplicate the selected profile for convenient dashboard rendering.
 - `globalAchievementMask`: persisted global achievement bits for focus-session milestones and a three-consecutive-day focus streak.
 - `totals`: lifetime counters currently stored in Preferences.
 - `recent`: aggregate of the most recent available daily records, up to the requested number of days (the serial command currently requests 7; the dashboard requests 14).

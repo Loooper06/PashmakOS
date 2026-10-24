@@ -154,7 +154,8 @@ The timer has a dedicated local endpoint, separate from the statistics snapshot:
 
 - `GET /api/timer` returns `phase` (`work`, `shortBreak`, or `longBreak`), `remainingMs`, `paused`, `completedCycles`, and `cyclesBeforeLongRest`.
 - `POST /api/timer` accepts one form field named `action` with exactly one of `start`, `pause`, `skip`, or `reset`. Missing or unsupported actions return HTTP 400.
-- Pause freezes the remaining duration; resume continues from that remaining time. Duplicate start/pause requests are idempotent.
+- The device boots into a paused work phase with the full configured work duration; it never silently consumes a session after reboot. Start begins the timer, and resume continues from the saved remaining duration. Duplicate start/pause requests are idempotent.
+- If a pause request arrives after the current phase deadline but before the main loop processes the transition, the device completes that phase transition first and pauses the next phase at its full duration.
 - Skip advances to the next phase without counting the interrupted work phase as completed and without awarding focus-session achievements. Reset starts a fresh work phase and clears cycle progress; lifetime statistics are retained.
 - Changing saved durations restarts the current phase with the new configured duration. Timer settings remain stored in the versioned ESP32 Preferences record.
 - The dashboard obtains timer state from the device and periodically resynchronizes it, so its visible countdown is only a presentation estimate between device responses.

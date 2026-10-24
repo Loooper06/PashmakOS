@@ -172,6 +172,7 @@ void PashmakApp::begin()
     _lastWorkTick = now;
     _lastFrame = now;
     _lastFrameMetricsAt = now;
+    _lastUpdateAt = now;
     _modeStartedAt = now;
     _lastStatsPersistAt = now;
 
@@ -718,6 +719,18 @@ void PashmakApp::handleSerialCommands()
 
 void PashmakApp::update()
 {
+    // Measures cadence between app.update() entries. Since dashboard.update()
+    // runs after this method in loop(), large gaps can expose slow network work.
+    const uint32_t updateStartedAt = millis();
+    const uint32_t loopGapMs = static_cast<uint32_t>(updateStartedAt - _lastUpdateAt);
+    _lastUpdateAt = updateStartedAt;
+    ++_loopMetricCount;
+    _loopMetricTotalMs += loopGapMs;
+    if (loopGapMs > _loopMetricMaxGapMs)
+        _loopMetricMaxGapMs = loopGapMs;
+    if (loopGapMs >= Config::FRAME_INTERVAL_MS)
+        ++_loopMetricOverBudget;
+
     handleSerialCommands();
     const uint32_t now = millis();
 
@@ -786,15 +799,30 @@ void PashmakApp::update()
             const uint32_t averageUs = _frameMetricCount > 0
                 ? static_cast<uint32_t>(_frameMetricTotalUs / _frameMetricCount)
                 : 0;
+            const uint32_t loopAverageGapMs = _loopMetricCount > 0
+                ? static_cast<uint32_t>(_loopMetricTotalMs / _loopMetricCount)
+                : 0;
+            const uint32_t metricsWindowMs = static_cast<uint32_t>(metricsNow - _lastFrameMetricsAt);
             Serial.printf(
                 "[TFT_FRAME] window=%lu ms frames=%lu avg=%lu us max=%lu us overBudget=%lu\n",
-                static_cast<unsigned long>(metricsNow - _lastFrameMetricsAt),
+                static_cast<unsigned long>(metricsWindowMs),
                 static_cast<unsigned long>(_frameMetricCount),
                 static_cast<unsigned long>(averageUs),
                 static_cast<unsigned long>(_frameMetricMaxUs),
                 static_cast<unsigned long>(_frameMetricOverBudget));
+            Serial.printf(
+                "[LOOP_TIMING] window=%lu ms calls=%lu avgGap=%lu ms maxGap=%lu ms overBudget=%lu\n",
+                static_cast<unsigned long>(metricsWindowMs),
+                static_cast<unsigned long>(_loopMetricCount),
+                static_cast<unsigned long>(loopAverageGapMs),
+                static_cast<unsigned long>(_loopMetricMaxGapMs),
+                static_cast<unsigned long>(_loopMetricOverBudget));
 
             _lastFrameMetricsAt = metricsNow;
+            _loopMetricCount = 0;
+            _loopMetricTotalMs = 0;
+            _loopMetricMaxGapMs = 0;
+            _loopMetricOverBudget = 0;
             _frameMetricCount = 0;
             _frameMetricTotalUs = 0;
             _frameMetricMaxUs = 0;

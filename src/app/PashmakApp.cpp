@@ -275,12 +275,22 @@ void PashmakApp::persistStats(uint32_t now, bool force)
         return;
     }
 
-    _statsPreferences.putULong64("workMs", _workMs);
-    _statsPreferences.putULong64("playMs", _playMs);
-    _statsPreferences.putULong64("napMs", _napMs);
-    _statsPreferences.putUInt("workSessions", _completedWorkSessions);
-    _lastStatsPersistAt = now;
+    const bool workSaved =
+        _statsPreferences.putULong64("workMs", _workMs) == sizeof(uint64_t);
+    const bool playSaved =
+        _statsPreferences.putULong64("playMs", _playMs) == sizeof(uint64_t);
+    const bool napSaved =
+        _statsPreferences.putULong64("napMs", _napMs) == sizeof(uint64_t);
+    const bool sessionsSaved =
+        _statsPreferences.putUInt("workSessions", _completedWorkSessions) == sizeof(uint32_t);
 
+    if (!(workSaved && playSaved && napSaved && sessionsSaved))
+    {
+        Serial.println("[STATS] Failed to persist one or more counters; will retry.");
+        return;
+    }
+
+    _lastStatsPersistAt = now;
     Serial.printf("[STATS] Work: %llu min | Play: %llu min | Rest: %llu min | Work sessions: %lu\n",
                   static_cast<unsigned long long>(_workMs / 60000ULL),
                   static_cast<unsigned long long>(_playMs / 60000ULL),

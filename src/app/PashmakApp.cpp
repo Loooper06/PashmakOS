@@ -832,8 +832,12 @@ void PashmakApp::update()
     persistMonthlyHistory(now);
 
     updateAutomaticMode(now);
+    int8_t currentHour = -1;
+    if (_rtc.isAvailable())
+        currentHour = static_cast<int8_t>(_rtc.now().hour());
+
     for (uint8_t i = 0; i < 3; ++i)
-        _behaviors[i].update(_mode, now);
+        _behaviors[i].update(_mode, now, currentHour);
     updateRtcReminder(now);
 
     if (_reminderMessage != nullptr &&

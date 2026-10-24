@@ -17,6 +17,7 @@ namespace StatsJson
     {
         uint8_t id;
         uint8_t energy;
+        uint8_t happiness;
         uint8_t bond;
         const char *name;
         const char *mood;
@@ -119,6 +120,8 @@ namespace StatsJson
         }
         json += "\"energy\":";
         appendUnsigned(json, pet.energy);
+        json += ",\"happiness\":";
+        appendUnsigned(json, pet.happiness);
         json += ",\"bond\":";
         appendUnsigned(json, pet.bond);
         json += ",\"mood\":";

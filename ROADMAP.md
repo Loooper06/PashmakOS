@@ -75,7 +75,8 @@ Acceptance: documented schema; failures do not erase useful data; dashboard read
    - Shows average daily focus, strongest focus day, days with recorded work, and completed sessions.
    - Values are derived from the existing statistics API; no new persistence fields or API schema changes.
    - [x] Show a daily-goal streak using the browser's configured session target and consecutive recorded calendar days (history is limited to 14 days).
-4. Keep behavior local-first and document what is stored in Preferences.
+4. [x] Keep behavior local-first; reminder schedules and quiet hours persist in versioned Preferences blobs with no cloud dependency.
+5. Continue measuring reminder/event overlap and full-loop cadence under dashboard load.
 Acceptance: no cloud dependency or undisclosed telemetry; reminders respect quiet hours.
 
 ## Phase 7 — Testability and release readiness

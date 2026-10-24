@@ -1013,6 +1013,8 @@ void PashmakApp::update()
         _behaviors[i].update(_mode, now, currentHour, quietHours);
     persistPetProfiles(now);
     updateRtcReminder(now, quietHours);
+    if (quietHours)
+        _reminderMessage = nullptr;
 
     if (_reminderMessage != nullptr &&
         static_cast<uint32_t>(now - _reminderShownAt) >= Config::REMINDER_DISPLAY_DURATION_MS)

@@ -2,6 +2,7 @@
 #include "Config.h"
 #include "../core/JsonEscape.h"
 #include "../core/HistoryDate.h"
+#include "../core/StatsAggregation.h"
 #include <Preferences.h>
 
 namespace
@@ -69,45 +70,14 @@ bool PashmakApp::getMonthlyStats(uint8_t index, MonthlyStats &out) const
 
 PashmakApp::StatsSummary PashmakApp::summarizeRecentDays(uint8_t days) const
 {
-    StatsSummary result{};
-    if (days == 0)
-        return result;
-
-    const uint8_t included = days < _dailyHistoryCount ? days : _dailyHistoryCount;
-    const uint8_t first = _dailyHistoryCount - included;
-    for (uint8_t i = first; i < _dailyHistoryCount; ++i)
-    {
-        const DailyStats &day = _dailyHistory[i];
-        result.workMs += day.workMs;
-        result.playMs += day.playMs;
-        result.napMs += day.napMs;
-        result.completedWorkSessions += day.completedWorkSessions;
-        ++result.daysIncluded;
-    }
-    return result;
+    return StatsAggregation::summarizeRecentDays<DailyStats, StatsSummary>(
+        _dailyHistory, _dailyHistoryCount, days);
 }
 
 PashmakApp::StatsSummary PashmakApp::summarizeMonth(uint16_t year, uint8_t month) const
 {
-    StatsSummary result{};
-    if (month < 1 || month > 12)
-        return result;
-
-    const int32_t monthKey = static_cast<int32_t>(year) * 100 + month;
-    for (uint8_t i = 0; i < _monthlyHistoryCount; ++i)
-    {
-        const MonthlyStats &record = _monthlyHistory[i];
-        if (record.monthKey != monthKey)
-            continue;
-
-        result.workMs = record.workMs;
-        result.playMs = record.playMs;
-        result.napMs = record.napMs;
-        result.completedWorkSessions = record.completedWorkSessions;
-        result.daysIncluded = 0; // Monthly aggregates track totals, not individual day coverage.
-        return result;
-    }
-    return result;
+    return StatsAggregation::summarizeMonth<MonthlyStats, StatsSummary>(
+        _monthlyHistory, _monthlyHistoryCount, year, month);
 }
 
 String PashmakApp::statisticsToJson(uint8_t recentDays) const

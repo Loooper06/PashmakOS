@@ -70,7 +70,7 @@ Acceptance: documented schema; failures do not erase useful data; dashboard read
 
 ## Phase 6 — User-aware features
 1. Use RTC time-of-day to adapt message tone and reminder windows.
-2. Add optional quiet hours only after defining safe configuration/storage.
+2. [x] Add configurable quiet hours with a versioned Preferences blob, dashboard controls, midnight-crossing ranges, and suppression of spontaneous messages/RTC reminders.
 3. Derive lightweight insights from local statistics; do not transmit personal data by default.
 4. Keep behavior local-first and document what is stored in Preferences.
 Acceptance: no cloud dependency or undisclosed telemetry; reminders respect quiet hours.

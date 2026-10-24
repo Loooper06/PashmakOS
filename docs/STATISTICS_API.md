@@ -130,3 +130,12 @@ The dashboard can export a versioned JSON backup containing timer-cycle settings
 ## Persistent event log
 
 `GET /api/events` returns the latest events in newest-first order. The fixed-capacity ring buffer retains 24 records in the `pashmak_log` Preferences namespace. Records include a sequence number, uptime seconds for the current boot, event code, and event-specific detail. Events cover boot, access-point startup failure, pet selection, and successful timer, quiet-hours, reminder, and Wi-Fi settings updates. Uptime is relative to the boot that recorded the event, not wall-clock time; no RTC timestamp is implied. Frequent pet interactions are intentionally omitted to reduce flash writes. The endpoint is read-only and sends `Cache-Control: no-store`.
+
+
+## Firmware OTA update
+
+- The dashboard provides a firmware update form that accepts a compiled ESP32 .bin image at POST /api/ota.
+- The upload uses the ESP32 Arduino Update API, which checks the available OTA partition and validates the image while writing. The device restarts only after a successful finalization; failed or interrupted uploads must not trigger a restart.
+- Use a firmware binary built for this exact board and partition layout. Keep the device powered and connected during upload.
+- **Security:** dashboard APIs are available to any client connected to the device access point. Change the default SSID password to a strong, unique password before enabling firmware updates and only connect trusted devices. OTA is not exposed as an authenticated internet service.
+- If the device does not return after an update, recover by reflashing over USB using PlatformIO.

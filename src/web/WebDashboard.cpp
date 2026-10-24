@@ -3,6 +3,7 @@
 #include <WiFi.h>
 #include <esp_system.h>
 #include <Preferences.h>
+#include <Update.h>
 #include <cstring>
 namespace
 {
@@ -250,6 +251,16 @@ footer{margin-top:18px;color:var(--muted);font-size:.82rem}
 <section class="card section"><h2>Activity trend</h2><div class="trend-legend"><span><i class="legend-dot trend-work"></i>Work</span><span><i class="legend-dot trend-play"></i>Play</span><span><i class="legend-dot trend-nap"></i>Nap</span></div><div id="activity-trend" class="trend-list" role="region" aria-label="Daily activity trend for work, play, and nap"><div class="chart-empty">Waiting for activity data…</div></div></section>
 <section class="card section"><div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap"><h2>Daily history</h2><button id="export-daily" type="button">Export CSV</button></div><div class="table-wrap"><table><thead><tr><th>Date</th><th>Work</th><th>Play</th><th>Nap</th><th>Sessions</th></tr></thead><tbody id="daily"></tbody></table></div></section>
 <section class="card section"><div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap"><h2>Monthly history</h2><button id="export-monthly" type="button">Export CSV</button></div><div class="table-wrap"><table><thead><tr><th>Month</th><th>Work</th><th>Play</th><th>Nap</th><th>Sessions</th></tr></thead><tbody id="monthly"></tbody></table></div></section>
+<section class="card section" aria-labelledby="ota-heading">
+<h2 id="ota-heading">Firmware update</h2>
+<p class="muted">Install a firmware <code>.bin</code> built for this exact ESP32 device. Keep the device powered and stay connected until it restarts. A failed update should leave the current firmware intact.</p>
+<p class="muted">Security: anyone connected to this Wi-Fi access point can use dashboard APIs. Change the default Wi-Fi password before updating firmware.</p>
+<div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+<input id="ota-file" type="file" accept=".bin,application/octet-stream" aria-label="Firmware binary file">
+<button id="ota-upload" type="button">Upload firmware</button>
+</div>
+<div id="ota-progress" class="muted" role="status" aria-live="polite" style="margin-top:10px">Choose a firmware binary to begin.</div>
+</section>
 <footer>Data is read from the ESP32's local statistics API. Keep this page open while connected to the PashmakOS Wi-Fi network.</footer>
 </main>
 <script>
@@ -368,6 +379,19 @@ $('wifi-save').addEventListener('click',saveWifiSettings);
 $('diagnostics-refresh').addEventListener('click',loadDiagnostics);
 $('event-log-refresh').addEventListener('click',loadEventLog);
 loadEventLog();
+const otaFile=$('ota-file'),otaButton=$('ota-upload'),otaProgress=$('ota-progress');
+otaButton.addEventListener('click',()=>{
+ const file=otaFile.files&&otaFile.files[0];
+ if(!file){otaProgress.textContent='Select a .bin firmware file first.';return}
+ if(!file.name.toLowerCase().endsWith('.bin')){otaProgress.textContent='Only .bin firmware files are accepted.';return}
+ if(!window.confirm('Upload and install this firmware? Do not disconnect power during the update.'))return;
+ const form=new FormData();form.append('firmware',file,file.name);
+ const xhr=new XMLHttpRequest();otaButton.disabled=true;otaFile.disabled=true;otaProgress.textContent='Uploading firmware…';
+ xhr.upload.addEventListener('progress',e=>{if(e.lengthComputable)otaProgress.textContent='Uploading '+Math.round(e.loaded/e.total*100)+'%';});
+ xhr.addEventListener('load',()=>{let message='';try{const data=JSON.parse(xhr.responseText);message=data.message||data.error||''}catch(e){message='Unexpected response from device'}otaProgress.textContent=xhr.status>=200&&xhr.status<300?(message||'Update accepted. Device will restart shortly.'):('Update failed: '+(message||('HTTP '+xhr.status)));otaButton.disabled=false;otaFile.disabled=false;});
+ xhr.addEventListener('error',()=>{otaProgress.textContent='Connection lost. Check device status before retrying.';otaButton.disabled=false;otaFile.disabled=false;});
+ xhr.open('POST','/api/ota');xhr.send(form);
+});
 loadDiagnostics();
 $('daily-goal-target').value=String(dailySessionGoal);$('daily-goal-target').addEventListener('change',saveDailyGoal);$('daily-goal-target').addEventListener('keydown',event=>{if(event.key==='Enter'){event.preventDefault();saveDailyGoal()}});
 loadTimerSettings();
@@ -410,6 +434,9 @@ void WebDashboard::begin(PashmakApp &app)
     _server.on("/api/reminder-settings", HTTP_GET, [this]() { handleReminderSettingsGet(); });
     _server.on("/api/reminder-settings", HTTP_POST, [this]() { handleReminderSettingsPost(); });
     _server.on("/api/events", HTTP_GET, [this]() { handleEventLog(); });
+    _server.on("/api/ota", HTTP_POST,
+               [this]() { handleOtaComplete(); },
+               [this]() { handleOtaUpload(); });
     _server.on("/api/diagnostics", HTTP_GET, [this]() { handleDiagnostics(); });
     _server.on("/api/wifi-settings", HTTP_GET, [this]() { handleWifiSettingsGet(); });
     _server.on("/api/wifi-settings", HTTP_POST, [this]() { handleWifiSettingsPost(); });

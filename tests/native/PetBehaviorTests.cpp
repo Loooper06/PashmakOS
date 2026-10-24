@@ -1,6 +1,7 @@
 #include "../../src/pet/PetBehavior.h"
 #include "../../src/core/JsonEscape.h"
 #include "../../src/core/HistoryDate.h"
+#include "../../src/core/StatsAggregation.h"
 #include <string>
 #include <assert.h>
 #include <stdio.h>
@@ -158,6 +159,99 @@ static void testInvalidPersonalityFallsBackSafely()
     assert(strcmp(fallback.state().message, invalid.state().message) == 0);
 }
 
+struct TestDailyStats
+{
+    int32_t dateKey;
+    uint64_t workMs;
+    uint64_t playMs;
+    uint64_t napMs;
+    uint32_t completedWorkSessions;
+};
+
+struct TestMonthlyStats
+{
+    int32_t monthKey;
+    uint64_t workMs;
+    uint64_t playMs;
+    uint64_t napMs;
+    uint32_t completedWorkSessions;
+};
+
+struct TestStatsSummary
+{
+    uint64_t workMs = 0;
+    uint64_t playMs = 0;
+    uint64_t napMs = 0;
+    uint32_t completedWorkSessions = 0;
+    uint8_t daysIncluded = 0;
+};
+
+static void testRecentStatisticsAggregation()
+{
+    const TestDailyStats days[] = {
+        {20261020, 100, 10, 1, 1},
+        {20261021, 200, 20, 2, 2},
+        {20261022, 300, 30, 3, 3},
+        {20261023, 400, 40, 4, 4},
+    };
+
+    const TestStatsSummary lastTwo =
+        StatsAggregation::summarizeRecentDays<TestDailyStats, TestStatsSummary>(days, 4, 2);
+    assert(lastTwo.workMs == 700);
+    assert(lastTwo.playMs == 70);
+    assert(lastTwo.napMs == 7);
+    assert(lastTwo.completedWorkSessions == 7);
+    assert(lastTwo.daysIncluded == 2);
+
+    const TestStatsSummary allDays =
+        StatsAggregation::summarizeRecentDays<TestDailyStats, TestStatsSummary>(days, 4, 99);
+    assert(allDays.workMs == 1000);
+    assert(allDays.playMs == 100);
+    assert(allDays.napMs == 10);
+    assert(allDays.completedWorkSessions == 10);
+    assert(allDays.daysIncluded == 4);
+
+    const TestStatsSummary noDays =
+        StatsAggregation::summarizeRecentDays<TestDailyStats, TestStatsSummary>(days, 4, 0);
+    assert(noDays.workMs == 0);
+    assert(noDays.daysIncluded == 0);
+
+    const TestStatsSummary empty =
+        StatsAggregation::summarizeRecentDays<TestDailyStats, TestStatsSummary>(nullptr, 4, 7);
+    assert(empty.workMs == 0);
+    assert(empty.daysIncluded == 0);
+}
+
+static void testMonthlyStatisticsAggregation()
+{
+    const TestMonthlyStats months[] = {
+        {202608, 1000, 100, 10, 2},
+        {202609, 2000, 200, 20, 4},
+        {202610, 3000, 300, 30, 6},
+    };
+
+    const TestStatsSummary october =
+        StatsAggregation::summarizeMonth<TestMonthlyStats, TestStatsSummary>(months, 3, 2026, 10);
+    assert(october.workMs == 3000);
+    assert(october.playMs == 300);
+    assert(october.napMs == 30);
+    assert(october.completedWorkSessions == 6);
+    assert(october.daysIncluded == 0);
+
+    const TestStatsSummary missing =
+        StatsAggregation::summarizeMonth<TestMonthlyStats, TestStatsSummary>(months, 3, 2026, 11);
+    assert(missing.workMs == 0);
+    assert(missing.completedWorkSessions == 0);
+
+    const TestStatsSummary invalidMonth =
+        StatsAggregation::summarizeMonth<TestMonthlyStats, TestStatsSummary>(months, 3, 2026, 13);
+    assert(invalidMonth.workMs == 0);
+
+    const TestStatsSummary empty =
+        StatsAggregation::summarizeMonth<TestMonthlyStats, TestStatsSummary>(nullptr, 3, 2026, 10);
+    assert(empty.workMs == 0);
+}
+
 static void testHistoryDateValidation()
 {
     assert(HistoryDate::isValidDateKey(20261024));
@@ -180,6 +274,8 @@ int main()
 {
     testJsonStringEscaping();
     testHistoryDateValidation();
+    testRecentStatisticsAggregation();
+    testMonthlyStatisticsAggregation();
     testEnergyBoundsAndRates();
     testMillisRollover();
     testPersonalityProfiles();

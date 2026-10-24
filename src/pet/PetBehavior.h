@@ -27,6 +27,7 @@ public:
     explicit PetBehavior(uint8_t personalityId = 0);
 
     void begin(uint32_t now);
+    bool restoreEnergy(uint8_t energy, uint32_t now);
     void update(PetMode mode, uint32_t now, int8_t hour = -1);
 
     const PetBehaviorState &state() const;

@@ -25,10 +25,10 @@ static void testMillisRollover()
     const uint32_t start = UINT32_MAX - 60000UL;
     PetBehavior pet;
     pet.begin(start);
-    pet.update(PetMode::Work, start + 120000UL);
+    pet.update(PetMode::Work, static_cast<uint32_t>(start + static_cast<uint32_t>(120000U)));
     assert(pet.state().energy == 79);
 
-    pet.update(PetMode::Nap, start + 150000UL);
+    pet.update(PetMode::Nap, static_cast<uint32_t>(start + static_cast<uint32_t>(150000U)));
     assert(pet.state().energy == 80);
 }
 

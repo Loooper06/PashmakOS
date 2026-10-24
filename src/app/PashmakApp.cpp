@@ -805,17 +805,17 @@ uint8_t PashmakApp::consecutiveWorkDays() const
             break;
         if (newerDateKey != 0)
         {
-            const int32_t year = newerDateKey / 10000;
-            const int32_t month = (newerDateKey / 100) % 100;
-            const int32_t day = newerDateKey % 100;
-            int32_t expected = 0;
+            const int32_t year = record.dateKey / 10000;
+            const int32_t month = (record.dateKey / 100) % 100;
+            const int32_t day = record.dateKey % 100;
+            int32_t expectedNextDate = 0;
             if (day < HistoryDate::daysInMonth(year, month))
-                expected = year * 10000 + month * 100 + day + 1;
+                expectedNextDate = year * 10000 + month * 100 + day + 1;
             else if (month < 12)
-                expected = year * 10000 + (month + 1) * 100 + 1;
+                expectedNextDate = year * 10000 + (month + 1) * 100 + 1;
             else if (year < 2099)
-                expected = (year + 1) * 10000 + 101;
-            if (record.dateKey != expected)
+                expectedNextDate = (year + 1) * 10000 + 101;
+            if (expectedNextDate != newerDateKey)
                 break;
         }
         ++streak;

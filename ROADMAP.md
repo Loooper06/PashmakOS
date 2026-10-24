@@ -7,6 +7,7 @@ Target: ESP32-WROOM-32 + ILI9341 TFT (320x240 landscape), DS3231 RTC
 ## Current baseline (2026-10-24)
 - Automatic work/play/nap cycle and pet behavior engine.
 - Three pet profiles (Pashmak, Mochi, Pixel) with independently updated behavior state and dashboard selection.
+- Dashboard pet interaction with personality-specific TFT reactions, persistent per-pet bond levels, and cooldown protection.
 - Pet mood/message passed to the existing renderer; timed spontaneous pet messages.
 - Local Wi-Fi dashboard with live status, energy, totals, daily/monthly history, activity trend, and CSV export.
 - Refresh overlap protection and connection/last-update status.

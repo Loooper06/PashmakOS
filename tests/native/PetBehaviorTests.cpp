@@ -147,6 +147,25 @@ static void testTimeAwareMessageDoesNotRepeat()
     assert(std::string(pet.state().message) != first);
 }
 
+static void testLowEnergyWarningsAreNotReplacedByRepeatFallback()
+{
+    PetBehavior tired(0);
+    tired.begin(0);
+    assert(tired.restoreEnergy(20, 0));
+    tired.update(PetMode::Work, 45000UL, 8, true);
+    assert(strcmp(tired.state().message, "I'm getting tired.") == 0);
+    tired.update(PetMode::Work, 90000UL, 8, true);
+    assert(strcmp(tired.state().message, "I'm getting tired.") == 0);
+
+    PetBehavior exhausted(0);
+    exhausted.begin(0);
+    assert(exhausted.restoreEnergy(5, 0));
+    exhausted.update(PetMode::Work, 45000UL, 8, true);
+    assert(strcmp(exhausted.state().message, "I need a longer rest.") == 0);
+    exhausted.update(PetMode::Work, 90000UL, 8, true);
+    assert(strcmp(exhausted.state().message, "I need a longer rest.") == 0);
+}
+
 static void testSpontaneousEventsStayQuietDuringNap()
 {
     PetBehavior pet(1);
@@ -416,6 +435,7 @@ int main()
     testSpontaneousMessageExpires();
     testTimeAwareMessages();
     testTimeAwareMessageDoesNotRepeat();
+    testLowEnergyWarningsAreNotReplacedByRepeatFallback();
     testSpontaneousEventsStayQuietDuringNap();
     testEventExpiryAcrossMillisRollover();
     testEventExpiryRestoresLatestModeMessage();

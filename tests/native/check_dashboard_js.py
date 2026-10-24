@@ -13,8 +13,8 @@ if not match:
 
 required_fragments = (
     r"if(/^[\s\u0000-\u001f]*[=+@-]/.test(text))",
-    r"join('\\r\\n')",
-    r"new Blob(['\\ufeff',csv]",
+    r"join('\r\n')",
+    r"new Blob(['\ufeff',csv]",
     "function isValidDateKey",
     "refreshRequested?250:retryDelay",
 )

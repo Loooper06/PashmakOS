@@ -80,7 +80,7 @@ checks = {
     "dashboard validates bond range and selected-pet consistency": "Number.isInteger(Number(p.bond))" in js and "Number(data.pet.bond)!==Number(selected.bond)" in js,
     "statistics schema v2 validates happiness and selected-pet consistency": "data.version!==2" in js and "Number.isInteger(Number(p.happiness))" in js and "Number(data.pet.happiness)!==Number(selected.happiness)" in js,
     "dashboard renders happiness meters": 'id="pet-happiness"' in web and 'id="pet-happiness-bar"' in web and "pet-happiness-bar" in js and "happinessFill.style.width=happiness+'%'" in js,
-    "pet profile persistence uses version 2 and migrates version 1 energy": "struct LegacyPetProfileStorage" in app and "stored.version = 2;" in app and "Migrated version 1 energy; happiness defaults to 70." in app and "stored.happiness[i]" in app,
+    "pet profile persistence uses version 2 and migrates version 1 energy": "struct LegacyPetProfileStorage" in header and "stored.version = 2;" in app and "Migrated version 1 energy; happiness defaults to 70." in app and "stored.happiness[i]" in app,
     "dashboard POSTs typed interaction actions and handles cooldown": "fetch('/api/pet/interact',{method:'POST'" in js and "encodeURIComponent(action)" in js and "response.status===429" in js,
     "interaction endpoint validates supported action types": all(token in interaction for token in ['_server.hasArg("action")', 'action == "affection"', 'action == "playful"', 'action == "comfort"', 'invalid interaction action']),
     "dashboard binds each interaction button to its typed action": "document.querySelectorAll('.pet-interaction')" in js and "button.dataset.interaction" in js,

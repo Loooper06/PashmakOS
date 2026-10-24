@@ -556,7 +556,6 @@ void PetRenderer::drawFooter(Display &d, PetMode mode, uint8_t petId, const char
         constexpr size_t MAX_DATETIME_CHARS = 24;
         const size_t dateTimeLength = strlen(dateTime);
         const char *visibleDateTime = dateTime;
-        char shortenedDateTime[MAX_DATETIME_CHARS + 1];
         size_t visibleLength = dateTimeLength;
         if (visibleLength > MAX_DATETIME_CHARS)
         {

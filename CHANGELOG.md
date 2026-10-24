@@ -6,7 +6,7 @@ All notable changes to PashmakOS are documented here.
 
 ### Added
 - Show each pet's bond tier and progress directly in the dashboard pet picker.
-- Show each pet's current energy and mood in the pet picker, including accessible state details.
+- Add a per-pet energy progress bar and mood summary to the dashboard picker, alongside bond progression and accessible state details.
 
 ## [1.0.0] — 2026-10-24
 

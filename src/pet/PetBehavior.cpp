@@ -170,6 +170,10 @@ void PetBehavior::update(PetMode mode, uint32_t now, int8_t hour)
             _interactionActive = false;
             _state.message = _baseMessage;
         }
+        else if (mode == PetMode::Nap)
+        {
+            _state.mood = PetMood::Happy;
+        }
         else if (_state.energy > 30)
         {
             _state.mood = PetMood::Excited;
@@ -356,6 +360,7 @@ void PetBehavior::interact(PetMode mode, uint32_t now, uint8_t bond)
         case 2: _interactionMessage = "Quiet ping received."; break;
         default: _interactionMessage = "A soft hello back."; break;
         }
+        _state.message = _interactionMessage;
         _state.mood = PetMood::Happy;
         return;
     }

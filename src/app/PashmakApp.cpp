@@ -175,6 +175,10 @@ bool PashmakApp::setTimerSettings(const TimerSettings &settings)
     }
 
     _timerSettings = settings;
+    _timerPaused = false;
+    _pausedRemainingMs = 0;
+    _modeStartedAt = millis();
+    _lastWorkTick = _modeStartedAt;
     Serial.printf("[TIMER] Settings saved: work=%u min, play=%u min, nap=%u min, long-rest every %u work sessions.\n",
                   _timerSettings.workMinutes, _timerSettings.playMinutes,
                   _timerSettings.napMinutes, _timerSettings.workCyclesBeforeLongRest);
@@ -206,7 +210,7 @@ bool PashmakApp::controlTimer(TimerCommand command, uint32_t now)
             _pausedRemainingMs = elapsed >= duration ? 0U : duration - elapsed;
             _timerPaused = true;
             _lastWorkTick = now;
-            Serial.printf("[TIMER] Paused with %lu ms remaining.\\n",
+            Serial.printf("[TIMER] Paused with %lu ms remaining.\n",
                           static_cast<unsigned long>(_pausedRemainingMs));
         }
         return true;

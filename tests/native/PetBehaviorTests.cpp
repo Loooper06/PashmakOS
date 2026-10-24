@@ -221,7 +221,13 @@ static void testQuietHoursSuppressSpontaneousEvents()
 
     // New spontaneous events remain suppressed for the entire quiet window.
     pet.update(PetMode::Work, 300000UL, 23, true);
-    assert(strcmp(pet.state().message, "Let's Focus, Engineer!") == 0);
+    const char *message = pet.state().message;
+    assert(strcmp(message, "Hey! Still there, Engineer?") != 0);
+    assert(strcmp(message, "A tiny break can help.") != 0);
+    assert(strcmp(message, "How about a sip of water?") != 0);
+    assert(strcmp(message, "You're making progress!") != 0);
+    assert(strcmp(message, "Remember to relax your shoulders.") != 0);
+    assert(strcmp(message, "One step at a time.") != 0);
 }
 
 static void testPetInteractionReactionsAndExpiry()

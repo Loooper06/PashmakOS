@@ -35,3 +35,5 @@ jobs:
 
       - name: Run native pet behavior tests
         run: sh tests/native/run.sh
+      - name: Check embedded dashboard JavaScript
+        run: python3 tests/native/check_dashboard_js.py

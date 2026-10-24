@@ -268,7 +268,7 @@ void WebDashboard::begin(PashmakApp &app)
     _started = true;
 
     Serial.printf("[WEB] Wi-Fi SSID: %s\n", WIFI_AP_SSID);
-    Serial.printf("[WEB] Wi-Fi password (changes after reboot): %s\\n", apPassword);
+    Serial.printf("[WEB] Wi-Fi password (changes after reboot): %s\n", apPassword);
     Serial.printf("[WEB] Dashboard: http://%s/\n", WiFi.softAPIP().toString().c_str());
 }
 

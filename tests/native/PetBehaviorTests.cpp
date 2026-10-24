@@ -141,11 +141,6 @@ static void testTimeAwareMessagesRespectModeAndQuietHours()
     PetBehavior play(0);
     PetBehavior nap(0);
     PetBehavior quiet(0);
-    work.begin(0);
-    play.begin(0);
-    nap.begin(0);
-    quiet.begin(0);
-
     work.update(PetMode::Work, 0, 8, false);
     play.update(PetMode::Play, 0, 8, false);
     nap.update(PetMode::Nap, 0, 8, false);
@@ -161,8 +156,7 @@ static void testTimeAwareMessagesRespectModeAndQuietHours()
 static void testQuietHoursDoNotShowLateTimeAwareLines()
 {
     PetBehavior quiet(2);
-    quiet.begin(0);
-    quiet.update(PetMode::Work, 45000UL, 22, true);
+    quiet.update(PetMode::Work, 0, 22, true);
     assert(strcmp(quiet.state().message, "Task mode: ON.") == 0);
 }
 

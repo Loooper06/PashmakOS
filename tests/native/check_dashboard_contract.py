@@ -95,6 +95,9 @@ checks = {
     "invalid saved timer settings fall back to defaults": '_timerSettings = TimerSettings{};' in timer_load and 'Invalid saved settings; using defaults.' in timer_load,
     "automatic cycle uses runtime-configured durations": '_timerSettings.workMinutes' in automatic_mode and '_timerSettings.playMinutes' in automatic_mode and '_timerSettings.napMinutes' in automatic_mode and '_timerSettings.workCyclesBeforeLongRest' in automatic_mode,
     "dashboard exposes settings form and save action": 'id="setting-work"' in web and 'id="setting-cycles"' in web and "async function saveTimerSettings()" in js,
+    "dashboard generates a fresh 16-character AP password from the ESP32 RNG": "WIFI_AP_PASSWORD_LENGTH = 16" in web and "esp_random()" in web and "generateAccessPointPassword(apPassword)" in web,
+    "dashboard uses the generated password and logs it for local setup": "WiFi.softAP(WIFI_AP_SSID, apPassword)" in web and "Wi-Fi password (changes after reboot)" in web,
+    "dashboard no longer contains the shared default AP password": "pashmak123" not in web,
     "dashboard validates and submits timer settings": "Check the allowed ranges before saving." in js and "fetch('/api/timer-settings',{method:'POST'" in js and "loadTimerSettings();" in js,
 
 }

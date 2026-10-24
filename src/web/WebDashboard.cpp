@@ -1,12 +1,23 @@
 #include "WebDashboard.h"
 #include "../app/PashmakApp.h"
 #include <WiFi.h>
+#include <esp_system.h>
 
 namespace
 {
-    // Local access-point defaults. Change these before deployment if desired.
     constexpr char WIFI_AP_SSID[] = "PashmakOS";
-    constexpr char WIFI_AP_PASSWORD[] = "pashmak123";
+    // A fresh 16-character WPA2 password is generated on every boot.
+    // The password is disclosed only through the local serial console.
+    constexpr char WIFI_AP_PASSWORD_CHARS[] = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789";
+    constexpr size_t WIFI_AP_PASSWORD_LENGTH = 16;
+
+    void generateAccessPointPassword(char (&password)[WIFI_AP_PASSWORD_LENGTH + 1])
+    {
+        constexpr size_t alphabetLength = sizeof(WIFI_AP_PASSWORD_CHARS) - 1;
+        for (size_t i = 0; i < WIFI_AP_PASSWORD_LENGTH; ++i)
+            password[i] = WIFI_AP_PASSWORD_CHARS[esp_random() % alphabetLength];
+        password[WIFI_AP_PASSWORD_LENGTH] = '\0';
+    }
 
     const char DASHBOARD_HTML[] PROGMEM = R"HTML(
 <!doctype html>
@@ -233,7 +244,9 @@ void WebDashboard::begin(PashmakApp &app)
     WiFi.mode(WIFI_AP);
     WiFi.setTxPower(WIFI_POWER_8_5dBm);
     WiFi.setSleep(true);
-    const bool apStarted = WiFi.softAP(WIFI_AP_SSID, WIFI_AP_PASSWORD);
+    char apPassword[WIFI_AP_PASSWORD_LENGTH + 1]{};
+    generateAccessPointPassword(apPassword);
+    const bool apStarted = WiFi.softAP(WIFI_AP_SSID, apPassword);
     if (!apStarted)
     {
         Serial.println("[WEB] Failed to start Wi-Fi access point.");
@@ -255,6 +268,7 @@ void WebDashboard::begin(PashmakApp &app)
     _started = true;
 
     Serial.printf("[WEB] Wi-Fi SSID: %s\n", WIFI_AP_SSID);
+    Serial.printf("[WEB] Wi-Fi password (changes after reboot): %s\n", apPassword);
     Serial.printf("[WEB] Dashboard: http://%s/\n", WiFi.softAPIP().toString().c_str());
 }
 

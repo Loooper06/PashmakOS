@@ -1,6 +1,7 @@
 #include "PashmakApp.h"
 #include "Config.h"
 #include "../core/JsonEscape.h"
+#include "../core/HistoryDate.h"
 #include <Preferences.h>
 
 namespace
@@ -395,8 +396,7 @@ void PashmakApp::loadDailyHistory()
     _dailyHistoryCount = stored.count;
     for (uint8_t i = 0; i < _dailyHistoryCount; ++i)
     {
-        if (stored.records[i].dateKey < 20000101 ||
-            stored.records[i].dateKey > 20991231)
+        if (!HistoryDate::isValidDateKey(stored.records[i].dateKey))
         {
             _dailyHistoryCount = 0;
             Serial.println("[HISTORY] Invalid date found; history reset.");
@@ -544,9 +544,7 @@ void PashmakApp::loadMonthlyHistory()
     for (uint8_t i = 0; i < stored.count; ++i)
     {
         const int32_t key = stored.records[i].monthKey;
-        const int32_t year = key / 100;
-        const int32_t month = key % 100;
-        if (year < 2000 || year > 2099 || month < 1 || month > 12 ||
+        if (!HistoryDate::isValidMonthKey(key) ||
             (i > 0 && key <= stored.records[i - 1].monthKey))
         {
             Serial.println("[MONTHLY] Invalid month key/order; history reset.");

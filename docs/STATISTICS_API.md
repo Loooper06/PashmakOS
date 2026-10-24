@@ -19,7 +19,7 @@ Unknown commands are ignored with a diagnostic message. Commands longer than the
 
 ## JSON schema
 
-The `stats` response is a single JSON object with `version: 1`. The dashboard validates the payload before rendering it; an invalid response is treated as a failed refresh, and the last valid snapshot remains visible.
+The `stats` response is a single JSON object with `version: 2`. The dashboard validates the payload before rendering it; an invalid response is treated as a failed refresh, and the last valid snapshot remains visible.
 
 - `activePetId`: selected pet ID (0–2).
 - `pets`: exactly three pet profiles. Each profile has `id`, `name`, `energy` (0–100), `bond` (0–100), `mood`, and `message`.
@@ -37,7 +37,7 @@ Example shape (values are illustrative):
 
 ```json
 {
-  "version": 1,
+  "version": 2,
   "totals": {
     "workMs": 120000,
     "playMs": 30000,
@@ -139,3 +139,6 @@ The dashboard can export a versioned JSON backup containing timer-cycle settings
 - Use a firmware binary built for this exact board and partition layout. Keep the device powered and connected during upload.
 - **Security:** dashboard APIs are available to any client connected to the device access point. Change the default SSID password to a strong, unique password before enabling firmware updates and only connect trusted devices. OTA is not exposed as an authenticated internet service.
 - If the device does not return after an update, recover by reflashing over USB using PlatformIO.
+
+
+Pet records in schema version 2 include `happiness` (integer, 0–100), alongside `energy` and `bond`. Version 2 adds this required field to both `pets[]` and the active `pet` record; clients must validate the version before consuming the payload.

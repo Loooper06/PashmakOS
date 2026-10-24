@@ -17,6 +17,7 @@ First consolidated stable candidate after firmware integration, automated CI val
 - Configurable quiet hours in the dashboard, with persistent start/end hours and suppression of spontaneous pet messages and RTC reminders.
 - Local focus insights summarizing the latest seven retained daily records: average focus time, most focused day, days with focus, and completed sessions.
 - Daily focus-goal streak based on the configured session target and consecutive retained calendar days, calculated locally in the dashboard.
+- One-click JSON export of the current statistics snapshot, browser-local daily goal, device settings, and export timestamp.
 - CSV export and serial statistics/diagnostic commands.
 - Preferences/NVS persistence for counters and bounded history.
 - Native tests for behavior timing, calendar validation, statistics aggregation, and JSON serialization.

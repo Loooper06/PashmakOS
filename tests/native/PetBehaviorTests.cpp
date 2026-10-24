@@ -178,6 +178,36 @@ static void testEventExpiryAcrossMillisRollover()
     assert(strcmp(pet.state().message, baseMessage) == 0);
 }
 
+static void testEventExpiryRestoresLatestModeMessage()
+{
+    PetBehavior pet(1);
+    pet.begin(0);
+    pet.update(PetMode::Work, 90000UL);
+    assert(strcmp(pet.state().message, "Just checking in, friend.") == 0);
+
+    // A mode change updates the baseline while the temporary event remains visible.
+    pet.update(PetMode::Play, 91000UL);
+    assert(strcmp(pet.state().message, "Just checking in, friend.") == 0);
+
+    // Expiry must restore the newest baseline, not the message from before the event.
+    pet.update(PetMode::Play, 97000UL);
+    assert(strcmp(pet.state().message, "A little stretch together?") == 0);
+}
+
+static void testEnergyLowerBoundAndRecovery()
+{
+    PetBehavior pet;
+    pet.begin(0);
+    pet.update(PetMode::Work, 12000000UL);
+    assert(pet.state().energy == 0);
+    assert(pet.state().mood == PetMood::Exhausted);
+
+    pet.update(PetMode::Nap, 12000000UL);
+    pet.update(PetMode::Nap, 12030000UL);
+    assert(pet.state().energy == 1);
+    assert(pet.state().energy <= 100);
+}
+
 static void testInvalidPersonalityFallsBackSafely()
 {
     PetBehavior fallback(0);
@@ -314,6 +344,8 @@ int main()
     testTimeAwareMessageDoesNotRepeat();
     testSpontaneousEventsStayQuietDuringNap();
     testEventExpiryAcrossMillisRollover();
+    testEventExpiryRestoresLatestModeMessage();
+    testEnergyLowerBoundAndRecovery();
     testInvalidPersonalityFallsBackSafely();
     puts("PetBehavior native tests: PASS");
     return 0;

@@ -23,7 +23,7 @@ public:
 int main()
 {
     const StatsJson::Pet pets[] = {
-        {0, 91, 76, 35, "Pashmak", "happy", "hello \"friend\"\\path\nnext"},
+        {0, 91, 76, 35, "Pashmak", "happy", "hello \"friend\"\\path\nnext", 25, 7},
         {1, 64, 62, 70, "Mochi", "sleepy", "quiet\tmode", 10, 3},
         {2, 12, 18, 5, "Pixel", "curious", "control\x01" "byte", 0, 0}};
 

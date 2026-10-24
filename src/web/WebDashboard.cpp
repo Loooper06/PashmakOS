@@ -72,6 +72,16 @@ footer{margin-top:18px;color:var(--muted);font-size:.82rem}
 <p class="muted">Hours are whole-hour boundaries; for example, 21 to 9 means 9 PM through 9 AM, including midnight.</p>
 <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:14px"><button id="quiet-save" type="button">Save quiet hours</button><span id="quiet-status" class="muted" role="status" aria-live="polite">Loading saved settings…</span></div>
 </section>
+<section class="card section" aria-labelledby="reminder-settings-heading">
+<h2 id="reminder-settings-heading">Reminder schedule</h2>
+<p class="muted">Choose how often the DS3231 sends water and movement reminders outside quiet hours. Set an interval to 0 to disable that reminder.</p>
+<div class="settings-grid">
+<label>Drink-water reminder (minutes; 0 disables)<input id="reminder-water" type="number" min="0" max="240" value="60" inputmode="numeric"></label>
+<label>Movement reminder (minutes; 0 disables)<input id="reminder-movement" type="number" min="0" max="180" value="45" inputmode="numeric"></label>
+</div>
+<p class="muted">Allowed intervals: water 15–240 minutes; movement 15–180 minutes, or 0 to disable.</p>
+<div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:14px"><button id="reminder-save" type="button">Save reminder schedule</button><span id="reminder-status" class="muted" role="status" aria-live="polite">Loading saved settings…</span></div>
+</section>
 <section class="card section" aria-labelledby="daily-goal-heading">
 <h2 id="daily-goal-heading">Daily focus goal</h2>
 <div class="goal-layout"><div><div id="daily-goal-count" class="metric">— / 4 sessions</div><div class="goal-progress" role="progressbar" aria-label="Daily focus goal progress" aria-valuemin="0" aria-valuemax="4" aria-valuenow="0" id="daily-goal-progress"><div id="daily-goal-fill" class="goal-progress-fill"></div></div><div id="daily-goal-status" class="goal-status" role="status" aria-live="polite">Waiting for activity data…</div></div><label for="daily-goal-target" class="label">Target sessions<br><input id="daily-goal-target" class="goal-number" type="number" min="1" max="20" value="4" inputmode="numeric"></label></div>
@@ -108,7 +118,7 @@ footer{margin-top:18px;color:var(--muted);font-size:.82rem}
 <footer>Data is read from the ESP32's local statistics API. Keep this page open while connected to the PashmakOS Wi-Fi network.</footer>
 </main>
 <script>
-const $=id=>document.getElementById(id);let snapshot=null;let timerSettingsSnapshot=null;let quietHoursSnapshot=null;let selectedDays=7;let refreshInFlight=false;let lastUpdatedAt=0;let dailySessionGoal=4;try{const savedGoal=Number(localStorage.getItem('pashmakDailySessionGoal'));if(Number.isInteger(savedGoal)&&savedGoal>=1&&savedGoal<=20)dailySessionGoal=savedGoal}catch(e){}
+const $=id=>document.getElementById(id);let snapshot=null;let timerSettingsSnapshot=null;let quietHoursSnapshot=null;let reminderSettingsSnapshot=null;let selectedDays=7;let refreshInFlight=false;let lastUpdatedAt=0;let dailySessionGoal=4;try{const savedGoal=Number(localStorage.getItem('pashmakDailySessionGoal'));if(Number.isInteger(savedGoal)&&savedGoal>=1&&savedGoal<=20)dailySessionGoal=savedGoal}catch(e){}
 const duration=ms=>{const mins=Math.floor(Number(ms||0)/60000);const d=Math.floor(mins/1440),h=Math.floor((mins%1440)/60),m=mins%60;return d?d+'d '+h+'h':h?h+'h '+m+'m':m+'m'};
 const dateLabel=n=>{const s=String(n);return s.length===8?s.slice(0,4)+'-'+s.slice(4,6)+'-'+s.slice(6,8):s};
 const monthLabel=n=>{const s=String(n);return s.length===6?s.slice(0,4)+'-'+s.slice(4,6):s};
@@ -117,7 +127,7 @@ function renderAchievements(data){const totals=data.totals||{};const sessions=Nu
 function renderDailyGoal(data){const records=Array.isArray(data.dailyHistory)?data.dailyHistory:[];const latest=records.length?records[records.length-1]:null;const completed=latest?Number(latest.completedWorkSessions||0):0;const goal=dailySessionGoal;const progress=Math.min(100,Math.round(completed/goal*100));$('daily-goal-target').value=String(goal);metric('daily-goal-count',completed+' / '+goal+' sessions');$('daily-goal-fill').style.width=progress+'%';const bar=$('daily-goal-progress');bar.setAttribute('aria-valuemax',String(goal));bar.setAttribute('aria-valuenow',String(Math.min(completed,goal)));if(!latest){$('daily-goal-status').textContent='No daily activity recorded yet.';return}const date=dateLabel(latest.dateKey);$('daily-goal-status').textContent=completed>=goal?'Goal completed for '+date+' — great work!':(goal-completed)+' more completed session'+(goal-completed===1?'':'s')+' to reach the goal for '+date+'.'}
 function saveDailyGoal(){const value=Number($('daily-goal-target').value);if(!Number.isInteger(value)||value<1||value>20){$('daily-goal-status').textContent='Choose a goal between 1 and 20 sessions.';$('daily-goal-target').value=String(dailySessionGoal);return}dailySessionGoal=value;try{localStorage.setItem('pashmakDailySessionGoal',String(value))}catch(e){}if(snapshot)renderDailyGoal(snapshot);else $('daily-goal-status').textContent='Goal set. Waiting for activity data.'}
 function downloadCsv(filename,headers,records){const quote=value=>{let text=String(value??'');if(/^[\s\u0000-\u001f]*[=+@-]/.test(text))text="'"+text;return '"'+text.replace(/"/g,'""')+'"'};const csv=[headers,...records].map(record=>record.map(quote).join(',')).join('\r\n');const blob=new Blob(['\ufeff',csv],{type:'text/csv;charset=utf-8;'});const url=URL.createObjectURL(blob);const link=document.createElement('a');link.href=url;link.download=filename;document.body.appendChild(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),1000)}
-function downloadJsonExport(){if(!snapshot)return;const payload={schemaVersion:1,exportedAt:new Date().toISOString(),source:'PashmakOS local dashboard',dailySessionGoal,settings:{timer:timerSettingsSnapshot,quietHours:quietHoursSnapshot},statistics:snapshot};const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json;charset=utf-8'});const url=URL.createObjectURL(blob);const link=document.createElement('a');link.href=url;link.download='pashmakos-export-'+new Date().toISOString().replace(/[:.]/g,'-')+'.json';document.body.appendChild(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),1000)}
+function downloadJsonExport(){if(!snapshot)return;const payload={schemaVersion:1,exportedAt:new Date().toISOString(),source:'PashmakOS local dashboard',dailySessionGoal,settings:{timer:timerSettingsSnapshot,quietHours:quietHoursSnapshot,reminders:reminderSettingsSnapshot},statistics:snapshot};const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json;charset=utf-8'});const url=URL.createObjectURL(blob);const link=document.createElement('a');link.href=url;link.download='pashmakos-export-'+new Date().toISOString().replace(/[:.]/g,'-')+'.json';document.body.appendChild(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),1000)}
 function row(values){const tr=document.createElement('tr');values.forEach(v=>{const td=document.createElement('td');td.textContent=v;tr.appendChild(td)});return tr}
 const petProfiles={0:{emoji:'🐶',tag:'Classic companion',color:'#c6a7ff',tint:'#4b3b67'},1:{emoji:'🐾',tag:'Soft & cozy',color:'#8fe0d0',tint:'#244d4b'},2:{emoji:'✨',tag:'Pixel buddy',color:'#ffbf86',tint:'#5b4030'}};
 function renderGoalStreak(data){
@@ -170,6 +180,8 @@ if(!monthly.children.length)monthly.appendChild(row(['No monthly records yet','�
 $('export-daily').disabled=!(data.dailyHistory||[]).length;$('export-monthly').disabled=!(data.monthlyHistory||[]).length;}
 async function loadQuietHours(){try{const response=await fetch('/api/quiet-hours',{cache:'no-store'});if(!response.ok)throw new Error('HTTP '+response.status);const settings=await response.json();if(typeof settings.enabled!=='boolean'||!Number.isInteger(settings.startHour)||settings.startHour<0||settings.startHour>23||!Number.isInteger(settings.endHour)||settings.endHour<0||settings.endHour>23||settings.startHour===settings.endHour)throw new Error('Invalid quiet-hours payload');quietHoursSnapshot={enabled:settings.enabled,startHour:settings.startHour,endHour:settings.endHour};$('quiet-enabled').checked=settings.enabled;$('quiet-start').value=settings.startHour;$('quiet-end').value=settings.endHour;$('quiet-status').textContent='Loaded from device.'}catch(e){$('quiet-status').textContent='Could not load quiet hours · '+(e.message||'connection error')}}
 async function saveQuietHours(){const values={enabled:$('quiet-enabled').checked?1:0,startHour:Number($('quiet-start').value),endHour:Number($('quiet-end').value)};if(!Number.isInteger(values.startHour)||values.startHour<0||values.startHour>23||!Number.isInteger(values.endHour)||values.endHour<0||values.endHour>23||values.startHour===values.endHour){$('quiet-status').textContent='Choose different whole hours between 0 and 23.';return}const button=$('quiet-save');button.disabled=true;$('quiet-status').textContent='Saving…';try{const response=await fetch('/api/quiet-hours',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams(values)});if(!response.ok)throw new Error('HTTP '+response.status);quietHoursSnapshot={enabled:Boolean(values.enabled),startHour:values.startHour,endHour:values.endHour};$('quiet-status').textContent=values.enabled?'Saved · quiet hours are active immediately.':'Saved · quiet hours are disabled.'}catch(e){$('quiet-status').textContent='Save failed · '+(e.message||'connection error')}finally{button.disabled=false}}
+async function loadReminderSettings(){try{const response=await fetch('/api/reminder-settings',{cache:'no-store'});if(!response.ok)throw new Error('HTTP '+response.status);const settings=await response.json();if(!Number.isInteger(settings.waterMinutes)||(settings.waterMinutes!==0&&(settings.waterMinutes<15||settings.waterMinutes>240))||!Number.isInteger(settings.movementMinutes)||(settings.movementMinutes!==0&&(settings.movementMinutes<15||settings.movementMinutes>180)))throw new Error('Invalid reminder settings payload');reminderSettingsSnapshot={waterMinutes:settings.waterMinutes,movementMinutes:settings.movementMinutes};$('reminder-water').value=settings.waterMinutes;$('reminder-movement').value=settings.movementMinutes;$('reminder-status').textContent='Loaded from device.'}catch(e){$('reminder-status').textContent='Could not load reminder settings · '+(e.message||'connection error')}}
+async function saveReminderSettings(){const values={waterMinutes:Number($('reminder-water').value),movementMinutes:Number($('reminder-movement').value)};if(!Number.isInteger(values.waterMinutes)||(values.waterMinutes!==0&&(values.waterMinutes<15||values.waterMinutes>240))||!Number.isInteger(values.movementMinutes)||(values.movementMinutes!==0&&(values.movementMinutes<15||values.movementMinutes>180))){$('reminder-status').textContent='Water: 0 or 15–240 min. Movement: 0 or 15–180 min.';return}const button=$('reminder-save');button.disabled=true;$('reminder-status').textContent='Saving…';try{const response=await fetch('/api/reminder-settings',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams(values)});if(!response.ok)throw new Error('HTTP '+response.status);reminderSettingsSnapshot={...values};$('reminder-status').textContent='Saved · new intervals are active immediately.'}catch(e){$('reminder-status').textContent='Save failed · '+(e.message||'connection error')}finally{button.disabled=false}}
 async function loadTimerSettings(){try{const response=await fetch('/api/timer-settings',{cache:'no-store'});if(!response.ok)throw new Error('HTTP '+response.status);const settings=await response.json();if(!Number.isInteger(settings.workMinutes)||settings.workMinutes<1||settings.workMinutes>180||!Number.isInteger(settings.playMinutes)||settings.playMinutes<1||settings.playMinutes>60||!Number.isInteger(settings.napMinutes)||settings.napMinutes<1||settings.napMinutes>120||!Number.isInteger(settings.workCyclesBeforeLongRest)||settings.workCyclesBeforeLongRest<1||settings.workCyclesBeforeLongRest>8)throw new Error('Invalid settings payload');timerSettingsSnapshot={workMinutes:settings.workMinutes,playMinutes:settings.playMinutes,napMinutes:settings.napMinutes,workCyclesBeforeLongRest:settings.workCyclesBeforeLongRest};$('setting-work').value=settings.workMinutes;$('setting-play').value=settings.playMinutes;$('setting-nap').value=settings.napMinutes;$('setting-cycles').value=settings.workCyclesBeforeLongRest;$('settings-status').textContent='Loaded from device.'}catch(e){$('settings-status').textContent='Could not load settings. Defaults are shown; try refresh.'}}
 async function saveTimerSettings(){const values={workMinutes:Number($('setting-work').value),playMinutes:Number($('setting-play').value),napMinutes:Number($('setting-nap').value),workCyclesBeforeLongRest:Number($('setting-cycles').value)};if(!Number.isInteger(values.workMinutes)||values.workMinutes<1||values.workMinutes>180||!Number.isInteger(values.playMinutes)||values.playMinutes<1||values.playMinutes>60||!Number.isInteger(values.napMinutes)||values.napMinutes<1||values.napMinutes>120||!Number.isInteger(values.workCyclesBeforeLongRest)||values.workCyclesBeforeLongRest<1||values.workCyclesBeforeLongRest>8){$('settings-status').textContent='Check the allowed ranges before saving.';return}const button=$('settings-save');button.disabled=true;$('settings-status').textContent='Saving…';try{const response=await fetch('/api/timer-settings',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams(values)});if(!response.ok)throw new Error('HTTP '+response.status);timerSettingsSnapshot={...values};$('settings-status').textContent='Saved. New durations are active immediately.';await refresh()}catch(e){$('settings-status').textContent='Save failed · '+(e.message||'connection error')}finally{button.disabled=false}}
 function isCounter(value){return value!==null&&value!==undefined&&value!==''&&Number.isFinite(Number(value))&&Number(value)>=0}
@@ -199,10 +211,11 @@ $('refresh').addEventListener('click',refresh);
 $('export-json').addEventListener('click',downloadJsonExport);
 $('pet-interact').addEventListener('click',interactWithPet);
 $('settings-save').addEventListener('click',saveTimerSettings);
-$('quiet-save').addEventListener('click',saveQuietHours);
+$('quiet-save').addEventListener('click',saveQuietHours);$('reminder-save').addEventListener('click',saveReminderSettings);
 $('daily-goal-target').value=String(dailySessionGoal);$('daily-goal-target').addEventListener('change',saveDailyGoal);$('daily-goal-target').addEventListener('keydown',event=>{if(event.key==='Enter'){event.preventDefault();saveDailyGoal()}});
 loadTimerSettings();
 loadQuietHours();
+loadReminderSettings();
 $('export-daily').disabled=true;$('export-monthly').disabled=true;$('export-daily').addEventListener('click',()=>{if(!snapshot?.dailyHistory?.length)return;const records=(snapshot?.dailyHistory||[]).map(d=>[dateLabel(d.dateKey),d.workMs,d.playMs,d.napMs,d.completedWorkSessions]);downloadCsv('pashmak-daily-history.csv',['Date','Work ms','Play ms','Nap ms','Completed sessions'],records)});
 $('export-monthly').addEventListener('click',()=>{if(!snapshot?.monthlyHistory?.length)return;const records=(snapshot?.monthlyHistory||[]).map(m=>[monthLabel(m.monthKey),m.workMs,m.playMs,m.napMs,m.completedWorkSessions]);downloadCsv('pashmak-monthly-history.csv',['Month','Work ms','Play ms','Nap ms','Completed sessions'],records)});
 document.querySelectorAll('[data-days]').forEach(b=>b.addEventListener('click',()=>{selectedDays=Number(b.dataset.days);if(snapshot)render(snapshot)}));refresh();
@@ -233,6 +246,8 @@ void WebDashboard::begin(PashmakApp &app)
     _server.on("/api/timer-settings", HTTP_POST, [this]() { handleTimerSettingsPost(); });
     _server.on("/api/quiet-hours", HTTP_GET, [this]() { handleQuietHoursGet(); });
     _server.on("/api/quiet-hours", HTTP_POST, [this]() { handleQuietHoursPost(); });
+    _server.on("/api/reminder-settings", HTTP_GET, [this]() { handleReminderSettingsGet(); });
+    _server.on("/api/reminder-settings", HTTP_POST, [this]() { handleReminderSettingsPost(); });
     _server.onNotFound([this]() { handleNotFound(); });
     _server.begin();
     _started = true;
@@ -452,6 +467,73 @@ void WebDashboard::handleQuietHoursPost()
     settings.startHour = startHour;
     settings.endHour = endHour;
     if (!_app->setQuietHoursSettings(settings))
+    {
+        _server.send(500, "application/json", "{\"error\":\"could not persist settings\"}");
+        return;
+    }
+    _server.sendHeader("Cache-Control", "no-store");
+    _server.send(200, "application/json", "{\"ok\":true}");
+}
+
+void WebDashboard::handleReminderSettingsGet()
+{
+    if (_app == nullptr)
+    {
+        _server.send(503, "application/json", "{\"error\":\"settings unavailable\"}");
+        return;
+    }
+    const PashmakApp::ReminderSettings settings = _app->reminderSettings();
+    char json[80];
+    snprintf(json, sizeof(json), "{\"waterMinutes\":%u,\"movementMinutes\":%u}",
+             settings.waterMinutes, settings.movementMinutes);
+    _server.sendHeader("Cache-Control", "no-store");
+    _server.send(200, "application/json; charset=utf-8", json);
+}
+
+void WebDashboard::handleReminderSettingsPost()
+{
+    if (_app == nullptr)
+    {
+        _server.send(503, "application/json", "{\"error\":\"settings unavailable\"}");
+        return;
+    }
+    const char *keys[] = {"waterMinutes", "movementMinutes"};
+    uint16_t values[2]{};
+    for (uint8_t i = 0; i < 2; ++i)
+    {
+        if (!_server.hasArg(keys[i]))
+        {
+            _server.send(400, "application/json", "{\"error\":\"missing setting\"}");
+            return;
+        }
+        const String raw = _server.arg(keys[i]);
+        if (raw.length() == 0 || raw.length() > 3)
+        {
+            _server.send(400, "application/json", "{\"error\":\"invalid setting\"}");
+            return;
+        }
+        uint16_t parsed = 0;
+        for (size_t j = 0; j < raw.length(); ++j)
+        {
+            if (raw[j] < '0' || raw[j] > '9')
+            {
+                _server.send(400, "application/json", "{\"error\":\"invalid setting\"}");
+                return;
+            }
+            parsed = static_cast<uint16_t>(parsed * 10U + static_cast<uint16_t>(raw[j] - '0'));
+        }
+        values[i] = parsed;
+    }
+    if ((values[0] != 0 && (values[0] < 15 || values[0] > 240)) ||
+        (values[1] != 0 && (values[1] < 15 || values[1] > 180)))
+    {
+        _server.send(400, "application/json", "{\"error\":\"setting out of range\"}");
+        return;
+    }
+    PashmakApp::ReminderSettings settings;
+    settings.waterMinutes = values[0];
+    settings.movementMinutes = values[1];
+    if (!_app->setReminderSettings(settings))
     {
         _server.send(500, "application/json", "{\"error\":\"could not persist settings\"}");
         return;

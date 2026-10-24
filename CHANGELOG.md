@@ -15,6 +15,7 @@ First consolidated stable candidate after firmware integration, automated CI val
 - Dashboard achievement badges for focus-session milestones, daily goal completion, and balanced activity.
 - Interactive pet bonding: personality-specific TFT reactions, per-pet bond progression (0–100), dashboard bond meter, and Preferences persistence with an 8-second per-pet cooldown.
 - Configurable quiet hours in the dashboard, with persistent start/end hours and suppression of spontaneous pet messages and RTC reminders.
+- Configurable RTC water and movement reminder intervals, including independent disable controls and persistent settings.
 - Local focus insights summarizing the latest seven retained daily records: average focus time, most focused day, days with focus, and completed sessions.
 - Daily focus-goal streak based on the configured session target and consecutive retained calendar days, calculated locally in the dashboard.
 - One-click JSON export of the current statistics snapshot, browser-local daily goal, device settings, and export timestamp.

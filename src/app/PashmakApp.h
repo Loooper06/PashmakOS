@@ -54,6 +54,12 @@ public:
         uint8_t workCyclesBeforeLongRest = 3;
     };
 
+    struct ReminderSettings
+    {
+        uint16_t waterMinutes = 60;
+        uint16_t movementMinutes = 45;
+    };
+
     PashmakApp();
     void begin();
     void update();
@@ -66,6 +72,8 @@ public:
     bool setTimerSettings(const TimerSettings &settings);
     QuietHoursSettings quietHoursSettings() const;
     bool setQuietHoursSettings(const QuietHoursSettings &settings);
+    ReminderSettings reminderSettings() const;
+    bool setReminderSettings(const ReminderSettings &settings);
     uint8_t dailyHistoryCount() const;
     bool getDailyStats(uint8_t index, DailyStats &out) const;
     uint8_t monthlyHistoryCount() const;
@@ -108,6 +116,12 @@ private:
         QuietHoursSettings settings{};
     };
 
+    struct ReminderSettingsStorage
+    {
+        uint32_t version = 1;
+        ReminderSettings settings{};
+    };
+
     struct PetProfileStorage
     {
         uint32_t version = 1;
@@ -123,6 +137,7 @@ private:
     uint8_t _activePetId = 0;
     TimerSettings _timerSettings{};
     QuietHoursSettings _quietHours{};
+    ReminderSettings _reminderSettings{};
 
     PetMode _mode = PetMode::Work;
 
@@ -179,6 +194,7 @@ private:
     void persistStats(uint32_t now, bool force = false);
     void loadTimerSettings();
     void loadQuietHoursSettings();
+    void loadReminderSettings();
     bool isQuietHour(int8_t hour) const;
     void loadPetProfiles();
     void persistPetProfiles(uint32_t now);

@@ -57,7 +57,9 @@ bool RtcService::begin()
     return true;
 }
 
-ReminderType RtcService::update(uint32_t nowMs, bool quietHours)
+ReminderType RtcService::update(uint32_t nowMs, bool quietHours,
+                                uint16_t waterIntervalMinutes,
+                                uint16_t movementIntervalMinutes)
 {
     if (!_available ||
         static_cast<uint32_t>(nowMs - _lastPollMs) < Config::RTC_POLL_INTERVAL_MS)
@@ -96,13 +98,19 @@ ReminderType RtcService::update(uint32_t nowMs, bool quietHours)
         }
     }
 
-    if (epoch - _lastWaterReminder >= Config::WATER_REMINDER_INTERVAL_SECONDS)
+    // A zero interval disables that reminder and continually resets its clock,
+    // so re-enabling it starts a fresh interval rather than firing immediately.
+    if (waterIntervalMinutes == 0)
+        _lastWaterReminder = epoch;
+    else if (epoch - _lastWaterReminder >= static_cast<uint32_t>(waterIntervalMinutes) * 60UL)
     {
         _lastWaterReminder = epoch;
         return ReminderType::DrinkWater;
     }
 
-    if (epoch - _lastMovementReminder >= Config::MOVEMENT_REMINDER_INTERVAL_SECONDS)
+    if (movementIntervalMinutes == 0)
+        _lastMovementReminder = epoch;
+    else if (epoch - _lastMovementReminder >= static_cast<uint32_t>(movementIntervalMinutes) * 60UL)
     {
         _lastMovementReminder = epoch;
         return ReminderType::MoveBody;

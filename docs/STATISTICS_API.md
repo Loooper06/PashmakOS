@@ -77,13 +77,21 @@ The local dashboard exposes a separate timer configuration API; it does not chan
 - Settings are stored as a versioned Preferences blob in the existing `petstats` namespace. Invalid or incompatible saved settings fall back to defaults (25/2/5 minutes and 3 work sessions).
 - Invalid or missing values return HTTP 400. A storage failure returns HTTP 500; an unavailable app returns HTTP 503.
 
+## Reminder schedule API
+
+- `GET /api/reminder-settings`: returns `waterMinutes` and `movementMinutes`.
+- `POST /api/reminder-settings`: accepts URL-encoded `waterMinutes` and `movementMinutes` and applies the schedule immediately.
+- Water reminders accept 15–240 minutes, or `0` to disable. Movement reminders accept 15–180 minutes, or `0` to disable.
+- Settings are stored in the `petstats` Preferences namespace as a separate versioned blob (`reminderCfg`). Missing, invalid, or incompatible stored data falls back to 60-minute water and 45-minute movement reminders.
+- Quiet hours still suppress both reminders. Disabling a reminder resets its interval clock while disabled, so re-enabling starts a fresh interval rather than firing immediately. Invalid requests return HTTP 400, persistence failures return HTTP 500, and an unavailable app returns HTTP 503.
+
 ## Dashboard JSON export
 
 The dashboard header's **Export JSON** action downloads a local snapshot containing:
 
 - The current `/api/stats` payload, including pet profiles, lifetime counters, and retained daily/monthly history.
 - The browser-local daily focus-session goal.
-- Timer settings and quiet-hours settings last successfully loaded from or saved to the device. A setting is `null` if it could not be loaded during this page session.
+- Timer settings, quiet-hours settings, and reminder intervals last successfully loaded from or saved to the device. A setting is `null` if it could not be loaded during this page session.
 - An ISO 8601 export timestamp and export schema version.
 
 The file is generated in the browser; it is not uploaded to a server. It is an export for backup or analysis, not a restore/import file. Keep the JSON private if you do not want to share your activity history.

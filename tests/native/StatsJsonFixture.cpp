@@ -25,7 +25,7 @@ int main()
     const StatsJson::Pet pets[] = {
         {0, 91, "Pashmak", "happy", "hello \"friend\"\\path\nnext"},
         {1, 64, "Mochi", "sleepy", "quiet\tmode"},
-        {2, 12, "Pixel", "curious", "control\x01byte"}};
+        {2, 12, "Pixel", "curious", "control\x01" "byte"}};
 
     const StatsJson::DailyRecord daily[] = {
         {20261023, 4294967000U, 200, 30, 7},

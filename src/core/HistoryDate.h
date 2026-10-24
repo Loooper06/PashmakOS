@@ -4,12 +4,12 @@
 
 namespace HistoryDate
 {
-    constexpr bool isLeapYear(int32_t year)
+    inline bool isLeapYear(int32_t year)
     {
         return (year % 4 == 0) && ((year % 100 != 0) || (year % 400 == 0));
     }
 
-    constexpr uint8_t daysInMonth(int32_t year, int32_t month)
+    inline uint8_t daysInMonth(int32_t year, int32_t month)
     {
         switch (month)
         {
@@ -24,7 +24,7 @@ namespace HistoryDate
         }
     }
 
-    constexpr bool isValidDateKey(int32_t dateKey)
+    inline bool isValidDateKey(int32_t dateKey)
     {
         const int32_t year = dateKey / 10000;
         const int32_t month = (dateKey / 100) % 100;
@@ -34,7 +34,7 @@ namespace HistoryDate
                day >= 1 && day <= daysInMonth(year, month);
     }
 
-    constexpr bool isValidMonthKey(int32_t monthKey)
+    inline bool isValidMonthKey(int32_t monthKey)
     {
         const int32_t year = monthKey / 100;
         const int32_t month = monthKey % 100;

@@ -122,12 +122,21 @@ private:
         ReminderSettings settings{};
     };
 
-    struct PetProfileStorage
+    struct LegacyPetProfileStorage
     {
         uint32_t version = 1;
         uint8_t count = 0;
         uint8_t petIds[PET_COUNT]{};
         uint8_t energy[PET_COUNT]{};
+    };
+
+    struct PetProfileStorage
+    {
+        uint32_t version = 2;
+        uint8_t count = 0;
+        uint8_t petIds[PET_COUNT]{};
+        uint8_t energy[PET_COUNT]{};
+        uint8_t happiness[PET_COUNT]{};
     };
 
     Display _display;
@@ -160,6 +169,7 @@ private:
     uint32_t _lastStatsPersistAt = 0;
     uint32_t _lastPetProfilePersistAt = 0;
     uint8_t _petProfileEnergy[PET_COUNT] = {80, 80, 80};
+    uint8_t _petProfileHappiness[PET_COUNT] = {70, 70, 70};
     uint8_t _petBond[PET_COUNT] = {0, 0, 0};
     uint32_t _lastInteractionAt[PET_COUNT]{};
     bool _hasInteracted[PET_COUNT]{};

@@ -41,6 +41,12 @@ if not client:
 js = client.group(1)
 
 checks = {
+    "settings backup UI offers JSON download and file restore controls": all(token in web for token in ['id="backup-download"', 'id="backup-file"', 'id="backup-restore"', 'id="backup-status"', 'accept=".json,application/json"']),
+    "settings backup exports versioned timer, quiet-hours and reminder settings": all(token in web for token in ["PashmakOS-settings-backup", "schemaVersion:1", "fetchSettings('/api/timer-settings')", "fetchSettings('/api/quiet-hours')", "fetchSettings('/api/reminder-settings')", "pashmakos-settings-backup.json"]),
+    "settings restore validates schema, field ranges and file size before applying settings": all(token in web for token in ["function validBackupSettings(data)", "selectedBackupFile.size>16384", "JSON.parse(await selectedBackupFile.text())", "backup.format!=='PashmakOS-settings-backup'", "window.confirm("]),
+    "settings restore reuses existing validated APIs and reloads UI state": all(token in web for token in ["postSettings('/api/timer-settings',s.timer)", "postSettings('/api/quiet-hours'", "postSettings('/api/reminder-settings',s.reminders)", "await Promise.all([loadTimerSettings(),loadQuietHours(),loadReminderSettings()])"]),
+    "settings backup explicitly excludes Wi-Fi credentials and activity history": "Wi-Fi credentials and activity history are deliberately excluded" in web and "Wi-Fi credentials and activity history are not included" in web,
+
     "diagnostics endpoint is registered and returns uncached runtime metrics": '_server.on("/api/diagnostics", HTTP_GET' in web and 'void WebDashboard::handleDiagnostics()' in web and '"Cache-Control", "no-store"' in function_body(web, "void WebDashboard::handleDiagnostics()", "void WebDashboard::handleWifiSettingsGet()"),
     "diagnostics includes heap, PSRAM, uptime, Wi-Fi clients, CPU and reset reason": all(token in web for token in ["ESP.getFreeHeap()", "ESP.getMinFreeHeap()", "ESP.getMaxAllocHeap()", "ESP.getFreePsram()", "WiFi.softAPgetStationNum()", "ESP.getCpuFreqMHz()", "esp_reset_reason()", "millis() / 1000UL"]),
     "dashboard displays and validates diagnostics without persistence": all(token in web for token in ['id="diag-uptime"', 'id="diag-heap"', 'id="diag-psram"', 'id="diag-clients"', 'id="diagnostics-refresh"', "async function loadDiagnostics()", "fetch('/api/diagnostics',{cache:'no-store'})"]) and "loadDiagnostics();" in web,

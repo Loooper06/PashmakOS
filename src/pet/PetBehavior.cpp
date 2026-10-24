@@ -380,6 +380,19 @@ void PetBehavior::interact(PetMode mode, uint32_t now, uint8_t bond)
 
 void PetBehavior::updateSpontaneousEvent(PetMode mode, uint32_t now, bool quietHours)
 {
+    // Quiet hours immediately suppress an already visible spontaneous event too.
+    if (quietHours)
+    {
+        if (_eventActive)
+        {
+            _eventActive = false;
+            if (!_interactionActive)
+                _state.message = _baseMessage;
+        }
+        _nextEventAt = now + EVENT_MIN_INTERVAL_MS;
+        return;
+    }
+
     // Signed subtraction keeps deadline checks safe across millis() rollover.
     if (_eventActive && static_cast<int32_t>(now - _eventUntil) >= 0)
     {
@@ -389,12 +402,6 @@ void PetBehavior::updateSpontaneousEvent(PetMode mode, uint32_t now, bool quietH
 
     if (_eventActive || static_cast<int32_t>(now - _nextEventAt) < 0)
         return;
-
-    if (quietHours)
-    {
-        _nextEventAt = now + EVENT_MIN_INTERVAL_MS;
-        return;
-    }
 
     // Nap is a quiet state: do not start a spontaneous interruption while the
     // pet is resting. Schedule the next opportunity from now so an overdue

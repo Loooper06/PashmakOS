@@ -18,7 +18,7 @@ def function_body(source: str, signature: str, next_signature: str) -> str:
 stats = function_body(web, "void WebDashboard::handleStats()", "void WebDashboard::handlePetSelection()")
 select = function_body(web, "void WebDashboard::handlePetSelection()", "void WebDashboard::handleNotFound()")
 setter = function_body(app, "bool PashmakApp::setActivePet(", "uint8_t PashmakApp::activePetId()")
-client = re.search(r"<script>\\s*(.*?)\\s*</script>", web, flags=re.DOTALL)
+client = re.search(r"<script>\s*(.*?)\s*</script>", web, flags=re.DOTALL)
 if not client:
     raise SystemExit("Embedded dashboard script block not found")
 js = client.group(1)

@@ -18,7 +18,8 @@ def function_body(source: str, signature: str, next_signature: str) -> str:
 
 
 stats = function_body(web, "void WebDashboard::handleStats()", "void WebDashboard::handlePetSelection()")
-select = function_body(web, "void WebDashboard::handlePetSelection()", "void WebDashboard::handleTimerSettingsGet()")
+select = function_body(web, "void WebDashboard::handlePetSelection()", "void WebDashboard::handlePetInteraction()")
+interaction = function_body(web, "void WebDashboard::handlePetInteraction()", "void WebDashboard::handleTimerSettingsGet()")
 timer_get = function_body(web, "void WebDashboard::handleTimerSettingsGet()", "void WebDashboard::handleTimerSettingsPost()")
 timer_post = function_body(web, "void WebDashboard::handleTimerSettingsPost()", "void WebDashboard::handleNotFound()")
 timer_setter = function_body(app, "bool PashmakApp::setTimerSettings(", "uint8_t PashmakApp::dailyHistoryCount()")
@@ -43,6 +44,11 @@ checks = {
     "app setter persists valid selection when Preferences are ready": '_statsPreferences.putUChar("activePet", _activePetId)' in setter,
     "stored active-pet ID is loaded with a safe default": '_statsPreferences.getUChar("activePet", 0)' in begin,
     "invalid stored active-pet ID falls back to pet 0 before use": "if (_activePetId >= 3) _activePetId = 0;" in begin and begin.find("if (_activePetId >= 3) _activePetId = 0;") < begin.find("_renderer.draw("),
+    "pet interaction endpoint is registered": '_server.on("/api/pet/interact", HTTP_POST' in web,
+    "pet interaction endpoint applies cooldown and returns 429": "_app->interactWithActivePet(millis())" in interaction and "_server.send(429" in interaction,
+    "dashboard exposes bond meter and interaction button": 'id="pet-bond-progress"' in web and 'id="pet-interact"' in web,
+    "dashboard validates bond range and selected-pet consistency": "Number.isInteger(Number(p.bond))" in js and "Number(data.pet.bond)!==Number(selected.bond)" in js,
+    "dashboard POSTs interaction and handles cooldown": "fetch('/api/pet/interact',{method:'POST'" in js and "response.status===429" in js,
     "dashboard POSTs selection and checks HTTP status": "fetch('/api/pet/select',{method:'POST'" in js and "if(!response.ok)throw new Error('HTTP '+response.status)" in js,
     "dashboard times out statistics requests": "setTimeout(()=>controller.abort(),5000)" in js,
     "dashboard validates payload before rendering": "if(!isValidStats(data))throw new Error('Invalid statistics payload')" in js,

@@ -511,6 +511,43 @@ void PashmakApp::loadReminderSettings()
                   _reminderSettings.waterMinutes, _reminderSettings.movementMinutes);
 }
 
+void PashmakApp::loadAchievementProgress()
+{
+    _achievementProgress = AchievementProgress::Storage{};
+    if (_statsReady && _statsPreferences.getBytesLength("achieve") == sizeof(AchievementProgress::Storage))
+    {
+        AchievementProgress::Storage stored{};
+        if (_statsPreferences.getBytes("achieve", &stored, sizeof(stored)) == sizeof(stored) &&
+            AchievementProgress::isValid(stored))
+        {
+            _achievementProgress = stored;
+            Serial.println("[ACHIEVEMENT] Persistent achievement progress loaded.");
+        }
+        else
+        {
+            Serial.println("[ACHIEVEMENT] Invalid saved progress; using safe defaults.");
+        }
+    }
+    _savedAchievementProgress = _achievementProgress;
+}
+
+void PashmakApp::persistAchievementProgress(uint32_t now, bool force)
+{
+    if (!_statsReady || AchievementProgress::equals(_achievementProgress, _savedAchievementProgress))
+        return;
+    constexpr uint32_t ACHIEVEMENT_PERSIST_INTERVAL_MS = 60000UL;
+    if (!force && static_cast<uint32_t>(now - _lastAchievementPersistAt) < ACHIEVEMENT_PERSIST_INTERVAL_MS)
+        return;
+    if (_statsPreferences.putBytes("achieve", &_achievementProgress, sizeof(_achievementProgress)) != sizeof(_achievementProgress))
+    {
+        Serial.println("[ACHIEVEMENT] Failed to persist progression; will retry.");
+        return;
+    }
+    _savedAchievementProgress = _achievementProgress;
+    _lastAchievementPersistAt = now;
+    Serial.println("[ACHIEVEMENT] Progress saved.");
+}
+
 void PashmakApp::loadPetProfiles()
 {
     for (uint8_t i = 0; i < PET_COUNT; ++i)

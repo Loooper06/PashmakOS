@@ -127,7 +127,7 @@ bool PashmakApp::setReminderSettings(const ReminderSettings &settings)
         return false;
     }
     _reminderSettings = settings;
-    Serial.printf("[REMINDER] Water=%u min, movement=%u min.\\n",
+    Serial.printf("[REMINDER] Water=%u min, movement=%u min.\n",
                   _reminderSettings.waterMinutes, _reminderSettings.movementMinutes);
     return true;
 }
@@ -492,7 +492,7 @@ void PashmakApp::loadReminderSettings()
     }
 
     _reminderSettings = stored.settings;
-    Serial.printf("[REMINDER] Loaded water=%u min, movement=%u min.\\n",
+    Serial.printf("[REMINDER] Loaded water=%u min, movement=%u min.\n",
                   _reminderSettings.waterMinutes, _reminderSettings.movementMinutes);
 }
 

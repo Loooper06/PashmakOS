@@ -22,5 +22,7 @@ private:
     void handlePetInteraction();
     void handleTimerSettingsGet();
     void handleTimerSettingsPost();
+    void handleQuietHoursGet();
+    void handleQuietHoursPost();
     void handleNotFound();
 };

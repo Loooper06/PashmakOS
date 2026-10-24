@@ -641,7 +641,7 @@ void WebDashboard::handleTimerStatusGet()
 {
     if (_app == nullptr)
     {
-        _server.send(503, "application/json", "{\\"error\\":\\"timer unavailable\\"}");
+        _server.send(503, "application/json", "{\"error\":\"timer unavailable\"}");
         return;
     }
     const PashmakApp::TimerStatus status = _app->timerStatus(millis());
@@ -649,7 +649,7 @@ void WebDashboard::handleTimerStatusGet()
                         status.phase == PetMode::Play ? "shortBreak" : "longBreak";
     char json[192];
     snprintf(json, sizeof(json),
-             "{\\"phase\\":\\"%s\\",\\"remainingMs\\":%lu,\\"paused\\":%s,\\"completedCycles\\":%u,\\"cyclesBeforeLongRest\\":%u}",
+             "{\"phase\":\"%s\",\"remainingMs\":%lu,\"paused\":%s,\"completedCycles\":%u,\"cyclesBeforeLongRest\":%u}",
              phase, static_cast<unsigned long>(status.remainingMs),
              status.paused ? "true" : "false", status.completedCycles,
              status.cyclesBeforeLongRest);
@@ -661,12 +661,12 @@ void WebDashboard::handleTimerControlPost()
 {
     if (_app == nullptr)
     {
-        _server.send(503, "application/json", "{\\"error\\":\\"timer unavailable\\"}");
+        _server.send(503, "application/json", "{\"error\":\"timer unavailable\"}");
         return;
     }
     if (!_server.hasArg("action"))
     {
-        _server.send(400, "application/json", "{\\"error\\":\\"missing action\\"}");
+        _server.send(400, "application/json", "{\"error\":\"missing action\"}");
         return;
     }
     const String action = _server.arg("action");
@@ -677,15 +677,15 @@ void WebDashboard::handleTimerControlPost()
     else if (action == "reset") command = PashmakApp::TimerCommand::Reset;
     else
     {
-        _server.send(400, "application/json", "{\\"error\\":\\"unsupported action\\"}");
+        _server.send(400, "application/json", "{\"error\":\"unsupported action\"}");
         return;
     }
     if (!_app->controlTimer(command, millis()))
     {
-        _server.send(409, "application/json", "{\\"error\\":\\"timer action rejected\\"}");
+        _server.send(409, "application/json", "{\"error\":\"timer action rejected\"}");
         return;
     }
-    appendEvent(EVENT_TIMER_SETTINGS_SAVED);
+    _server.sendHeader("Cache-Control", "no-store");
     handleTimerStatusGet();
 }
 

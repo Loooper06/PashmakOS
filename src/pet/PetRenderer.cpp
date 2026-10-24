@@ -362,9 +362,12 @@ void PetRenderer::drawDog(Display &d, PetMode mode, uint32_t frame, uint8_t petI
     else
     {
         const bool curiousMood = mood == PetMood::Curious;
-        const int8_t eyeHeight = sleepyEyes ? 6 : (curiousMood ? 13 : 11);
+        // Sleepy eyes should read as narrow, half-closed eyes rather than
+        // oversized lids. Keep the iris short and let the upper fur lid cover
+        // its top edge completely.
+        const int8_t eyeHeight = sleepyEyes ? 5 : (curiousMood ? 13 : 11);
         const int8_t eyeTop = sleepyEyes ? 0 : (curiousMood ? -5 : -4);
-        const int8_t eyeRadiusY = sleepyEyes ? 8 : (curiousMood ? 14 : 13);
+        const int8_t eyeRadiusY = sleepyEyes ? 6 : (curiousMood ? 14 : 13);
         d.fillEllipse(cx - 17 + pose.gazeX, cy - 3, 10, eyeRadiusY, furDark);
         d.fillEllipse(cx + 17 + pose.gazeX, cy - 3, 10, eyeRadiusY, furDark);
         d.fillEllipse(cx - 17 + pose.gazeX, cy + eyeTop, 8, eyeHeight, EYE);
@@ -378,9 +381,11 @@ void PetRenderer::drawDog(Display &d, PetMode mode, uint32_t frame, uint8_t petI
         }
         else
         {
-            // A soft upper lid makes low-energy moods visibly drowsy.
-            d.fillEllipse(cx - 17 + pose.gazeX, cy - 3, 9, 5, fur);
-            d.fillEllipse(cx + 17 + pose.gazeX, cy - 3, 9, 5, fur);
+            // Draw a compact upper lid over the top of the iris. Moving it
+            // upward and extending it slightly lower at the center hides the
+            // exposed upper iris while preserving a thin, sleepy eye opening.
+            d.fillEllipse(cx - 17 + pose.gazeX, cy - 5, 9, 6, fur);
+            d.fillEllipse(cx + 17 + pose.gazeX, cy - 5, 9, 6, fur);
         }
         if (happyMood && !pose.moving)
         {

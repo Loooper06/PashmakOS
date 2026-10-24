@@ -6,7 +6,7 @@ namespace
 {
     void appendJsonString(String &json, const char *value)
     {
-        static const char HEX[] = "0123456789ABCDEF";
+        static const char JSON_HEX_DIGITS[] = "0123456789ABCDEF";
         json += '"';
         if (value != nullptr)
         {
@@ -28,8 +28,8 @@ namespace
                     if (ch < 0x20)
                     {
                         json += F("\\u00");
-                        json += HEX[(ch >> 4) & 0x0F];
-                        json += HEX[ch & 0x0F];
+                        json += JSON_HEX_DIGITS[(ch >> 4) & 0x0F];
+                        json += JSON_HEX_DIGITS[ch & 0x0F];
                     }
                     else
                     {

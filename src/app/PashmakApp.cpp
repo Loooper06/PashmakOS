@@ -35,6 +35,38 @@ bool PashmakApp::setActivePet(uint8_t petId)
     return true;
 }
 
+bool PashmakApp::interactWithActivePet(uint32_t now)
+{
+    if (_activePetId >= PET_COUNT)
+        return false;
+
+    const uint8_t petId = _activePetId;
+    // Per-pet cooldown prevents dashboard clicks from spamming reactions or flash writes.
+    if (_hasInteracted[petId] &&
+        static_cast<uint32_t>(now - _lastInteractionAt[petId]) < 8000UL)
+        return false;
+
+    _hasInteracted[petId] = true;
+    _lastInteractionAt[petId] = now;
+    if (_petBond[petId] < 100)
+    {
+        const uint16_t nextBond = static_cast<uint16_t>(_petBond[petId]) + 5U;
+        _petBond[petId] = nextBond > 100U ? 100U : static_cast<uint8_t>(nextBond);
+    }
+
+    if (_statsReady)
+    {
+        char key[8];
+        snprintf(key, sizeof(key), "bond%u", petId);
+        if (_statsPreferences.putUChar(key, _petBond[petId]) != sizeof(uint8_t))
+            Serial.printf("[BOND] Failed to persist bond for pet %u.\\n", petId);
+    }
+
+    _behaviors[petId].interact(_mode, now, _petBond[petId]);
+    Serial.printf("[BOND] Pet %u interaction; bond=%u/100.\\n", petId, _petBond[petId]);
+    return true;
+}
+
 uint8_t PashmakApp::activePetId() const
 {
     return _activePetId;
@@ -137,7 +169,7 @@ String PashmakApp::statisticsToJson(uint8_t recentDays) const
     {
         const PetBehaviorState &profile = _behaviors[i].state();
         pets[i] = StatsJson::Pet{
-            i, profile.energy, petNames[i], moodName(profile.mood), profile.message};
+            i, profile.energy, _petBond[i], petNames[i], moodName(profile.mood), profile.message};
     }
 
     const PetBehaviorState &active = _behaviors[_activePetId].state();
@@ -180,7 +212,7 @@ String PashmakApp::statisticsToJson(uint8_t recentDays) const
         _activePetId,
         pets,
         PET_COUNT,
-        StatsJson::Pet{_activePetId, active.energy, nullptr, moodName(active.mood), active.message},
+        StatsJson::Pet{_activePetId, active.energy, _petBond[_activePetId], nullptr, moodName(active.mood), active.message},
         totals,
         recentView,
         daily,
@@ -213,6 +245,13 @@ void PashmakApp::begin()
     if (_statsReady)
     {
         _activePetId = _statsPreferences.getUChar("activePet", 0);
+        for (uint8_t i = 0; i < PET_COUNT; ++i)
+        {
+            char key[8];
+            snprintf(key, sizeof(key), "bond%u", i);
+            const uint8_t savedBond = _statsPreferences.getUChar(key, 0);
+            _petBond[i] = savedBond <= 100 ? savedBond : 0;
+        }
         if (_activePetId >= 3) _activePetId = 0;
         _workMs = _statsPreferences.getULong64("workMs", 0);
         _playMs = _statsPreferences.getULong64("playMs", 0);

@@ -60,9 +60,9 @@ Example shape (values are illustrative):
 ## Integration notes
 
 - The JSON snapshot is available over USB serial and the local Wi-Fi dashboard at `GET /api/stats`.
-- The ESP32 starts its own Wi-Fi access point; connect to SSID `PashmakOS` with password `pashmak123`, then open `http://192.168.4.1/` on a phone or computer. Internet access is not required while connected to this access point.
+- The ESP32 starts its own Wi-Fi access point named `PashmakOS`. On each boot it generates a fresh 16-character WPA2 password and prints it to the USB serial console at 115200 baud. Read `[WEB] Wi-Fi password (changes after reboot): ...`, connect to the AP, then open `http://192.168.4.1/`. Internet access is not required while connected to this access point.
 - The dashboard refreshes automatically every 10 seconds. The API returns lifetime totals plus up to 14 daily and 12 monthly records.
-- Change the access-point SSID/password in `src/web/WebDashboard.cpp` before sharing the device. Use a password of at least 8 characters.
+- The access-point password is intentionally ephemeral and changes after every reboot. Anyone with access to the USB serial console can read the current password; do not leave an exposed serial console connected in an untrusted environment. The dashboard API is available to clients connected to the AP, so only share the current password with trusted users.
 - History is retained in ESP32 Preferences. Daily history keeps up to 14 records and monthly history up to 12 records.
 - The current schema is versioned so a future dashboard can detect incompatible changes.
 

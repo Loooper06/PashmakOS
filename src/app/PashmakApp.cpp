@@ -2,6 +2,7 @@
 #include "Config.h"
 #include "../core/JsonEscape.h"
 #include "../core/HistoryDate.h"
+#include "../core/PetProfileValidation.h"
 #include "../core/StatsAggregation.h"
 #include "../core/StatsJson.h"
 #include <Preferences.h>
@@ -513,21 +514,10 @@ void PashmakApp::loadPetProfiles()
 
     PetProfileStorage stored{};
     if (_statsPreferences.getBytes("petProfile", &stored, expected) != expected ||
-        stored.version != 1 || stored.count != PET_COUNT)
+        !PetProfileValidation::isValid<PetProfileStorage, PET_COUNT>(stored, 1))
     {
         Serial.println("[PET_PROFILE] Invalid profile storage; using defaults.");
         return;
-    }
-
-    for (uint8_t i = 0; i < PET_COUNT; ++i)
-    {
-        if (stored.petIds[i] != i || stored.energy[i] > 100)
-        {
-            Serial.println("[PET_PROFILE] Invalid pet ID or energy; using defaults.");
-            for (uint8_t j = 0; j < PET_COUNT; ++j)
-                _petProfileEnergy[j] = 80;
-            return;
-        }
     }
 
     for (uint8_t i = 0; i < PET_COUNT; ++i)

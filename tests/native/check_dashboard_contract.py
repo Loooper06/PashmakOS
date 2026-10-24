@@ -129,6 +129,12 @@ checks = {
     "Wi-Fi settings UI validates and submits SSID/password": 'id="wifi-ssid"' in web and 'id="wifi-password"' in web and "async function loadWifiSettings()" in js and "async function saveWifiSettings()" in js and "fetch('/api/wifi-settings',{method:'POST'" in js,
     "Wi-Fi API does not expose the current password and restarts AP after saving": "passwordConfigured" in web and "WiFi.softAPdisconnect(true)" in web and "WiFi.softAP(ssid.c_str(), passwordValue.c_str())" in web,
     "Wi-Fi credentials are validated and the default bootstrap credentials are documented": "password must contain 8 to 63 characters" in web and "DEFAULT_WIFI_AP_PASSWORD[] = \"pashmak123\"" in web,
+    "timer status and control endpoints are registered": '_server.on("/api/timer", HTTP_GET, [this]() { handleTimerStatusGet(); });' in web and '_server.on("/api/timer", HTTP_POST, [this]() { handleTimerControlPost(); });' in web,
+    "timer status exposes phase, remaining time, pause state and cycle progress": all(token in web for token in ["status.phase", "remainingMs", "paused", "completedCycles", "cyclesBeforeLongRest"]),
+    "timer control API validates start pause skip and reset actions": all(token in web for token in ['action == "start"', 'action == "pause"', 'action == "skip"', 'action == "reset"', 'unsupported action']),
+    "countdown helper uses rollover-safe arithmetic and native timer tests": "PomodoroTimer::remainingMs" in app and "PomodoroTimer::remainingAtPause" in app and "PomodoroTimer::resumedStartAt" in app and (ROOT / "tests" / "native" / "PomodoroTimerTests.cpp").exists(),
+    "timer controls preserve pause remaining time and avoid false completion on skip/reset": all(token in app for token in ['_timerPaused', '_pausedRemainingMs', 'TimerCommand::Pause', 'TimerCommand::Start', 'TimerCommand::Skip', 'TimerCommand::Reset']) and 'Skipping is not a completed focus session' in app and 'if (_timerPaused)\n        return;' in automatic_mode,
+    "dashboard renders synchronized timer and sends explicit controls": all(token in web for token in ['id="timer-countdown"', 'id="timer-cycle"', 'id="timer-start"', 'id="timer-pause"', 'id="timer-skip"', 'id="timer-reset"', "fetch('/api/timer',{cache:'no-store'})", "fetch('/api/timer',{method:'POST'", "setInterval(loadTimerStatus,10000)"]),
     "dashboard validates and submits timer settings": "Check the allowed ranges before saving." in js and "fetch('/api/timer-settings',{method:'POST'" in js and "loadTimerSettings();" in js,
 
 }

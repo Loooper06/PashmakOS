@@ -105,8 +105,8 @@ This sequence supplements the existing engineering roadmap above. Each feature p
 | 1 | Distinct personalities: voice plus per-pet energy dynamics | Completed (PR #43) |
 | 2 | Direct interaction with the pet | Completed (PR #45) |
 | 3 | Pet needs: energy, happiness, and bond model | Completed (PR #47) |
-| 4 | Achievements and persistent progression | In progress (PR pending) |
-| 5 | Complete Pomodoro flow and work/rest cycle controls | Planned |
+| 4 | Achievements and persistent progression | Completed (PR #48) |
+| 5 | Complete Pomodoro flow and work/rest cycle controls | In progress (PR pending) |
 | 6 | Persistent settings through the dashboard | Planned |
 | 7 | Activity statistics and history improvements | Planned |
 | 8 | Day/night behavior using the RTC | Planned |
@@ -148,12 +148,25 @@ This sequence supplements the existing engineering roadmap above. Each feature p
 
 ### Feature phase 4 — achievements and persistent progression
 
-- [ ] Define a small, deterministic achievement catalog for meaningful events (first interaction, interaction milestones, focus-session milestones, and consistent use) without awarding achievements from dashboard page loads or repeated polling.
-- [ ] Track per-pet achievement progress and earned IDs using a versioned Preferences record with validation, bounded writes, and safe migration/default behavior.
-- [ ] Award each achievement exactly once; repeated events, duplicate HTTP requests, or reboot must not duplicate rewards.
-- [ ] Surface unlocked achievements and progress in the dashboard and include the relevant per-pet data in a documented, validated statistics API schema.
-- [ ] Keep progress local-first and avoid adding cloud dependencies or personal telemetry.
-- [ ] Native tests cover unlock thresholds, duplicate prevention, invalid persisted data, migration, and serialization; dashboard contract tests cover rendering and payload validation.
+- [x] Define a small, deterministic achievement catalog for meaningful events (first interaction, interaction milestones, focus-session milestones, and consistent use) without awarding achievements from dashboard page loads or repeated polling.
+- [x] Track per-pet achievement progress and earned IDs using a versioned Preferences record with validation, bounded writes, and safe migration/default behavior.
+- [x] Award each achievement exactly once; repeated events, duplicate HTTP requests, or reboot must not duplicate rewards.
+- [x] Surface unlocked achievements and progress in the dashboard and include the relevant per-pet data in a documented, validated statistics API schema.
+- [x] Keep progress local-first and avoid adding cloud dependencies or personal telemetry.
+- [x] Native tests cover unlock thresholds, duplicate prevention, invalid persisted data, migration, and serialization; dashboard contract tests cover rendering and payload validation.
+- [x] ESP32 firmware build and native/dashboard CI pass for the implementation PR.
+- [x] User confirms achievement unlocks, per-pet separation, and persistence after reboot on physical ESP32/TFT.
+- [x] Implementation PR #48 merged; phase completed.
+
+
+### Feature phase 5 — complete Pomodoro flow and work/rest cycle controls
+
+- [ ] Make the active timer phase explicit (work, short break, long break, paused) with a rollover-safe remaining-time calculation and no false session completion after pause/resume or reset.
+- [ ] Add explicit dashboard controls to start, pause/resume, skip the current phase, and reset the timer; validate unsupported actions and reject malformed requests.
+- [ ] Preserve the configured work duration, short-break duration, long-break duration, and work sessions per long-break cycle; use the existing persistent timer settings and safe bounds.
+- [ ] Complete a work session exactly once when its deadline is reached; skip/reset/phase changes must not increment completed-session counters or achievements incorrectly.
+- [ ] Expose validated timer state (phase, remaining milliseconds, paused/running state, cycle progress) in the statistics API and keep the dashboard synchronized without duplicate actions.
+- [ ] Add native tests for phase transitions, pause/resume elapsed-time accounting, reset/skip behavior, rollover, cycle-to-long-break logic, and duplicate completion; add dashboard contract tests for action validation and timer rendering.
 - [ ] ESP32 firmware build and native/dashboard CI pass for the implementation PR.
-- [ ] User confirms achievement unlocks, per-pet separation, and persistence after reboot on physical ESP32/TFT.
+- [ ] User confirms start/pause/resume/skip/reset, countdown accuracy, cycle transitions, and persisted settings on physical ESP32/TFT.
 - [ ] Implementation PR merged; phase completed.

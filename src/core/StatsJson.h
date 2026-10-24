@@ -22,8 +22,8 @@ namespace StatsJson
         const char *name;
         const char *mood;
         const char *message;
-        uint16_t interactions = 0;
-        uint32_t achievementMask = 0;
+        uint16_t interactions;
+        uint32_t achievementMask;
     };
 
     struct Recent
@@ -63,7 +63,7 @@ namespace StatsJson
         uint8_t dailyCount;
         const MonthlyRecord *monthlyHistory;
         uint8_t monthlyCount;
-        uint32_t globalAchievementMask = 0;
+        uint32_t globalAchievementMask;
     };
 
     template <typename StringLike>

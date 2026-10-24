@@ -147,3 +147,14 @@ Pet records in schema version 2 include `happiness` (integer, 0–100), alongsid
 ## Persistent achievements
 
 Achievement progress is stored locally in the ESP32 Preferences namespace as a versioned, validated record. Per-pet interaction counts and achievement masks remain separate for each pet; focus-session milestones and the three-consecutive-day streak use a global mask. Achievement bits are awarded once and persisted immediately when a new achievement unlocks. Other progress is coalesced into writes no more frequently than once per minute. Invalid records fall back to an empty progress record. The dashboard only renders achievements from the validated API masks, rather than inferring unlocked status from browser-local state.
+
+## Pomodoro timer control API
+
+The timer has a dedicated local endpoint, separate from the statistics snapshot:
+
+- `GET /api/timer` returns `phase` (`work`, `shortBreak`, or `longBreak`), `remainingMs`, `paused`, `completedCycles`, and `cyclesBeforeLongRest`.
+- `POST /api/timer` accepts one form field named `action` with exactly one of `start`, `pause`, `skip`, or `reset`. Missing or unsupported actions return HTTP 400.
+- Pause freezes the remaining duration; resume continues from that remaining time. Duplicate start/pause requests are idempotent.
+- Skip advances to the next phase without counting the interrupted work phase as completed and without awarding focus-session achievements. Reset starts a fresh work phase and clears cycle progress; lifetime statistics are retained.
+- Changing saved durations restarts the current phase with the new configured duration. Timer settings remain stored in the versioned ESP32 Preferences record.
+- The dashboard obtains timer state from the device and periodically resynchronizes it, so its visible countdown is only a presentation estimate between device responses.

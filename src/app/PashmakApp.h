@@ -55,6 +55,17 @@ public:
         uint8_t workCyclesBeforeLongRest = 3;
     };
 
+    enum class TimerCommand : uint8_t { Start, Pause, Skip, Reset };
+
+    struct TimerStatus
+    {
+        PetMode phase = PetMode::Work;
+        uint32_t remainingMs = 0;
+        bool paused = false;
+        uint8_t completedCycles = 0;
+        uint8_t cyclesBeforeLongRest = 3;
+    };
+
     struct ReminderSettings
     {
         uint16_t waterMinutes = 60;
@@ -71,6 +82,8 @@ public:
     uint8_t petBond(uint8_t petId) const;
     TimerSettings timerSettings() const;
     bool setTimerSettings(const TimerSettings &settings);
+    bool controlTimer(TimerCommand command, uint32_t now);
+    TimerStatus timerStatus(uint32_t now) const;
     QuietHoursSettings quietHoursSettings() const;
     bool setQuietHoursSettings(const QuietHoursSettings &settings);
     ReminderSettings reminderSettings() const;
@@ -183,6 +196,8 @@ private:
     Preferences _statsPreferences;
     bool _statsReady = false;
     uint32_t _modeStartedAt = 0;
+    bool _timerPaused = false;
+    uint32_t _pausedRemainingMs = 0;
     uint32_t _reminderShownAt = 0;
 
     DailyStats _dailyHistory[DAILY_HISTORY_DAYS]{};

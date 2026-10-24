@@ -20,6 +20,8 @@ private:
     void handleStats();
     void handlePetSelection();
     void handlePetInteraction();
+    void handleTimerStatusGet();
+    void handleTimerControlPost();
     void handleTimerSettingsGet();
     void handleTimerSettingsPost();
     void handleQuietHoursGet();

@@ -21,7 +21,7 @@ namespace
                 case '\\': json += F("\\\\"); break;
                 case '\b': json += F("\\b"); break;
                 case '\f': json += F("\\f"); break;
-                case '\n': json += F("\n"); break;
+                case '\n': json += F("\\n"); break;
                 case '\r': json += F("\\r"); break;
                 case '\t': json += F("\\t"); break;
                 default:

@@ -40,7 +40,7 @@ Progress update (2026-10-24): mood-specific facial expressions are implemented u
 1. Preserve the current renderer API/layout unless a task explicitly requires a fix.
 2. [x] Make mood changes visible through distinct focused, curious, sleepy/tired, excited, and exhausted facial cues using existing renderer inputs.
 3. Verify RTC reminders expire and return to the current pet message.
-4. Measure frame timing and check flicker with Wi-Fi enabled.
+4. Add serial frame-duration diagnostics (10-second average/maximum and over-budget count); measure actual frame timing and check flicker with Wi-Fi enabled on hardware.
 5. Keep display/network work non-blocking.
 Acceptance: no new physical-display flicker/frame stalls; reminders and messages restore correctly.
 

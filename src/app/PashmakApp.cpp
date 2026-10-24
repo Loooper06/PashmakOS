@@ -171,6 +171,7 @@ void PashmakApp::begin()
     const uint32_t now = millis();
     _lastWorkTick = now;
     _lastFrame = now;
+    _lastFrameMetricsAt = now;
     _modeStartedAt = now;
     _lastStatsPersistAt = now;
 
@@ -766,7 +767,38 @@ void PashmakApp::update()
                      current.hour(), current.minute(), current.year(),
                      current.month(), current.day());
         }
+        const uint32_t drawStartedAtUs = micros();
         _renderer.draw(_display, _mode, _frame, _activePetId, _behaviors[_activePetId].state().mood, message, dateTime);
+        const uint32_t drawDurationUs = static_cast<uint32_t>(micros() - drawStartedAtUs);
+
+        ++_frameMetricCount;
+        _frameMetricTotalUs += drawDurationUs;
+        if (drawDurationUs > _frameMetricMaxUs)
+            _frameMetricMaxUs = drawDurationUs;
+        if (drawDurationUs >= Config::FRAME_INTERVAL_MS * 1000UL)
+            ++_frameMetricOverBudget;
+
         _lastFrame = now;
+
+        const uint32_t metricsNow = millis();
+        if (static_cast<uint32_t>(metricsNow - _lastFrameMetricsAt) >= 10000UL)
+        {
+            const uint32_t averageUs = _frameMetricCount > 0
+                ? static_cast<uint32_t>(_frameMetricTotalUs / _frameMetricCount)
+                : 0;
+            Serial.printf(
+                "[TFT_FRAME] window=%lu ms frames=%lu avg=%lu us max=%lu us overBudget=%lu\n",
+                static_cast<unsigned long>(metricsNow - _lastFrameMetricsAt),
+                static_cast<unsigned long>(_frameMetricCount),
+                static_cast<unsigned long>(averageUs),
+                static_cast<unsigned long>(_frameMetricMaxUs),
+                static_cast<unsigned long>(_frameMetricOverBudget));
+
+            _lastFrameMetricsAt = metricsNow;
+            _frameMetricCount = 0;
+            _frameMetricTotalUs = 0;
+            _frameMetricMaxUs = 0;
+            _frameMetricOverBudget = 0;
+        }
     }
 }

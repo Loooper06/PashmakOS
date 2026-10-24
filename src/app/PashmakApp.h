@@ -83,6 +83,11 @@ private:
     PetMode _mode = PetMode::Work;
 
     uint32_t _lastFrame = 0;
+    uint32_t _lastFrameMetricsAt = 0;
+    uint32_t _frameMetricCount = 0;
+    uint64_t _frameMetricTotalUs = 0;
+    uint32_t _frameMetricMaxUs = 0;
+    uint32_t _frameMetricOverBudget = 0;
     uint32_t _frame = 0;
     uint64_t _workMs = 0;
     uint64_t _playMs = 0;

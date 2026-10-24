@@ -50,6 +50,7 @@ This checklist is intended for the ESP32-WROOM-32 + ILI9341 TFT + DS3231 RTC tar
 ## 5. TFT, behavior, and RTC reminder checks
 
 - [ ] Observe the TFT for at least 10 minutes with Wi-Fi enabled. Note flicker, partial redraws, stalls, or watchdog resets.
+- [ ] Capture at least three `[TFT_FRAME]` serial reports while the dashboard is idle and while it is serving requests; record average/max draw duration and `overBudget` count. A report is diagnostic data, not by itself proof of flicker-free output.
 - [ ] Confirm Work → Play → Work transitions occur at the configured durations. Allow enough time for the configured session duration; do not infer timing from a short observation.
 - [ ] Confirm energy remains within 0–100 and changes at the documented mode-specific rates.
 - [ ] Confirm Pashmak, Mochi, and Pixel have distinguishable message/personality profiles.

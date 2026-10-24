@@ -39,6 +39,13 @@ public:
         uint32_t completedWorkSessions = 0;
     };
 
+    struct QuietHoursSettings
+    {
+        bool enabled = true;
+        uint8_t startHour = 21;
+        uint8_t endHour = 9;
+    };
+
     struct TimerSettings
     {
         uint16_t workMinutes = 25;
@@ -57,6 +64,8 @@ public:
     uint8_t petBond(uint8_t petId) const;
     TimerSettings timerSettings() const;
     bool setTimerSettings(const TimerSettings &settings);
+    QuietHoursSettings quietHoursSettings() const;
+    bool setQuietHoursSettings(const QuietHoursSettings &settings);
     uint8_t dailyHistoryCount() const;
     bool getDailyStats(uint8_t index, DailyStats &out) const;
     uint8_t monthlyHistoryCount() const;
@@ -107,6 +116,7 @@ private:
     RtcService _rtc;
     uint8_t _activePetId = 0;
     TimerSettings _timerSettings{};
+    QuietHoursSettings _quietHours{};
 
     PetMode _mode = PetMode::Work;
 
@@ -162,6 +172,7 @@ private:
     void handleSerialCommands();
     void persistStats(uint32_t now, bool force = false);
     void loadTimerSettings();
+    bool isQuietHour(int8_t hour) const;
     void loadPetProfiles();
     void persistPetProfiles(uint32_t now);
     void loadDailyHistory();

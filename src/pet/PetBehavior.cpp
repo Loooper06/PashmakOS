@@ -109,6 +109,18 @@ void PetBehavior::begin(uint32_t now)
     _initialized = true;
 }
 
+bool PetBehavior::restoreEnergy(uint8_t energy, uint32_t now)
+{
+    if (energy > 100)
+        return false;
+
+    _state.energy = energy;
+    _lastEnergyTickAt = now;
+    _energyRemainderMs = 0;
+    updateMood(_lastMode);
+    return true;
+}
+
 void PetBehavior::update(PetMode mode, uint32_t now, int8_t hour)
 {
     if (!_initialized)

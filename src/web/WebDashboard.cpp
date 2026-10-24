@@ -255,11 +255,11 @@ void WebDashboard::handleTimerSettingsPost()
         return;
     }
 
-    const PashmakApp::TimerSettings settings{
-        static_cast<uint16_t>(values[0]),
-        static_cast<uint16_t>(values[1]),
-        static_cast<uint16_t>(values[2]),
-        static_cast<uint8_t>(values[3])};
+    PashmakApp::TimerSettings settings;
+    settings.workMinutes = static_cast<uint16_t>(values[0]);
+    settings.playMinutes = static_cast<uint16_t>(values[1]);
+    settings.napMinutes = static_cast<uint16_t>(values[2]);
+    settings.workCyclesBeforeLongRest = static_cast<uint8_t>(values[3]);
     if (!_app->setTimerSettings(settings))
     {
         _server.send(500, "application/json", "{\"error\":\"could not persist settings\"}");

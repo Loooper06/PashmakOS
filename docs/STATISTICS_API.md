@@ -22,7 +22,7 @@ Unknown commands are ignored with a diagnostic message. Commands longer than the
 The `stats` response is a single JSON object with `version: 1`. The dashboard validates the payload before rendering it; an invalid response is treated as a failed refresh, and the last valid snapshot remains visible.
 
 - `activePetId`: selected pet ID (0–2).
-- `pets`: exactly three pet profiles. Each profile has `id`, `name`, `energy` (0–100), `mood`, and `message`.
+- `pets`: exactly three pet profiles. Each profile has `id`, `name`, `energy` (0–100), `bond` (0–100), `mood`, and `message`.
 - `pet`: the selected pet's `energy`, `mood`, and `message`. This duplicates the selected profile for convenient dashboard rendering.
 - `totals`: lifetime counters currently stored in Preferences.
 - `recent`: aggregate of the most recent available daily records, up to the requested number of days (the serial command currently requests 7; the dashboard requests 14).
@@ -80,3 +80,10 @@ The local dashboard exposes a separate timer configuration API; it does not chan
 ## CSV export
 
 The `daily_csv` and `monthly_csv` commands print header rows and comma-separated numeric records. Copy only the content between the matching begin/end markers into a `.csv` file. The `dateKey` format is `YYYYMMDD`; `monthKey` is `YYYYMM`. Durations are milliseconds.
+
+## Pet interaction and bonding
+
+- `POST /api/pet/interact` triggers a personality-specific reaction on the TFT and increases the selected pet's bond by 5, capped at 100.
+- Each pet has an independent 8-second cooldown; requests during cooldown return HTTP 429 with `Retry-After: 8`. An unavailable app returns HTTP 503.
+- Bond is stored in ESP32 Preferences under a per-pet key and loaded after reboot. Each accepted interaction persists only that pet's bond value; the cooldown limits write frequency.
+- Reactions are temporary (about 6 seconds) and the pet's normal behavior message resumes afterward.

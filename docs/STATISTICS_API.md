@@ -19,12 +19,17 @@ Unknown commands are ignored with a diagnostic message. Commands longer than the
 
 ## JSON schema
 
-The `stats` response is a single JSON object with `version: 1`:
+The `stats` response is a single JSON object with `version: 1`. The dashboard validates the payload before rendering it; an invalid response is treated as a failed refresh, and the last valid snapshot remains visible.
 
+- `activePetId`: selected pet ID (0–2).
+- `pets`: exactly three pet profiles. Each profile has `id`, `name`, `energy` (0–100), `mood`, and `message`.
+- `pet`: the selected pet's `energy`, `mood`, and `message`. This duplicates the selected profile for convenient dashboard rendering.
 - `totals`: lifetime counters currently stored in Preferences.
-- `recent`: aggregate of the most recent available daily records, up to the requested number of days (currently 7).
-- `dailyHistory`: retained daily records, each with `dateKey` in `YYYYMMDD` format.
-- `monthlyHistory`: retained monthly records, each with `monthKey` in `YYYYMM` format.
+- `recent`: aggregate of the most recent available daily records, up to the requested number of days (the serial command currently requests 7; the dashboard requests 14).
+- `dailyHistory`: retained daily records, each with `dateKey` in `YYYYMMDD` format. The dashboard expects no more than 14 records.
+- `monthlyHistory`: retained monthly records, each with `monthKey` in `YYYYMM` format. The dashboard expects no more than 12 records.
+
+The dashboard uses a 5-second request timeout and bounded retry backoff up to 60 seconds. A successful response resets the refresh interval to 10 seconds. During temporary failures it preserves the last valid snapshot and marks it stale.
 
 All duration values ending in `Ms` are milliseconds. Session counters are counts, not durations. JSON numeric values should be treated as unsigned counters where applicable.
 

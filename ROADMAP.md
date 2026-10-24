@@ -98,7 +98,7 @@ Acceptance: repeatable tests, passing CI, clear setup docs, no unverified claims
 
 ## Roadmap for the next product features
 
-This sequence supplements the existing engineering roadmap above. Each feature phase gets its own branch and pull request. A phase is marked complete only after both CI jobs pass, the user confirms the physical ESP32 test, and the PR is merged.
+This product-feature sequence intentionally ends at feature phase 5 (Pomodoro). No additional product feature phases are planned in this roadmap. Each listed feature phase gets its own branch and pull request. A phase is marked complete only after both CI jobs pass, the user confirms the physical ESP32 test, and the PR is merged.
 
 | Feature phase | Scope | Status |
 |---:|---|---|
@@ -107,12 +107,6 @@ This sequence supplements the existing engineering roadmap above. Each feature p
 | 3 | Pet needs: energy, happiness, and bond model | Completed (PR #47) |
 | 4 | Achievements and persistent progression | Completed (PR #48) |
 | 5 | Complete Pomodoro flow and work/rest cycle controls | Completed (PR #49) |
-| 6 | Persistent settings through the dashboard | Completed (PR #50) |
-| 7 | Activity statistics and history improvements | In progress (PR pending) |
-| 8 | Day/night behavior using the RTC | Planned |
-| 9 | Dashboard health and network recovery improvements | Planned |
-| 10 | Customizable themes and accessories | Planned |
-| 11 | Stability and recovery regression suite | Planned |
 
 ### Feature phase 1 — acceptance criteria
 
@@ -161,48 +155,12 @@ This sequence supplements the existing engineering roadmap above. Each feature p
 
 ### Feature phase 5 — complete Pomodoro flow and work/rest cycle controls
 
-- [ ] Make the active timer phase explicit (work, short break, long break, paused) with a rollover-safe remaining-time calculation and no false session completion after pause/resume or reset.
-- [ ] Add explicit dashboard controls to start, pause/resume, skip the current phase, and reset the timer; validate unsupported actions and reject malformed requests.
-- [ ] Preserve the configured work duration, short-break duration, long-break duration, and work sessions per long-break cycle; use the existing persistent timer settings and safe bounds.
-- [ ] Complete a work session exactly once when its deadline is reached; skip/reset/phase changes must not increment completed-session counters or achievements incorrectly.
-- [ ] Expose validated timer state (phase, remaining milliseconds, paused/running state, cycle progress) in the statistics API and keep the dashboard synchronized without duplicate actions.
-- [ ] Add native tests for phase transitions, pause/resume elapsed-time accounting, reset/skip behavior, rollover, cycle-to-long-break logic, and duplicate completion; add dashboard contract tests for action validation and timer rendering.
-- [ ] ESP32 firmware build and native/dashboard CI pass for the implementation PR.
-- [ ] User confirms start/pause/resume/skip/reset, countdown accuracy, cycle transitions, and persisted settings on physical ESP32/TFT.
-- [ ] Implementation PR merged; phase completed.
-
-
-### Feature phase 6 — persistent settings through the dashboard
-
-- [ ] Identify dashboard settings that should survive page reloads and device reboot; keep defaults and validation explicit.
-- [ ] Persist supported settings on-device using versioned Preferences records, bounded storage writes, and safe defaults for missing or invalid data.
-- [ ] Expose settings through validated dashboard API endpoints; reject unsupported keys, malformed values, and out-of-range values.
-- [ ] Reflect persisted settings in the dashboard after reload and keep UI controls synchronized with the device's authoritative values.
-- [ ] Avoid secrets in responses and preserve local-first operation without cloud dependencies.
-- [ ] Native tests cover validation, defaults, serialization, and persistence-related contracts; dashboard contract tests cover endpoints and UI wiring.
-- [ ] ESP32 firmware build and native/dashboard CI pass for the implementation PR.
-- [ ] User confirms settings survive dashboard reload and device reboot on physical ESP32/TFT.
-- [ ] Implementation PR merged; phase completed.
-
-
-### Feature phase 6 — persistent settings through the dashboard
-
-- [x] Persist the daily focus-session goal in versioned ESP32 Preferences storage with safe defaults and bounded validation (1–20; default 4).
-- [x] Provide validated `GET /api/dashboard-settings` and `POST /api/dashboard-settings` endpoints; malformed or out-of-range values are rejected.
-- [x] Synchronize the dashboard goal from device-authoritative settings after page load; browser storage is only a fallback cache.
-- [x] Keep the endpoint local-first and free of secrets or cloud dependencies.
-- [x] Native/dashboard contract checks and ESP32 firmware build passed for PR #50.
-- [x] User confirmed the physical ESP32 test, including persistence behavior.
-- [x] Implementation PR #50 merged; phase completed.
-
-### Feature phase 7 — activity statistics and history improvements
-
-- [ ] Review current activity counters, daily/monthly history, focus sessions, and CSV export; preserve existing API compatibility unless a documented schema version change is required.
-- [ ] Add useful activity-history summaries and filtering that are grounded in persisted device data; avoid duplicate counting from dashboard polling or page reloads.
-- [ ] Ensure empty, missing, malformed, and boundary-date history states render safely and clearly in the dashboard.
-- [ ] Keep history storage bounded and persistence writes controlled; do not introduce cloud dependencies or transmit personal activity data.
-- [ ] Document any API fields, aggregation windows, and export semantics.
-- [ ] Native tests cover aggregation, date boundaries, empty history, duplicate counting, and invalid data; dashboard contract tests cover rendering and API behavior.
-- [ ] ESP32 firmware build and native/dashboard CI pass for the implementation PR.
-- [ ] User confirms activity summaries, history views, and CSV export on physical ESP32/dashboard.
-- [ ] Implementation PR merged; phase completed.
+- [x] Make the active timer phase explicit (work, short break, long break, paused) with a rollover-safe remaining-time calculation and no false session completion after pause/resume or reset.
+- [x] Add explicit dashboard controls to start, pause/resume, skip the current phase, and reset the timer; validate unsupported actions and reject malformed requests.
+- [x] Preserve the configured work duration, short-break duration, long-break duration, and work sessions per long-break cycle; use the existing persistent timer settings and safe bounds.
+- [x] Complete a work session exactly once when its deadline is reached; skip/reset/phase changes must not increment completed-session counters or achievements incorrectly.
+- [x] Expose validated timer state (phase, remaining milliseconds, paused/running state, cycle progress) in the statistics API and keep the dashboard synchronized without duplicate actions.
+- [x] Add native tests for phase transitions, pause/resume elapsed-time accounting, reset/skip behavior, rollover, cycle-to-long-break logic, and duplicate completion; add dashboard contract tests for action validation and timer rendering.
+- [x] ESP32 firmware build and native/dashboard CI pass for the implementation PR.
+- [x] User confirms start/pause/resume/skip/reset, countdown accuracy, cycle transitions, and persisted settings on physical ESP32/TFT.
+- [x] Implementation PR merged; phase completed.

@@ -61,7 +61,7 @@ Acceptance: documented schema; failures do not erase useful data; dashboard read
 Acceptance: no cloud dependency or undisclosed telemetry; reminders respect quiet hours.
 
 ## Phase 7 — Testability and release readiness
-1. Add tests for behavior timing, mood thresholds, JSON serialization, and statistics aggregation.
+1. Native host-side tests now cover energy rates/bounds, mode changes, millis() rollover, distinct message profiles, and spontaneous-message expiry. JSON serialization and statistics aggregation tests remain to be added.
 2. Add API contract checks and a documented serial smoke-test procedure.
 3. Document wiring, pin conflicts, first boot, AP credentials, RTC setup, and troubleshooting.
 4. Record measured RAM/flash usage and TFT frame timing.

@@ -11,6 +11,17 @@ match = re.search(r"<script>\s*(.*?)\s*</script>", source, flags=re.DOTALL)
 if not match:
     raise SystemExit("Dashboard script block not found in WebDashboard.cpp")
 
+required_fragments = (
+    r"if(/^[\s\u0000-\u001f]*[=+@-]/.test(text))",
+    r"join('\\r\\n')",
+    r"new Blob(['\\ufeff',csv]",
+    "function isValidDateKey",
+    "refreshRequested?250:retryDelay",
+)
+for fragment in required_fragments:
+    if fragment not in match.group(1):
+        raise SystemExit(f"Dashboard regression check failed: missing {fragment!r}")
+
 with tempfile.NamedTemporaryFile("w", suffix=".js", encoding="utf-8") as script:
     script.write(match.group(1))
     script.flush()

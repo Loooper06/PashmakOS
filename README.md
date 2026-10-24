@@ -1,0 +1,64 @@
+# PashmakOS
+
+A local-first ESP32 desk companion with automatic work/play/nap cycles, three pet personalities, an ILI9341 TFT interface, DS3231 RTC reminders, and a local Wi-Fi statistics dashboard.
+
+## Current capabilities
+
+- Automatic Work → Play → Work cycles, with a longer nap after the configured number of work sessions.
+- Three pet profiles: Pashmak, Mochi, and Pixel, each with independent behavior state, energy, mood, and message.
+- Time-aware messages and RTC reminders.
+- Local dashboard with pet selection, energy/mood/message, lifetime counters, recent activity, daily/monthly history, and CSV export.
+- Preferences/NVS-backed lifetime counters and bounded daily/monthly history.
+- Serial diagnostics and `stats`, `daily_csv`, and `monthly_csv` commands.
+- Native C++ tests and GitHub Actions checks for the ESP32 build, pet behavior, dashboard JavaScript, and statistics JSON contract.
+
+## Hardware target
+
+- ESP32-WROOM-32 development board
+- ILI9341-compatible 320×240 TFT in landscape orientation
+- DS3231 RTC module
+
+See [hardware setup and troubleshooting](docs/SETUP.md) for the pin map, build/flash instructions, RTC setup, local dashboard access, and troubleshooting. Verify your exact module documentation before wiring.
+
+## Build and test
+
+Build firmware with PlatformIO:
+
+```sh
+pio run -e esp32dev
+```
+
+Upload to the connected board:
+
+```sh
+pio run -e esp32dev -t upload
+```
+
+Run native behavior tests:
+
+```sh
+sh tests/native/run.sh
+```
+
+Dashboard JavaScript and statistics JSON checks run in CI:
+
+```sh
+python3 tests/native/check_dashboard_js.py
+python3 tests/native/check_stats_api.py
+```
+
+## Local dashboard and serial commands
+
+The firmware creates a local Wi-Fi access point. The current development defaults are SSID `PashmakOS` and password `pashmak123`; connect to it and open `http://192.168.4.1/`. **Change the default AP password in `src/web/WebDashboard.cpp` before sharing or deploying the device.**
+
+Open the serial monitor at **115200 baud**. Supported commands are documented in [Statistics API and serial commands](docs/STATISTICS_API.md). The `stats` command emits a JSON snapshot between `[STATS_JSON_BEGIN]` and `[STATS_JSON_END]`.
+
+## Hardware validation and release status
+
+CI verifies compilation and automated host-side checks; it cannot verify actual TFT behavior, RTC accuracy, Wi-Fi recovery, or persistence after physical power interruption. Run and record the checks in [Hardware smoke test checklist](docs/HARDWARE_SMOKE_TEST.md) before calling a physical build release-ready.
+
+The project roadmap tracks implemented work, pending hardware checks, and future enhancements in [ROADMAP.md](ROADMAP.md). Do not treat a passing CI run as proof that physical-device checks have passed.
+
+## Data and privacy
+
+The dashboard is served locally by the ESP32. The documented architecture does not require a cloud service for normal operation. Lifetime statistics, selected pet, daily/monthly history, and some RTC reminder state are stored in ESP32 Preferences/NVS.

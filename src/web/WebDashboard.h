@@ -30,6 +30,8 @@ private:
     void handleReminderSettingsPost();
     void handleEventLog();
     void handleDiagnostics();
+    void handleDashboardSettingsGet();
+    void handleDashboardSettingsPost();
     void handleWifiSettingsGet();
     void handleWifiSettingsPost();
     void handleOtaUpload();

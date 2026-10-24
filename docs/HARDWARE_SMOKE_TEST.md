@@ -37,7 +37,7 @@ This checklist is intended for the ESP32-WROOM-32 + ILI9341 TFT + DS3231 RTC tar
 
 ## 4. Wi-Fi dashboard and reconnect behavior
 
-1. Connect a phone or computer to the device AP documented in `docs/STATISTICS_API.md`, then open `http://192.168.4.1/`.
+1. Open the USB serial monitor at 115200 baud and record the `[WEB] Wi-Fi SSID` and `[WEB] Wi-Fi password (changes after reboot)` lines. Connect a phone or computer to that AP, then open `http://192.168.4.1/`.
 2. Confirm the page loads, current pet selection matches serial `stats`, and totals/history/chart data appear.
 3. Change the selected pet and confirm the visible pet details update without an inconsistent API snapshot; repeat for IDs 0, 1, and 2.
 4. Check `GET /api/stats` in browser developer tools: it should return HTTP 200, `Content-Type: application/json`, and `Cache-Control: no-store`.
@@ -46,6 +46,7 @@ This checklist is intended for the ESP32-WROOM-32 + ILI9341 TFT + DS3231 RTC tar
 7. Temporarily disconnect the client from the AP, wait through at least one refresh timeout, reconnect, and reload or wait for refresh.
 8. Confirm the UI indicates stale/failed updates while disconnected and recovers to fresh data after reconnection. The last valid snapshot should not be replaced with empty or malformed data.
 9. Repeat with a browser on a narrow mobile viewport. Check for horizontal overflow, clipped controls, unreadable chart labels, and inaccessible buttons.
+10. Reboot the ESP32 and confirm a new AP password is printed; verify the previous password no longer connects and the new password does.
 
 **Pass criteria:** dashboard loads reliably, exports remain valid, temporary client disconnects do not erase the last valid snapshot, and a reconnect restores live updates. For loop timing, compare idle vs. refresh/export windows; investigate repeatable `maxGap` values at or above 100 ms and any increase in `overBudget`. These are investigation thresholds, not automatic proof of a visible fault.
 

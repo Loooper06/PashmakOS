@@ -18,7 +18,10 @@ required_fragments = (
     "function isValidDateKey",
     "refreshRequested?250:retryDelay",
     "pet-option-state",
-    "Energy '+energy+'% · '+mood",
+    "pet-option-energy-track",
+    "pet-option-energy-fill",
+    "Mood · '+mood",
+    "energyFill.style.width=energy+'%'",
 )
 for fragment in required_fragments:
     if fragment not in match.group(1):

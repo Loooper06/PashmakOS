@@ -85,6 +85,8 @@ PetBehavior::PetBehavior(uint8_t personalityId)
       _playMessageIndex(0),
       _eventIndex(0),
       _eventActive(false),
+      _interactionActive(false),
+      _interactionUntil(0),
       _initialized(false)
 {
 }
@@ -100,6 +102,8 @@ void PetBehavior::begin(uint32_t now)
     _playMessageIndex = 0;
     _eventIndex = 0;
     _eventActive = false;
+    _interactionActive = false;
+    _interactionUntil = now;
     _eventUntil = now;
     _nextEventAt = now + EVENT_MIN_INTERVAL_MS;
     const MessageProfile &profile = PROFILES[_personalityId];
@@ -156,6 +160,28 @@ void PetBehavior::update(PetMode mode, uint32_t now, int8_t hour)
     }
 
     updateSpontaneousEvent(mode, now);
+
+    if (_interactionActive)
+    {
+        if (static_cast<int32_t>(now - _interactionUntil) >= 0)
+        {
+            _interactionActive = false;
+        }
+        else if (_state.energy > 30)
+        {
+            _state.mood = PetMood::Excited;
+        }
+    }
+    if (_interactionActive)
+    {
+        // Keep the direct interaction reaction visible above spontaneous events.
+        switch (_personalityId)
+        {
+        case 1: _state.message = "Thanks for being here!"; break;
+        case 2: _state.message = "Bond++: friend detected!"; break;
+        default: _state.message = "Happy tail wag for you!"; break;
+        }
+    }
 }
 
 void PetBehavior::updateEnergy(PetMode mode, uint32_t now)
@@ -316,6 +342,36 @@ void PetBehavior::selectMessage(PetMode mode, uint32_t now, int8_t hour)
     _lastBaseMessage = _baseMessage;
     if (!_eventActive)
         _state.message = _baseMessage;
+}
+
+void PetBehavior::interact(PetMode mode, uint32_t now, uint8_t bond)
+{
+    (void)bond;
+    _interactionActive = true;
+    _interactionUntil = now + 6000UL;
+
+    if (mode == PetMode::Nap)
+    {
+        switch (_personalityId)
+        {
+        case 1: _state.message = "A gentle hello, friend."; break;
+        case 2: _state.message = "Quiet ping received."; break;
+        default: _state.message = "A soft hello back."; break;
+        }
+        _state.mood = PetMood::Happy;
+        return;
+    }
+
+    switch (_personalityId)
+    {
+    case 1: _state.message = bond >= 70 ? "My favorite human!" : "Thanks for being here!"; break;
+    case 2: _state.message = bond >= 70 ? "Best-friend protocol!" : "Bond++: friend detected!"; break;
+    default: _state.message = bond >= 70 ? "You're my best friend!" : "Happy tail wag for you!"; break;
+    }
+    if (_state.energy > 30)
+        _state.mood = PetMood::Excited;
+    else if (_state.energy > 10)
+        _state.mood = PetMood::Happy;
 }
 
 void PetBehavior::updateSpontaneousEvent(PetMode mode, uint32_t now)

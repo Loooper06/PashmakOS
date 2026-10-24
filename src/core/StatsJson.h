@@ -82,7 +82,6 @@ namespace StatsJson
         if (value < 0)
         {
             json += '-';
-            // Avoid signed overflow for the minimum representable value.
             appendUnsigned(json, static_cast<uint64_t>(-(value + 1)) + 1U);
         }
         else
@@ -92,17 +91,16 @@ namespace StatsJson
     }
 
     template <typename StringLike>
-    void appendCounters(StringLike &json, const Counters &counters)
+    void appendCounterFields(StringLike &json, const Counters &counters)
     {
-        json += F("{\"workMs\":");
+        json += "{\"workMs\":";
         appendUnsigned(json, counters.workMs);
-        json += F(",\"playMs\":");
+        json += ",\"playMs\":";
         appendUnsigned(json, counters.playMs);
-        json += F(",\"napMs\":");
+        json += ",\"napMs\":";
         appendUnsigned(json, counters.napMs);
-        json += F(",\"completedWorkSessions\":");
+        json += ",\"completedWorkSessions\":";
         appendUnsigned(json, counters.completedWorkSessions);
-        json += '}';
     }
 
     template <typename StringLike>
@@ -111,18 +109,18 @@ namespace StatsJson
         json += '{';
         if (includeId)
         {
-            json += F("\"id\":");
+            json += "\"id\":";
             appendUnsigned(json, pet.id);
             json += ',';
-            json += F("\"name\":");
+            json += "\"name\":";
             appendJsonString(json, pet.name);
             json += ',';
         }
-        json += F("\"energy\":");
+        json += "\"energy\":";
         appendUnsigned(json, pet.energy);
-        json += F(",\"mood\":");
+        json += ",\"mood\":";
         appendJsonString(json, pet.mood);
-        json += F(",\"message\":");
+        json += ",\"message\":";
         appendJsonString(json, pet.message);
         json += '}';
     }
@@ -130,9 +128,9 @@ namespace StatsJson
     template <typename StringLike>
     void appendStatisticsJson(StringLike &json, const Payload &payload)
     {
-        json += F("{\"version\":1,\"activePetId\":");
+        json += "{\"version\":1,\"activePetId\":";
         appendUnsigned(json, payload.activePetId);
-        json += F(",\"pets\":[");
+        json += ",\"pets\":[";
         for (uint8_t i = 0; i < payload.petCount; ++i)
         {
             if (i != 0)
@@ -140,54 +138,54 @@ namespace StatsJson
             appendPet(json, payload.pets[i], true);
         }
 
-        json += F("],\"pet\":");
+        json += "],\"pet\":";
         appendPet(json, payload.activePet, false);
-        json += F(",\"totals\":");
-        appendCounters(json, payload.totals);
-        json += F(",\"recent\":{\"requestedDays\":");
+        json += ",\"totals\":{";
+        appendCounterFields(json, payload.totals);
+        json += "},\"recent\":{\"requestedDays\":";
         appendUnsigned(json, payload.recent.requestedDays);
-        json += F(",\"daysIncluded\":");
+        json += ",\"daysIncluded\":";
         appendUnsigned(json, payload.recent.daysIncluded);
         json += ',';
-        appendCounters(json, payload.recent.totals);
-        json += F("},\"dailyHistory\":[");
+        appendCounterFields(json, payload.recent.totals);
+        json += "},\"dailyHistory\":[";
 
         for (uint8_t i = 0; i < payload.dailyCount; ++i)
         {
             if (i != 0)
                 json += ',';
             const DailyRecord &day = payload.dailyHistory[i];
-            json += F("{\"dateKey\":");
+            json += "{\"dateKey\":";
             appendSigned(json, day.dateKey);
-            json += F(",\"workMs\":");
+            json += ",\"workMs\":";
             appendUnsigned(json, day.workMs);
-            json += F(",\"playMs\":");
+            json += ",\"playMs\":";
             appendUnsigned(json, day.playMs);
-            json += F(",\"napMs\":");
+            json += ",\"napMs\":";
             appendUnsigned(json, day.napMs);
-            json += F(",\"completedWorkSessions\":");
+            json += ",\"completedWorkSessions\":";
             appendUnsigned(json, day.completedWorkSessions);
             json += '}';
         }
 
-        json += F("],\"monthlyHistory\":[");
+        json += "],\"monthlyHistory\":[";
         for (uint8_t i = 0; i < payload.monthlyCount; ++i)
         {
             if (i != 0)
                 json += ',';
             const MonthlyRecord &month = payload.monthlyHistory[i];
-            json += F("{\"monthKey\":");
+            json += "{\"monthKey\":";
             appendSigned(json, month.monthKey);
-            json += F(",\"workMs\":");
+            json += ",\"workMs\":";
             appendUnsigned(json, month.workMs);
-            json += F(",\"playMs\":");
+            json += ",\"playMs\":";
             appendUnsigned(json, month.playMs);
-            json += F(",\"napMs\":");
+            json += ",\"napMs\":";
             appendUnsigned(json, month.napMs);
-            json += F(",\"completedWorkSessions\":");
+            json += ",\"completedWorkSessions\":";
             appendUnsigned(json, month.completedWorkSessions);
             json += '}';
         }
-        json += F("]}");
+        json += "]}";
     }
 }

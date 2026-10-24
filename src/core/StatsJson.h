@@ -134,7 +134,7 @@ namespace StatsJson
     template <typename StringLike>
     void appendStatisticsJson(StringLike &json, const Payload &payload)
     {
-        json += "{\"version\":1,\"activePetId\":";
+        json += "{\"version\":2,\"activePetId\":";
         appendUnsigned(json, payload.activePetId);
         json += ",\"pets\":[";
         for (uint8_t i = 0; i < payload.petCount; ++i)

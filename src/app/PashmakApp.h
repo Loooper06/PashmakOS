@@ -163,6 +163,8 @@ private:
     uint8_t _petBond[PET_COUNT] = {0, 0, 0};
     uint32_t _lastInteractionAt[PET_COUNT]{};
     bool _hasInteracted[PET_COUNT]{};
+    uint32_t _attentionEffectStartedAt = 0;
+    uint32_t _attentionEffectUntil = 0;
     uint32_t _completedWorkSessions = 0;
     Preferences _statsPreferences;
     bool _statsReady = false;

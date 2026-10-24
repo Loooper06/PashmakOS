@@ -250,7 +250,7 @@ void PetRenderer::drawHeader(Display &d)
     d.fillCircle(291, 15, 2, WHITE);
 }
 
-void PetRenderer::drawDog(Display &d, PetMode mode, uint32_t frame, uint8_t petId, PetMood mood)
+void PetRenderer::drawDog(Display &d, PetMode mode, uint32_t frame, uint8_t petId, PetMood mood, bool attentionActive, uint8_t attentionPhase)
 {
     const bool sleeping = mode == PetMode::Nap;
     const uint16_t fur = petId == 1 ? 0xCE79 : (petId == 2 ? 0x7D7C : FUR);
@@ -410,7 +410,13 @@ void PetRenderer::drawDog(Display &d, PetMode mode, uint32_t frame, uint8_t petI
     d.fillCircle(muzzleX, cy + 11, 3, NOSE);
     d.fillCircle(muzzleX - 1, cy + 10, 1, WHITE);
 
-    if (mood == PetMood::Excited)
+    if (attentionActive)
+    {
+        // Give Attention gets a clearly visible open-mouth reaction.
+        d.fillEllipse(muzzleX, cy + 21, 7, 8, MOUTH);
+        d.fillEllipse(muzzleX, cy + 25, 4, 3, TONGUE);
+    }
+    else if (mood == PetMood::Excited)
     {
         // A small open smile is reserved for high-energy excitement.
         d.fillEllipse(muzzleX, cy + 20, 7, 7, MOUTH);
@@ -428,6 +434,24 @@ void PetRenderer::drawDog(Display &d, PetMode mode, uint32_t frame, uint8_t petI
         d.drawLine(muzzleX - 5, cy + 18, muzzleX - 8, cy + 18, MOUTH);
         d.drawLine(muzzleX, cy + 21, muzzleX + 5, cy + 18, MOUTH);
         d.drawLine(muzzleX + 5, cy + 18, muzzleX + 8, cy + 18, MOUTH);
+    }
+
+    if (attentionActive)
+    {
+        // Three compact pixel hearts float around the head. The four-phase
+        // bob is timer-driven; no delay or heap allocation is used.
+        const int8_t heartBob = static_cast<int8_t>((attentionPhase == 1U || attentionPhase == 2U) ? -4 : 0);
+        const uint16_t heartColors[3] = {0xF81F, 0xF2B5, 0xF81F};
+        const int16_t heartX[3] = {105, 211, 160};
+        const int16_t heartY[3] = {77, 72, 48};
+        for (uint8_t i = 0; i < 3; ++i)
+        {
+            const int16_t hx = heartX[i];
+            const int16_t hy = heartY[i] + heartBob - static_cast<int16_t>((attentionPhase + i) % 2U);
+            d.fillCircle(hx - 3, hy, 4, heartColors[i]);
+            d.fillCircle(hx + 3, hy, 4, heartColors[i]);
+            d.fillTriangle(hx - 7, hy + 1, hx + 7, hy + 1, hx, hy + 10, heartColors[i]);
+        }
     }
 
     if (playing)
@@ -473,7 +497,7 @@ void PetRenderer::drawFooter(Display &d, PetMode mode, uint8_t petId, const char
         d.drawText(dateTime, 190, 228, 1, WHITE);
 }
 
-void PetRenderer::draw(Display &d, PetMode mode, uint32_t frame, uint8_t petId, PetMood mood, const char *message, const char *dateTime)
+void PetRenderer::draw(Display &d, PetMode mode, uint32_t frame, uint8_t petId, PetMood mood, const char *message, const char *dateTime, bool attentionActive, uint8_t attentionPhase)
 {
     if (!_initialized)
     {
@@ -513,12 +537,14 @@ void PetRenderer::draw(Display &d, PetMode mode, uint32_t frame, uint8_t petId, 
         pose.blinking != _lastDogBlinking ||
         mood != _lastDogMood ||
         pose.leftEarX != _lastDogLeftEarX ||
-        pose.rightEarX != _lastDogRightEarX;
+        pose.rightEarX != _lastDogRightEarX ||
+        attentionActive != _lastAttentionActive ||
+        (attentionActive && attentionPhase != _lastAttentionPhase);
 
     if (!dogChanged)
         return;
 
-    drawDog(d, mode, frame, petId, mood);
+    drawDog(d, mode, frame, petId, mood, attentionActive, attentionPhase);
 
     _lastDogMode = mode;
     _lastDogPetId = petId;
@@ -533,5 +559,7 @@ void PetRenderer::draw(Display &d, PetMode mode, uint32_t frame, uint8_t petId, 
     _lastDogMood = mood;
     _lastDogLeftEarX = pose.leftEarX;
     _lastDogRightEarX = pose.rightEarX;
+    _lastAttentionActive = attentionActive;
+    _lastAttentionPhase = attentionPhase;
     _dogInitialized = true;
 }

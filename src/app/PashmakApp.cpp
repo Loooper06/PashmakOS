@@ -49,6 +49,8 @@ bool PashmakApp::interactWithActivePet(uint32_t now)
 
     _hasInteracted[petId] = true;
     _lastInteractionAt[petId] = now;
+    _attentionEffectStartedAt = now;
+    _attentionEffectUntil = now + 3000UL;
     if (_petBond[petId] < 100)
     {
         const uint16_t nextBond = static_cast<uint16_t>(_petBond[petId]) + 5U;
@@ -359,7 +361,9 @@ void PashmakApp::begin()
         _activePetId,
         _behaviors[_activePetId].state().mood,
         _behaviors[_activePetId].state().message,
-        nullptr);
+        nullptr,
+        false,
+        0);
 
     Serial.println("PashmakOS: automatic pet behavior enabled");
 }
@@ -1078,8 +1082,16 @@ void PashmakApp::update()
                      current.hour(), current.minute(), current.year(),
                      current.month(), current.day());
         }
+        const bool attentionActive =
+            _attentionEffectUntil != 0 &&
+            static_cast<int32_t>(now - _attentionEffectUntil) < 0;
+        const uint8_t attentionPhase = attentionActive
+            ? static_cast<uint8_t>(((now - _attentionEffectStartedAt) / 250UL) % 4UL)
+            : 0;
         const uint32_t drawStartedAtUs = micros();
-        _renderer.draw(_display, _mode, _frame, _activePetId, _behaviors[_activePetId].state().mood, message, dateTime);
+        _renderer.draw(_display, _mode, _frame, _activePetId,
+                       _behaviors[_activePetId].state().mood, message, dateTime,
+                       attentionActive, attentionPhase);
         const uint32_t drawDurationUs = static_cast<uint32_t>(micros() - drawStartedAtUs);
 
         ++_frameMetricCount;

@@ -35,6 +35,8 @@ required_fragments = (
     "pet-option-state",
     "pet-option-energy-track",
     "pet-option-energy-fill",
+    "pet-happiness-bar",
+    "data.version!==2",
     "Mood · '+mood",
     "energyFill.style.width=energy+'%'",
 )

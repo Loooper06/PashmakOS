@@ -1,47 +1,10 @@
 #include "PashmakApp.h"
 #include "Config.h"
+#include "../core/JsonEscape.h"
 #include <Preferences.h>
 
 namespace
 {
-    void appendJsonString(String &json, const char *value)
-    {
-        static const char JSON_HEX_DIGITS[] = "0123456789ABCDEF";
-        json += '"';
-        if (value != nullptr)
-        {
-            const unsigned char *cursor =
-                reinterpret_cast<const unsigned char *>(value);
-            while (*cursor != '\0')
-            {
-                const unsigned char ch = *cursor++;
-                switch (ch)
-                {
-                case '"': json += F("\\\""); break;
-                case '\\': json += F("\\\\"); break;
-                case '\b': json += F("\\b"); break;
-                case '\f': json += F("\\f"); break;
-                case '\n': json += F("\\n"); break;
-                case '\r': json += F("\\r"); break;
-                case '\t': json += F("\\t"); break;
-                default:
-                    if (ch < 0x20)
-                    {
-                        json += F("\\u00");
-                        json += JSON_HEX_DIGITS[(ch >> 4) & 0x0F];
-                        json += JSON_HEX_DIGITS[ch & 0x0F];
-                    }
-                    else
-                    {
-                        json += static_cast<char>(ch);
-                    }
-                    break;
-                }
-            }
-        }
-        json += '"';
-    }
-
     const char *modeName(PetMode mode)
     {
         switch (mode)

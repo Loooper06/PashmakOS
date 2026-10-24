@@ -53,5 +53,5 @@ private:
     void selectMessage(PetMode mode, uint32_t now, int8_t hour);
     void updateEnergy(PetMode mode, uint32_t now);
     void updateMood(PetMode mode);
-    void updateSpontaneousEvent(uint32_t now);
+    void updateSpontaneousEvent(PetMode mode, uint32_t now);
 };

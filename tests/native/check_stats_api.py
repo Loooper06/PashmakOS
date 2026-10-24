@@ -11,14 +11,19 @@ if start < 0 or end < 0:
 
 method = source[start:end]
 required_fragments = (
-    r'F("{\\"version\\":1,\\"activePetId\\":")',
-    r'F(",\\"pets\\":[")',
-    r'F("],\\"pet\\":{\\"energy\\":")',
-    r'F("},\\"totals\\":{\\"workMs\\":")',
-    r'F("},\\"recent\\":{\\"requestedDays\\":")',
-    r'F("},\\"dailyHistory\\":[")',
-    r'F("],\\"monthlyHistory\\":[")',
-    r'F("]}")',
+    r'version',
+    r'activePetId',
+    r'"pets"',
+    r'"pet"',
+    r'"totals"',
+    r'"recent"',
+    r'"dailyHistory"',
+    r'"monthlyHistory"',
+    r'"requestedDays"',
+    r'"daysIncluded"',
+    r'"dateKey"',
+    r'"monthKey"',
+    r'"completedWorkSessions"',
 )
 for fragment in required_fragments:
     if fragment not in method:

@@ -13,6 +13,9 @@ namespace
         uint8_t playCount;
         const char *const *spontaneous;
         uint8_t spontaneousCount;
+        uint32_t workEnergyStepMs;
+        uint32_t playEnergyStepMs;
+        uint32_t napEnergyStepMs;
     };
 
     const char *const PASHMAK_WORK[] = {
@@ -55,15 +58,16 @@ namespace
         "Ping! Still with me?", "Achievement: take a sip of water.",
         "Micro-break detected.", "One small commit at a time."};
 
+    // Personality profiles control both voice and energy dynamics.
+    // Pashmak is balanced, Mochi recovers gently, and Pixel is more energetic.
     constexpr MessageProfile PROFILES[] = {
-        {PASHMAK_WORK, 5, PASHMAK_NAP, 4, PASHMAK_PLAY, 4, PASHMAK_EVENTS, 6},
-        {MOCHI_WORK, 4, MOCHI_NAP, 4, MOCHI_PLAY, 4, MOCHI_EVENTS, 4},
-        {PIXEL_WORK, 4, PIXEL_NAP, 4, PIXEL_PLAY, 4, PIXEL_EVENTS, 4}};
+        {PASHMAK_WORK, 5, PASHMAK_NAP, 4, PASHMAK_PLAY, 4, PASHMAK_EVENTS, 6,
+         120000UL, 60000UL, 30000UL},
+        {MOCHI_WORK, 4, MOCHI_NAP, 4, MOCHI_PLAY, 4, MOCHI_EVENTS, 4,
+         150000UL, 90000UL, 25000UL},
+        {PIXEL_WORK, 4, PIXEL_NAP, 4, PIXEL_PLAY, 4, PIXEL_EVENTS, 4,
+         90000UL, 45000UL, 40000UL}};
     constexpr uint8_t PROFILE_COUNT = sizeof(PROFILES) / sizeof(PROFILES[0]);
-
-    constexpr uint32_t WORK_ENERGY_STEP_MS = 120000UL;
-    constexpr uint32_t PLAY_ENERGY_STEP_MS = 60000UL;
-    constexpr uint32_t NAP_ENERGY_STEP_MS = 30000UL;
     constexpr uint32_t EVENT_DURATION_MS = 7000UL;
     constexpr uint32_t EVENT_MIN_INTERVAL_MS = 90000UL;
     constexpr uint32_t EVENT_INTERVAL_VARIATION_MS = 15000UL;
@@ -190,16 +194,17 @@ void PetBehavior::updateEnergy(PetMode mode, uint32_t now)
 {
     const uint32_t elapsed = static_cast<uint32_t>(now - _lastEnergyTickAt);
     _lastEnergyTickAt = now;
-    uint32_t stepMs = WORK_ENERGY_STEP_MS;
+    const MessageProfile &profile = PROFILES[_personalityId];
+    uint32_t stepMs = profile.workEnergyStepMs;
     int8_t delta = -1;
     if (mode == PetMode::Play)
     {
-        stepMs = PLAY_ENERGY_STEP_MS;
+        stepMs = profile.playEnergyStepMs;
         delta = 1;
     }
     else if (mode == PetMode::Nap)
     {
-        stepMs = NAP_ENERGY_STEP_MS;
+        stepMs = profile.napEnergyStepMs;
         delta = 1;
     }
 

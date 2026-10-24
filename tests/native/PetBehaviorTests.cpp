@@ -106,6 +106,40 @@ static void testPersonalityProfiles()
     assert(strcmp(mochi.state().message, pixel.state().message) != 0);
 }
 
+static void testPersonalityEnergyRates()
+{
+    PetBehavior pashmak(0);
+    PetBehavior mochi(1);
+    PetBehavior pixel(2);
+    pashmak.begin(0);
+    mochi.begin(0);
+    pixel.begin(0);
+
+    // Pashmak is balanced, Mochi conserves energy, and Pixel burns energy faster.
+    pashmak.update(PetMode::Work, 180000UL);
+    mochi.update(PetMode::Work, 180000UL);
+    pixel.update(PetMode::Work, 180000UL);
+    assert(pashmak.state().energy == 79);
+    assert(mochi.state().energy == 79);
+    assert(pixel.state().energy == 78);
+
+    PetBehavior restedPashmak(0);
+    PetBehavior restedMochi(1);
+    PetBehavior restedPixel(2);
+    restedPashmak.begin(0);
+    restedMochi.begin(0);
+    restedPixel.begin(0);
+    restedPashmak.update(PetMode::Nap, 0);
+    restedMochi.update(PetMode::Nap, 0);
+    restedPixel.update(PetMode::Nap, 0);
+    restedPashmak.update(PetMode::Nap, 50000UL);
+    restedMochi.update(PetMode::Nap, 50000UL);
+    restedPixel.update(PetMode::Nap, 50000UL);
+    assert(restedPashmak.state().energy == 81);
+    assert(restedMochi.state().energy == 82);
+    assert(restedPixel.state().energy == 81);
+}
+
 static void testSpontaneousMessageExpires()
 {
     PetBehavior pet;
@@ -489,6 +523,7 @@ int main()
     testEnergyBoundsAndRates();
     testMillisRollover();
     testPersonalityProfiles();
+    testPersonalityEnergyRates();
     testSpontaneousMessageExpires();
     testTimeAwareMessages();
     testTimeAwareMessagesRespectModeAndQuietHours();

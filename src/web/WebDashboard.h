@@ -30,5 +30,10 @@ private:
     void handleDiagnostics();
     void handleWifiSettingsGet();
     void handleWifiSettingsPost();
+    void handleOtaUpload();
+    void handleOtaComplete();
+    bool _otaUploadStarted = false;
+    bool _otaUploadFailed = false;
+    size_t _otaUploadBytes = 0;
     void handleNotFound();
 };

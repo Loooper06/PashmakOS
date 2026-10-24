@@ -158,3 +158,11 @@ The timer has a dedicated local endpoint, separate from the statistics snapshot:
 - Skip advances to the next phase without counting the interrupted work phase as completed and without awarding focus-session achievements. Reset starts a fresh work phase and clears cycle progress; lifetime statistics are retained.
 - Changing saved durations restarts the current phase with the new configured duration. Timer settings remain stored in the versioned ESP32 Preferences record.
 - The dashboard obtains timer state from the device and periodically resynchronizes it, so its visible countdown is only a presentation estimate between device responses.
+
+
+## Persistent dashboard settings API
+
+- `GET /api/dashboard-settings` returns `schemaVersion` and `dailySessionGoal`. The default goal is 4 completed work sessions per day.
+- `POST /api/dashboard-settings` accepts `dailySessionGoal` as an integer from 1 through 20. Missing, malformed, or out-of-range values return HTTP 400; a Preferences write failure returns HTTP 500.
+- The goal is stored on the ESP32 in a versioned Preferences record, so it follows the device across browser reloads and different clients. Browser `localStorage` is only a convenience cache, not the source of truth.
+- This endpoint contains no Wi-Fi credentials or activity history.

@@ -104,8 +104,8 @@ This sequence supplements the existing engineering roadmap above. Each feature p
 |---:|---|---|
 | 1 | Distinct personalities: voice plus per-pet energy dynamics | Completed (PR #43) |
 | 2 | Direct interaction with the pet | Completed (PR #45) |
-| 3 | Pet needs: energy, happiness, and bond model | In progress (PR pending) |
-| 4 | Achievements and persistent progression | Planned |
+| 3 | Pet needs: energy, happiness, and bond model | Completed (PR #47) |
+| 4 | Achievements and persistent progression | In progress (PR pending) |
 | 5 | Complete Pomodoro flow and work/rest cycle controls | Planned |
 | 6 | Persistent settings through the dashboard | Planned |
 | 7 | Activity statistics and history improvements | Planned |
@@ -141,6 +141,19 @@ This sequence supplements the existing engineering roadmap above. Each feature p
 - [x] Persist happiness with per-pet profiles using a version-2 record; legacy version-1 energy records remain readable and receive a safe happiness default.
 - [x] Expose happiness in the version-2 statistics API and render active-pet and per-pet dashboard meters.
 - [x] Native tests cover happiness rates, bounds, interaction gains, and API serialization; dashboard contract checks cover validation, rendering, and persistence migration.
+- [x] ESP32 firmware build and native/dashboard CI passed for implementation PR #47.
+- [x] User confirmed happiness changes, interaction gains, and persistence after reboot on physical ESP32/TFT.
+- [x] Implementation PR #47 merged; phase completed.
+
+
+### Feature phase 4 — achievements and persistent progression
+
+- [ ] Define a small, deterministic achievement catalog for meaningful events (first interaction, interaction milestones, focus-session milestones, and consistent use) without awarding achievements from dashboard page loads or repeated polling.
+- [ ] Track per-pet achievement progress and earned IDs using a versioned Preferences record with validation, bounded writes, and safe migration/default behavior.
+- [ ] Award each achievement exactly once; repeated events, duplicate HTTP requests, or reboot must not duplicate rewards.
+- [ ] Surface unlocked achievements and progress in the dashboard and include the relevant per-pet data in a documented, validated statistics API schema.
+- [ ] Keep progress local-first and avoid adding cloud dependencies or personal telemetry.
+- [ ] Native tests cover unlock thresholds, duplicate prevention, invalid persisted data, migration, and serialization; dashboard contract tests cover rendering and payload validation.
 - [ ] ESP32 firmware build and native/dashboard CI pass for the implementation PR.
-- [ ] User confirms happiness changes, interaction gains, and persistence after reboot on physical ESP32/TFT.
+- [ ] User confirms achievement unlocks, per-pet separation, and persistence after reboot on physical ESP32/TFT.
 - [ ] Implementation PR merged; phase completed.

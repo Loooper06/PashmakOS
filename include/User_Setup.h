@@ -2,8 +2,8 @@
 
 #define ILI9341_2_DRIVER
 
-#define TFT_WIDTH 320
-#define TFT_HEIGHT 240
+// TFT_eSPI's ILI9341 driver defines the native panel dimensions (240x320).
+// Landscape dimensions are selected at runtime with setRotation(1).
 
 #define TFT_MOSI 23
 #define TFT_MISO -1

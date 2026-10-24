@@ -11,6 +11,7 @@ public:
     void begin();
     void clear(uint16_t color);
 
+    void setDogPosition(int16_t centerX, int16_t verticalOffset = 0);
     void beginDogFrame(uint16_t background);
     void endDogFrame();
 
@@ -50,10 +51,11 @@ private:
 
     bool _spriteReady;
     bool _drawingDog;
-
-    static constexpr int16_t DOG_X = 70;
+    int16_t _dogOffsetX = 0;
+    int16_t _dogOffsetY = 0;
+    static constexpr int16_t DOG_X = 0;
     static constexpr int16_t DOG_Y = 36;
-    static constexpr int16_t DOG_W = 180;
+    static constexpr int16_t DOG_W = 320;
     static constexpr int16_t DOG_H = 158;
 
     int16_t targetX(int16_t x) const;

@@ -158,6 +158,24 @@ static void testInvalidPersonalityFallsBackSafely()
     assert(strcmp(fallback.state().message, invalid.state().message) == 0);
 }
 
+static void testHistoryDateValidation()
+{
+    assert(HistoryDate::isValidDateKey(20261024));
+    assert(HistoryDate::isValidDateKey(20240229));
+    assert(!HistoryDate::isValidDateKey(20230229));
+    assert(!HistoryDate::isValidDateKey(20260431));
+    assert(!HistoryDate::isValidDateKey(20261301));
+    assert(!HistoryDate::isValidDateKey(20260015));
+    assert(!HistoryDate::isValidDateKey(19991231));
+    assert(!HistoryDate::isValidDateKey(21000101));
+
+    assert(HistoryDate::isValidMonthKey(202610));
+    assert(HistoryDate::isValidMonthKey(200001));
+    assert(!HistoryDate::isValidMonthKey(202600));
+    assert(!HistoryDate::isValidMonthKey(202613));
+    assert(!HistoryDate::isValidMonthKey(199912));
+}
+
 int main()
 {
     testJsonStringEscaping();

@@ -93,7 +93,7 @@ namespace StatsJson
     template <typename StringLike>
     void appendCounterFields(StringLike &json, const Counters &counters)
     {
-        json += "{\"workMs\":";
+        json += "\"workMs\":";
         appendUnsigned(json, counters.workMs);
         json += ",\"playMs\":";
         appendUnsigned(json, counters.playMs);

@@ -3,6 +3,7 @@
 #include "../core/JsonEscape.h"
 #include "../core/HistoryDate.h"
 #include "../core/StatsAggregation.h"
+#include "../core/StatsJson.h"
 #include <Preferences.h>
 
 namespace

@@ -519,9 +519,16 @@ void PashmakApp::loadPetProfiles()
         if (_statsPreferences.getBytes("petProfile", &stored, sizeof(stored)) == sizeof(stored) &&
             PetProfileValidation::isValid<PetProfileStorage, PET_COUNT>(stored, 2))
         {
+            bool validHappiness = true;
+            for (uint8_t i = 0; i < PET_COUNT; ++i)
+                validHappiness = validHappiness && stored.happiness[i] <= 100;
+            if (!validHappiness)
+            {
+                Serial.println("[PET_PROFILE] Invalid happiness; using defaults.");
+                return;
+            }
             for (uint8_t i = 0; i < PET_COUNT; ++i)
             {
-                if (stored.happiness[i] > 100) { Serial.println("[PET_PROFILE] Invalid happiness; using defaults."); return; }
                 _petProfileEnergy[i] = stored.energy[i];
                 _petProfileHappiness[i] = stored.happiness[i];
             }

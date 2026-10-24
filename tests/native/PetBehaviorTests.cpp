@@ -115,6 +115,48 @@ static void testSpontaneousMessageExpires()
     assert(strcmp(pet.state().message, eventMessage) != 0);
 }
 
+static void testTimeAwareMessages()
+{
+    PetBehavior pashmak(0);
+    PetBehavior mochi(1);
+    PetBehavior pixel(2);
+    pashmak.update(PetMode::Work, 0, 8);
+    mochi.update(PetMode::Work, 0, 8);
+    pixel.update(PetMode::Work, 0, 8);
+
+    assert(strstr(pashmak.state().message, "morning") != nullptr);
+    assert(strstr(mochi.state().message, "morning") != nullptr);
+    assert(strstr(pixel.state().message, "morning") != nullptr);
+    assert(strcmp(pashmak.state().message, mochi.state().message) != 0);
+    assert(strcmp(mochi.state().message, pixel.state().message) != 0);
+}
+
+static void testEventExpiryAcrossMillisRollover()
+{
+    const uint32_t start = UINT32_MAX - 20000UL;
+    PetBehavior pet;
+    pet.begin(start);
+    const char *baseMessage = pet.state().message;
+    const uint32_t eventAt = static_cast<uint32_t>(start + 90000UL);
+    pet.update(PetMode::Work, eventAt);
+    assert(strcmp(pet.state().message, baseMessage) != 0);
+
+    const uint32_t expiryAt = static_cast<uint32_t>(eventAt + 7000UL);
+    pet.update(PetMode::Work, expiryAt);
+    assert(strcmp(pet.state().message, baseMessage) == 0);
+}
+
+static void testInvalidPersonalityFallsBackSafely()
+{
+    PetBehavior fallback(0);
+    PetBehavior invalid(255);
+    fallback.begin(0);
+    invalid.begin(0);
+    fallback.update(PetMode::Work, 1);
+    invalid.update(PetMode::Work, 1);
+    assert(strcmp(fallback.state().message, invalid.state().message) == 0);
+}
+
 int main()
 {
     testJsonStringEscaping();
@@ -122,6 +164,9 @@ int main()
     testMillisRollover();
     testPersonalityProfiles();
     testSpontaneousMessageExpires();
+    testTimeAwareMessages();
+    testEventExpiryAcrossMillisRollover();
+    testInvalidPersonalityFallsBackSafely();
     puts("PetBehavior native tests: PASS");
     return 0;
 }

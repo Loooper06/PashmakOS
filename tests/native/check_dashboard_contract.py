@@ -22,7 +22,11 @@ select = function_body(web, "void WebDashboard::handlePetSelection()", "void Web
 interaction = function_body(web, "void WebDashboard::handlePetInteraction()", "void WebDashboard::handleTimerSettingsGet()")
 timer_get = function_body(web, "void WebDashboard::handleTimerSettingsGet()", "void WebDashboard::handleTimerSettingsPost()")
 timer_post = function_body(web, "void WebDashboard::handleTimerSettingsPost()", "void WebDashboard::handleQuietHoursGet()")
-quiet_post = function_body(web, "void WebDashboard::handleQuietHoursPost()", "void WebDashboard::handleNotFound()")
+quiet_post = function_body(web, "void WebDashboard::handleQuietHoursPost()", "void WebDashboard::handleReminderSettingsGet()")
+reminder_get = function_body(web, "void WebDashboard::handleReminderSettingsGet()", "void WebDashboard::handleReminderSettingsPost()")
+reminder_post = function_body(web, "void WebDashboard::handleReminderSettingsPost()", "void WebDashboard::handleNotFound()")
+reminder_setter = function_body(app, "bool PashmakApp::setReminderSettings(", "bool PashmakApp::isQuietHour(")
+reminder_load = function_body(app, "void PashmakApp::loadReminderSettings()", "void PashmakApp::loadPetProfiles()")
 timer_setter = function_body(app, "bool PashmakApp::setTimerSettings(", "uint8_t PashmakApp::dailyHistoryCount()")
 timer_load = function_body(app, "void PashmakApp::loadTimerSettings()", "void PashmakApp::loadQuietHoursSettings()")
 quiet_setter = function_body(app, "bool PashmakApp::setQuietHoursSettings(", "PashmakApp::TimerSettings PashmakApp::timerSettings() const")
@@ -66,6 +70,12 @@ checks = {
     "quiet-hours default and rollover-midnight ranges are supported": "_quietHours = QuietHoursSettings{};" in quiet_load and "return hour >= _quietHours.startHour || hour < _quietHours.endHour;" in quiet_logic,
     "dashboard loads, validates, and saves quiet hours": "async function loadQuietHours()" in js and "async function saveQuietHours()" in js and "fetch('/api/quiet-hours',{method:'POST'" in js,
     "dashboard exposes accessible quiet-hours controls": 'id="quiet-enabled"' in web and 'id="quiet-start"' in web and 'id="quiet-end"' in web and 'id="quiet-status"' in web,
+    "reminder settings endpoints are registered for GET and POST": '_server.on("/api/reminder-settings", HTTP_GET' in web and '_server.on("/api/reminder-settings", HTTP_POST' in web,
+    "reminder settings GET returns both intervals and disables caching": "settings.waterMinutes, settings.movementMinutes" in reminder_get and '"Cache-Control", "no-store"' in reminder_get,
+    "reminder settings POST validates ranges and supports zero to disable": 'values[0] < 15 || values[0] > 240' in reminder_post and 'values[1] < 15 || values[1] > 180' in reminder_post and 'values[0] != 0' in reminder_post and 'values[1] != 0' in reminder_post,
+    "reminder settings persist in a versioned Preferences blob": '_statsPreferences.putBytes("reminderCfg", &stored, sizeof(stored))' in reminder_setter and 'stored.version != 1' in reminder_load,
+    "dashboard loads, validates, and saves reminder settings": "async function loadReminderSettings()" in js and "async function saveReminderSettings()" in js and "fetch('/api/reminder-settings',{method:'POST'" in js,
+    "dashboard exposes accessible reminder controls": 'id="reminder-water"' in web and 'id="reminder-movement"' in web and 'id="reminder-status"' in web,
     "focus insights use the latest seven retained daily records": "slice(-7)" in js and "function renderFocusInsights(data)" in js,
     "focus insights derive average, best day, active days, and sessions from local history": "insight-average" in js and "insight-best-day" in js and "insight-active-days" in js and "insight-sessions" in js and "renderFocusInsights(data)" in js,
     "focus insights provide an empty state without daily records": "No daily history is available yet." in js,

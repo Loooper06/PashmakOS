@@ -2,6 +2,7 @@
 #include "Config.h"
 #include "../core/JsonEscape.h"
 #include "../core/HistoryDate.h"
+#include "../core/PomodoroTimer.h"
 #include "../core/PetProfileValidation.h"
 #include "../core/StatsAggregation.h"
 #include "../core/StatsJson.h"
@@ -206,8 +207,7 @@ bool PashmakApp::controlTimer(TimerCommand command, uint32_t now)
             return true;
         {
             const uint32_t duration = durationFor(_mode);
-            const uint32_t elapsed = static_cast<uint32_t>(now - _modeStartedAt);
-            _pausedRemainingMs = elapsed >= duration ? 0U : duration - elapsed;
+            _pausedRemainingMs = PomodoroTimer::remainingAtPause(now, _modeStartedAt, duration);
             _timerPaused = true;
             _lastWorkTick = now;
             Serial.printf("[TIMER] Paused with %lu ms remaining.\n",
@@ -220,7 +220,7 @@ bool PashmakApp::controlTimer(TimerCommand command, uint32_t now)
         {
             const uint32_t duration = durationFor(_mode);
             const uint32_t remaining = _pausedRemainingMs > duration ? duration : _pausedRemainingMs;
-            _modeStartedAt = now - (duration - remaining);
+            _modeStartedAt = PomodoroTimer::resumedStartAt(now, duration, remaining);
             _timerPaused = false;
             _pausedRemainingMs = 0;
         }
@@ -280,8 +280,7 @@ PashmakApp::TimerStatus PashmakApp::timerStatus(uint32_t now) const
         status.remainingMs = _pausedRemainingMs > duration ? duration : _pausedRemainingMs;
     else
     {
-        const uint32_t elapsed = static_cast<uint32_t>(now - _modeStartedAt);
-        status.remainingMs = elapsed >= duration ? 0U : duration - elapsed;
+        status.remainingMs = PomodoroTimer::remainingMs(now, _modeStartedAt, duration);
     }
     return status;
 }

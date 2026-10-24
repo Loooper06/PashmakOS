@@ -12,7 +12,7 @@ A local-first ESP32 desk companion with automatic work/play/nap cycles, three pe
 - Three pet profiles: Pashmak, Mochi, and Pixel, each with independent behavior state, energy, mood, and message.
 - Pet bonding with four relationship stages (New companion, Familiar friend, Close companion, Best friend), personality-specific interaction reactions, and progress to the next milestone.
 - Pet picker cards show each companion's current bond tier and 0–100 progress without switching profiles.
-- Pet picker cards also show each companion's current energy and mood, so all three profiles can be compared at a glance.
+- Pet picker cards show each companion's current mood, an energy progress bar, and bond-tier progress, so all three profiles can be compared at a glance.
 - Time-aware messages and RTC reminders with configurable water/movement intervals and quiet hours.
 - Local dashboard with pet selection, energy/mood/message, lifetime counters, recent activity, daily/monthly history, and CSV export.
 - Preferences/NVS-backed lifetime counters and bounded daily/monthly history.

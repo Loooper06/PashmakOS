@@ -42,7 +42,7 @@ js = client.group(1)
 
 checks = {
     "firmware OTA upload route uses the ESP32 Update API and a multipart upload handler": all(token in web for token in ['#include <Update.h>', '_server.on("/api/ota", HTTP_POST', 'handleOtaComplete()', 'handleOtaUpload()', 'Update.begin(UPDATE_SIZE_UNKNOWN)', 'Update.write(upload.buf, upload.currentSize)', 'Update.end(true)']),
-    "firmware OTA only accepts bin files and reports upload failures without restarting": all(token in web for token in ['upload.filename.endsWith(".bin")', 'Update.abort()', '_otaUploadFailed', 'firmware update failed', 'ESP.restart()']),
+    "firmware OTA only accepts bin files and reports upload failures without restarting": all(token in web for token in ['upload.filename.endsWith(".bin")', 'Update.abort()', '_otaUploadFailed', 'Firmware update failed', 'ESP.restart()']),
     "dashboard OTA UI requires explicit confirmation and warns about default AP credentials": all(token in web for token in ['id="ota-file"', 'id="ota-upload"', "window.confirm('Upload and install this firmware?", 'Change the default Wi-Fi password before updating firmware.']),
 
     "event log endpoint returns a bounded newest-first event list without caching": '_server.on("/api/events", HTTP_GET, [this]() { handleEventLog(); });' in web and 'void WebDashboard::handleEventLog()' in web and '"Cache-Control","no-store"' in function_body(web, "void WebDashboard::handleEventLog()", "void WebDashboard::handleDiagnostics()") and "EVENT_LOG_CAPACITY" in web,

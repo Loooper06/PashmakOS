@@ -787,7 +787,7 @@ void PashmakApp::update()
                 ? static_cast<uint32_t>(_frameMetricTotalUs / _frameMetricCount)
                 : 0;
             Serial.printf(
-                "[TFT_FRAME] window=%lu ms frames=%lu avg=%lu us max=%lu us overBudget=%lu\\n",
+                "[TFT_FRAME] window=%lu ms frames=%lu avg=%lu us max=%lu us overBudget=%lu\n",
                 static_cast<unsigned long>(metricsNow - _lastFrameMetricsAt),
                 static_cast<unsigned long>(_frameMetricCount),
                 static_cast<unsigned long>(averageUs),

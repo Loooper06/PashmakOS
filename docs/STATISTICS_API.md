@@ -77,6 +77,18 @@ The local dashboard exposes a separate timer configuration API; it does not chan
 - Settings are stored as a versioned Preferences blob in the existing `petstats` namespace. Invalid or incompatible saved settings fall back to defaults (25/2/5 minutes and 3 work sessions).
 - Invalid or missing values return HTTP 400. A storage failure returns HTTP 500; an unavailable app returns HTTP 503.
 
+## Dashboard JSON export
+
+The dashboard header's **Export JSON** action downloads a local snapshot containing:
+
+- The current `/api/stats` payload, including pet profiles, lifetime counters, and retained daily/monthly history.
+- The browser-local daily focus-session goal.
+- Timer settings and quiet-hours settings last successfully loaded from or saved to the device. A setting is `null` if it could not be loaded during this page session.
+- An ISO 8601 export timestamp and export schema version.
+
+The file is generated in the browser; it is not uploaded to a server. It is an export for backup or analysis, not a restore/import file. Keep the JSON private if you do not want to share your activity history.
+
+
 ## CSV export
 
 The `daily_csv` and `monthly_csv` commands print header rows and comma-separated numeric records. Copy only the content between the matching begin/end markers into a `.csv` file. The `dateKey` format is `YYYYMMDD`; `monthKey` is `YYYYMM`. Durations are milliseconds.

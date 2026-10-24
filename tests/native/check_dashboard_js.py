@@ -16,7 +16,11 @@ if not style_match:
     raise SystemExit("Dashboard style block not found in WebDashboard.cpp")
 
 required_css_fragments = (
+    "@media(max-width:600px)",
+    "header>div:last-child{display:grid",
     '.grid>article[style*="grid-column:span 2"]{grid-column:1/-1!important}',
+    "button{min-height:44px}",
+    "@media(max-width:380px)",
 )
 for fragment in required_css_fragments:
     if fragment not in style_match.group(1):
@@ -33,10 +37,6 @@ required_fragments = (
     "pet-option-energy-fill",
     "Mood · '+mood",
     "energyFill.style.width=energy+'%'",
-    "@media(max-width:600px)",
-    "header>div:last-child{display:grid",
-    "button{min-height:44px}",
-    "@media(max-width:380px)",
 )
 for fragment in required_fragments:
     if fragment not in match.group(1):

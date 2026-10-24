@@ -1,7 +1,46 @@
 #include "../../src/pet/PetBehavior.h"
+#include "../../src/core/JsonEscape.h"
+#include <string>
 #include <assert.h>
 #include <stdio.h>
 #include <string.h>
+
+
+class TestJsonString
+{
+public:
+    std::string value;
+
+    TestJsonString &operator+=(char ch)
+    {
+        value += ch;
+        return *this;
+    }
+
+    TestJsonString &operator+=(const char *text)
+    {
+        value += text;
+        return *this;
+    }
+};
+
+static void testJsonStringEscaping()
+{
+    const char input[] =
+        "quote:\" slash:\\ backspace:\b formfeed:\f newline:\n "
+        "carriage:\r tab:\t controls:\x01\x1F utf8: \xC3\xA9";
+    const std::string expected =
+        "\"quote:\\\" slash:\\\\ backspace:\\b formfeed:\\f newline:\\n "
+        "carriage:\\r tab:\\t controls:\\u0001\\u001F utf8: \xC3\xA9\"";
+
+    TestJsonString output;
+    appendJsonString(output, input);
+    assert(output.value == expected);
+
+    TestJsonString nullOutput;
+    appendJsonString(nullOutput, nullptr);
+    assert(nullOutput.value == "\"\"");
+}
 
 static void testEnergyBoundsAndRates()
 {
@@ -78,6 +117,7 @@ static void testSpontaneousMessageExpires()
 
 int main()
 {
+    testJsonStringEscaping();
     testEnergyBoundsAndRates();
     testMillisRollover();
     testPersonalityProfiles();

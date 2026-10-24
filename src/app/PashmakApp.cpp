@@ -2,6 +2,7 @@
 #include "Config.h"
 #include "../core/JsonEscape.h"
 #include "../core/HistoryDate.h"
+#include "../core/HistoryValidation.h"
 #include "../core/PomodoroTimer.h"
 #include "../core/PetProfileValidation.h"
 #include "../core/StatsAggregation.h"
@@ -803,23 +804,14 @@ void PashmakApp::loadDailyHistory()
         return;
     }
 
-    _dailyHistoryCount = stored.count;
-    for (uint8_t i = 0; i < _dailyHistoryCount; ++i)
+    if (!HistoryValidation::validDailyHistory(
+            stored.records, stored.count, DAILY_HISTORY_DAYS))
     {
-        if (!HistoryDate::isValidDateKey(stored.records[i].dateKey))
-        {
-            _dailyHistoryCount = 0;
-            Serial.println("[HISTORY] Invalid date found; history reset.");
-            return;
-        }
-        if (i > 0 && stored.records[i].dateKey <= stored.records[i - 1].dateKey)
-        {
-            _dailyHistoryCount = 0;
-            Serial.println("[HISTORY] History order invalid; history reset.");
-            return;
-        }
+        Serial.println("[HISTORY] Saved daily records failed date/order/counter validation; history reset.");
+        return;
     }
 
+    _dailyHistoryCount = stored.count;
     for (uint8_t i = 0; i < _dailyHistoryCount; ++i)
         _dailyHistory[i] = stored.records[i];
 
@@ -990,15 +982,11 @@ void PashmakApp::loadMonthlyHistory()
         return;
     }
 
-    for (uint8_t i = 0; i < stored.count; ++i)
+    if (!HistoryValidation::validMonthlyHistory(
+            stored.records, stored.count, MONTHLY_HISTORY_MONTHS))
     {
-        const int32_t key = stored.records[i].monthKey;
-        if (!HistoryDate::isValidMonthKey(key) ||
-            (i > 0 && key <= stored.records[i - 1].monthKey))
-        {
-            Serial.println("[MONTHLY] Invalid month key/order; history reset.");
-            return;
-        }
+        Serial.println("[MONTHLY] Saved monthly records failed date/order/counter validation; history reset.");
+        return;
     }
 
     _monthlyHistoryCount = stored.count;

@@ -8,7 +8,7 @@ int main()
 {
     const Daily valid[]={{20260228,3600000U,1800000U,600000U,4},{20260301,0U,0U,0U,0}};
     assert(HistoryValidation::validDailyHistory(valid,2,14));
-    assert(HistoryValidation::validDailyHistory(nullptr,0,14));
+    assert(HistoryValidation::validDailyHistory(static_cast<const Daily *>(nullptr),0,14));
     assert(!HistoryValidation::validDailyHistory(valid,15,14));
     const Daily leapInvalid[]={{20260229,0U,0U,0U,0}};
     assert(!HistoryValidation::validDailyHistory(leapInvalid,1,14));

@@ -69,7 +69,7 @@ Acceptance: no cloud dependency or undisclosed telemetry; reminders respect quie
 ## Phase 7 — Testability and release readiness
 1. Native host-side tests cover energy rates/bounds, mode changes, millis() rollover, distinct message profiles, spontaneous-message expiry, JSON escaping, and history calendar validation. Statistics aggregation and the shared statistics JSON serializer are covered by portable native tests; a physical-device serialization check remains part of the hardware smoke test.
 2. [x] Add API contract checks and a documented serial/hardware smoke-test procedure (`docs/HARDWARE_SMOKE_TEST.md`).
-3. Document wiring, pin conflicts, first boot, AP credentials, RTC setup, and troubleshooting.
+3. [x] Document wiring, pin conflicts, first boot, AP credentials, RTC setup, and troubleshooting in `docs/SETUP.md`.
 4. Record measured RAM/flash usage and TFT frame timing.
 5. Create a release checklist; tag only after CI and physical-device checks.
 Acceptance: repeatable tests, passing CI, clear setup docs, no unverified claims about device behavior.

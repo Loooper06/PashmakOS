@@ -45,12 +45,13 @@ This checklist is intended for the ESP32-WROOM-32 + ILI9341 TFT + DS3231 RTC tar
 6. Confirm the UI indicates stale/failed updates while disconnected and recovers to fresh data after reconnection. The last valid snapshot should not be replaced with empty or malformed data.
 7. Repeat with a browser on a narrow mobile viewport. Check for horizontal overflow, clipped controls, unreadable chart labels, and inaccessible buttons.
 
-**Pass criteria:** dashboard loads reliably, exports remain valid, temporary client disconnects do not erase the last valid snapshot, and a reconnect restores live updates.
+**Pass criteria:** dashboard loads reliably, exports remain valid, temporary client disconnects do not erase the last valid snapshot, and a reconnect restores live updates. For loop timing, compare idle vs. refresh/export windows; investigate repeatable `maxGap` values at or above 100 ms and any increase in `overBudget`. These are investigation thresholds, not automatic proof of a visible fault.
 
 ## 5. TFT, behavior, and RTC reminder checks
 
 - [ ] Observe the TFT for at least 10 minutes with Wi-Fi enabled. Note flicker, partial redraws, stalls, or watchdog resets.
-- [ ] Capture at least three `[TFT_FRAME]` serial reports while the dashboard is idle and while it is serving requests; record average/max draw duration and `overBudget` count. A report is diagnostic data, not by itself proof of flicker-free output.
+- [ ] Capture at least three paired `[TFT_FRAME]` and `[LOOP_TIMING]` serial reports while the dashboard is idle, refreshing normally, and exporting CSV. Record average/max draw duration plus average/max loop gap and each `overBudget` count.
+- [x] User-reported physical observation: flicker is resolved both during normal display operation and while Wi-Fi/dashboard requests are active. Keep this separate from timing acceptance; a visually stable display does not by itself prove that the main loop never stalls.
 - [ ] Confirm Work → Play → Work transitions occur at the configured durations. Allow enough time for the configured session duration; do not infer timing from a short observation.
 - [ ] Confirm energy remains within 0–100 and changes at the documented mode-specific rates.
 - [ ] Confirm Pashmak, Mochi, and Pixel have distinguishable message/personality profiles.
@@ -72,7 +73,7 @@ Record the firmware commit, board, test date/time, RTC status, observed serial o
 | Normal reboot persistence | Pass / Fail |
 | Wi-Fi disconnect/reconnect | Pass / Fail |
 | Mobile dashboard | Pass / Fail |
-| TFT flicker / responsiveness | Pass / Fail |
+| TFT flicker / responsiveness | User reports Pass in normal + dashboard-active modes; repeatable timing measurements pending |
 | Behavior transitions / energy | Pass / Fail |
 | RTC reminders | Pass / Fail |
 | Notes / logs | |

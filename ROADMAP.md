@@ -23,6 +23,7 @@ Target: ESP32-WROOM-32 + ILI9341 TFT (320x240 landscape), DS3231 RTC
 - [x] Extract recent-day and monthly statistics aggregation into portable core helpers; native tests cover latest-N selection, full-range aggregation, empty/zero requests, missing months, and invalid month inputs.
 - [x] Extract the JSON encoder into a portable serializer shared by firmware and native tests; compile a fixture, parse its emitted JSON, and validate the complete payload shape, wide counters, and escaped message contents.
 - [ ] Complete a physical Wi-Fi disconnect/reconnect smoke test after the latest dashboard changes; procedure is documented in `docs/HARDWARE_SMOKE_TEST.md`.
+- [ ] Measure full-loop cadence under dashboard idle/request/export load using `[LOOP_TIMING]` reports; frame draw duration alone does not capture time spent serving network requests.
 Acceptance: valid API JSON for all message contents; intended energy rates; dashboard usable through brief disconnects; CI passes and hardware checks are recorded.
 
 ## Phase 2 — Behavior quality and pet personality
@@ -40,7 +41,7 @@ Progress update (2026-10-24): mood-specific facial expressions are implemented u
 1. Preserve the current renderer API/layout unless a task explicitly requires a fix.
 2. [x] Make mood changes visible through distinct focused, curious, sleepy/tired, excited, and exhausted facial cues using existing renderer inputs.
 3. Verify RTC reminders expire and return to the current pet message.
-4. Add serial frame-duration diagnostics (10-second average/maximum and over-budget count); measure actual frame timing and check flicker with Wi-Fi enabled on hardware.
+4. [x] Add serial frame-duration diagnostics (10-second average/maximum and over-budget count); [x] add loop-cadence diagnostics to reveal delays between `app.update()` calls while the dashboard is being serviced. Physical flicker check is user-confirmed resolved both with Wi-Fi idle and while serving dashboard requests; collect loop timing measurements under load next.
 5. Keep display/network work non-blocking.
 Acceptance: no new physical-display flicker/frame stalls; reminders and messages restore correctly.
 
@@ -73,7 +74,7 @@ Acceptance: no cloud dependency or undisclosed telemetry; reminders respect quie
 1. Native host-side tests cover energy rates/bounds, mode changes, millis() rollover, distinct message profiles, spontaneous-message expiry, JSON escaping, and history calendar validation. Statistics aggregation and the shared statistics JSON serializer are covered by portable native tests; a physical-device serialization check remains part of the hardware smoke test.
 2. [x] Add API contract checks and a documented serial/hardware smoke-test procedure (`docs/HARDWARE_SMOKE_TEST.md`).
 3. [x] Document wiring, pin conflicts, first boot, AP credentials, RTC setup, and troubleshooting in `docs/SETUP.md`.
-4. Record measured RAM/flash usage and TFT frame timing.
+4. Record measured RAM/flash usage, TFT frame timing, and loop-cadence measurements under dashboard load.
 5. Create a release checklist; tag only after CI and physical-device checks.
 Acceptance: repeatable tests, passing CI, clear setup docs, no unverified claims about device behavior.
 

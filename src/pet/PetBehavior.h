@@ -14,6 +14,13 @@ enum class PetMood : uint8_t
     Exhausted
 };
 
+enum class PetInteraction : uint8_t
+{
+    Affection,
+    Playful,
+    Comfort
+};
+
 struct PetBehaviorState
 {
     PetMood mood;
@@ -29,7 +36,7 @@ public:
     void begin(uint32_t now);
     bool restoreEnergy(uint8_t energy, uint32_t now);
     void update(PetMode mode, uint32_t now, int8_t hour = -1, bool quietHours = false);
-    void interact(PetMode mode, uint32_t now, uint8_t bond);
+    void interact(PetMode mode, uint32_t now, uint8_t bond, PetInteraction interaction = PetInteraction::Affection);
 
     const PetBehaviorState &state() const;
 

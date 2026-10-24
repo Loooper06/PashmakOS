@@ -103,7 +103,7 @@ This sequence supplements the existing engineering roadmap above. Each feature p
 | Feature phase | Scope | Status |
 |---:|---|---|
 | 1 | Distinct personalities: voice plus per-pet energy dynamics | Completed (PR #43) |
-| 2 | Direct interaction with the pet | Planned |
+| 2 | Direct interaction with the pet | In progress (PR pending) |
 | 3 | Pet needs: energy, happiness, and bond model | Planned |
 | 4 | Achievements and persistent progression | Planned |
 | 5 | Complete Pomodoro flow and work/rest cycle controls | Planned |
@@ -122,3 +122,13 @@ This sequence supplements the existing engineering roadmap above. Each feature p
 - [x] Native behavior/dashboard CI and ESP32 firmware build both pass.
 - [x] User confirms the physical ESP32/TFT behavior.
 - [x] Phase completed and PR #43 merged.
+
+### Feature phase 2 — direct interaction with the pet
+
+- [x] Dashboard offers distinct affection, playful, and comfort actions.
+- [x] Each action produces a personality-specific message and mood reaction on the TFT.
+- [x] Interaction actions use the existing per-pet cooldown and bond progression.
+- [x] Unsupported or missing action values are rejected by the HTTP API.
+- [x] Native tests cover typed reactions and interaction expiry; dashboard contract tests cover action validation and button wiring.
+- [ ] Both CI jobs pass and the user confirms the physical ESP32/TFT behavior.
+- [ ] Merge the implementation PR before marking this phase complete.

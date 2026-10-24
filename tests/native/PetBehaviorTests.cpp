@@ -332,6 +332,33 @@ static void testPetInteractionReactionsAndExpiry()
     assert(strcmp(pashmak.state().message, "Let's Focus, Engineer!") == 0);
 }
 
+static void testTypedPetInteractions()
+{
+    PetBehavior pashmak(0);
+    PetBehavior mochi(1);
+    PetBehavior pixel(2);
+    pashmak.begin(0);
+    mochi.begin(0);
+    pixel.begin(0);
+
+    pashmak.interact(PetMode::Work, 10, 20, PetInteraction::Affection);
+    mochi.interact(PetMode::Play, 10, 20, PetInteraction::Playful);
+    pixel.interact(PetMode::Nap, 10, 20, PetInteraction::Comfort);
+
+    assert(strcmp(pashmak.state().message, "Happy tail wag for you!") == 0);
+    assert(strcmp(mochi.state().message, "A tiny game? Count me in!") == 0);
+    assert(strcmp(pixel.state().message, "Calm mode engaged.") == 0);
+    assert(pashmak.state().mood == PetMood::Excited);
+    assert(mochi.state().mood == PetMood::Excited);
+    assert(pixel.state().mood == PetMood::Sleepy);
+
+    // Each interaction remains visible until its normal six-second expiry.
+    pashmak.update(PetMode::Work, 5000);
+    assert(strcmp(pashmak.state().message, "Happy tail wag for you!") == 0);
+    pashmak.update(PetMode::Work, 6010);
+    assert(strcmp(pashmak.state().message, "Let's Focus, Engineer!") == 0);
+}
+
 static void testBondRelationshipTiers()
 {
     PetBehavior pashmak(0);
@@ -536,6 +563,7 @@ int main()
     testEnergyLowerBoundAndRecovery();
     testInvalidPersonalityFallsBackSafely();
     testPetInteractionReactionsAndExpiry();
+    testTypedPetInteractions();
     testBondRelationshipTiers();
     testQuietHoursSuppressSpontaneousEvents();
     puts("PetBehavior native tests: PASS");

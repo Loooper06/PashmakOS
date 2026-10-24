@@ -65,7 +65,7 @@ public:
     void update();
 
     bool setActivePet(uint8_t petId);
-    bool interactWithActivePet(uint32_t now);
+    bool interactWithActivePet(uint32_t now, PetInteraction interaction = PetInteraction::Affection);
     uint8_t activePetId() const;
     uint8_t petBond(uint8_t petId) const;
     TimerSettings timerSettings() const;

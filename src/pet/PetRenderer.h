@@ -19,10 +19,12 @@ public:
         uint8_t petId,
         PetMood mood,
         const char *message,
-        const char *dateTime);
+        const char *dateTime,
+        bool attentionActive,
+        uint8_t attentionPhase);
 
 private:
-    void drawDog(Display &display, PetMode mode, uint32_t frame, uint8_t petId, PetMood mood);
+    void drawDog(Display &display, PetMode mode, uint32_t frame, uint8_t petId, PetMood mood, bool attentionActive, uint8_t attentionPhase);
     void drawHeader(Display &display);
     void drawFooter(Display &display, PetMode mode, uint8_t petId, const char *dateTime);
     void drawMessage(Display &display, const char *message);
@@ -46,6 +48,8 @@ private:
     uint8_t _lastDogAction = 255;
     bool _lastDogBlinking;
     PetMood _lastDogMood = PetMood::Focused;
+    bool _lastAttentionActive = false;
+    uint8_t _lastAttentionPhase = 255;
     int8_t _lastDogLeftEarX;
     int8_t _lastDogRightEarX;
 };

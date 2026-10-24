@@ -50,17 +50,17 @@ try:
 except json.JSONDecodeError as exc:
     raise SystemExit(f"Statistics serializer produced invalid JSON: {exc}")
 
-assert data["version"] == 1
+assert data["version"] == 2
 assert data["activePetId"] == 1
 assert len(data["pets"]) == 3
 assert data["pets"][0] == {
-    "id": 0, "name": "Pashmak", "energy": 91, "bond": 35, "mood": "happy",
+    "id": 0, "name": "Pashmak", "energy": 91, "happiness": 76, "bond": 35, "mood": "happy",
     "message": 'hello "friend"\\path\nnext',
 }
 assert data["pets"][1]["message"] == "quiet\tmode"
 assert data["pets"][2]["message"] == "control\x01byte"
 assert data["pet"] == {
-    "energy": 64, "bond": 70, "mood": "sleepy", "message": "quiet\tmode"
+    "energy": 64, "happiness": 62, "bond": 70, "mood": "sleepy", "message": "quiet\tmode"
 }
 assert data["totals"] == {
     "workMs": 9000000000, "playMs": 2000000000, "napMs": 300000000,

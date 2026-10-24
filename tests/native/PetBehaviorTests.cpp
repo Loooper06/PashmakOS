@@ -72,6 +72,37 @@ static void testEnergyBoundsAndRates()
     assert(pet.state().energy == 100);
 }
 
+static void testHappinessNeedDynamicsAndBounds()
+{
+    PetBehavior pet;
+    pet.begin(0);
+    assert(pet.state().happiness == 70);
+    pet.update(PetMode::Work, 300000UL);
+    assert(pet.state().happiness == 69);
+    pet.update(PetMode::Play, 300000UL);
+    pet.update(PetMode::Play, 360000UL);
+    assert(pet.state().happiness == 71);
+    pet.update(PetMode::Nap, 360000UL);
+    pet.update(PetMode::Nap, 450000UL);
+    assert(pet.state().happiness == 72);
+    assert(pet.restoreHappiness(100, 450000UL));
+    pet.update(PetMode::Play, 510000UL);
+    assert(pet.state().happiness == 100);
+    assert(!pet.restoreHappiness(101, 510000UL));
+}
+
+static void testInteractionImprovesHappiness()
+{
+    PetBehavior pet(1);
+    pet.begin(0);
+    pet.interact(PetMode::Work, 0, 0, PetInteraction::Affection);
+    assert(pet.state().happiness == 78);
+    pet.interact(PetMode::Work, 1000, 5, PetInteraction::Playful);
+    assert(pet.state().happiness == 90);
+    pet.interact(PetMode::Work, 2000, 10, PetInteraction::Comfort);
+    assert(pet.state().happiness == 95);
+}
+
 static void testMillisRollover()
 {
     const uint32_t start = UINT32_MAX - 60000UL;
@@ -548,6 +579,8 @@ int main()
     testRecentStatisticsAggregation();
     testMonthlyStatisticsAggregation();
     testEnergyBoundsAndRates();
+    testHappinessNeedDynamicsAndBounds();
+    testInteractionImprovesHappiness();
     testMillisRollover();
     testPersonalityProfiles();
     testPersonalityEnergyRates();

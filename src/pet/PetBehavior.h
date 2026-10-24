@@ -26,6 +26,7 @@ struct PetBehaviorState
     PetMood mood;
     const char *message;
     uint8_t energy;
+    uint8_t happiness;
 };
 
 class PetBehavior
@@ -35,6 +36,7 @@ public:
 
     void begin(uint32_t now);
     bool restoreEnergy(uint8_t energy, uint32_t now);
+    bool restoreHappiness(uint8_t happiness, uint32_t now);
     void update(PetMode mode, uint32_t now, int8_t hour = -1, bool quietHours = false);
     void interact(PetMode mode, uint32_t now, uint8_t bond, PetInteraction interaction = PetInteraction::Affection);
 
@@ -50,6 +52,8 @@ private:
     uint32_t _lastMessageAt;
     uint32_t _lastEnergyTickAt;
     uint32_t _energyRemainderMs;
+    uint32_t _lastHappinessTickAt;
+    uint32_t _happinessRemainderMs;
     uint32_t _eventUntil;
     uint32_t _nextEventAt;
     uint8_t _workMessageIndex;
@@ -64,6 +68,7 @@ private:
 
     void selectMessage(PetMode mode, uint32_t now, int8_t hour, bool quietHours);
     void updateEnergy(PetMode mode, uint32_t now);
+    void updateHappiness(PetMode mode, uint32_t now);
     void updateMood(PetMode mode);
     void updateSpontaneousEvent(PetMode mode, uint32_t now, bool quietHours);
 };

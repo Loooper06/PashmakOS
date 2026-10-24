@@ -75,13 +75,15 @@ namespace
 
 PetBehavior::PetBehavior(uint8_t personalityId)
     : _personalityId(personalityId < PROFILE_COUNT ? personalityId : 0),
-      _state{PetMood::Focused, PASHMAK_WORK[0], 80},
+      _state{PetMood::Focused, PASHMAK_WORK[0], 80, 70},
       _baseMessage(PASHMAK_WORK[0]),
       _lastBaseMessage(nullptr),
       _lastMode(PetMode::Work),
       _lastMessageAt(0),
       _lastEnergyTickAt(0),
       _energyRemainderMs(0),
+      _lastHappinessTickAt(0),
+      _happinessRemainderMs(0),
       _eventUntil(0),
       _nextEventAt(0),
       _workMessageIndex(0),
@@ -101,6 +103,8 @@ void PetBehavior::begin(uint32_t now)
     _lastMessageAt = now;
     _lastEnergyTickAt = now;
     _energyRemainderMs = 0;
+    _lastHappinessTickAt = now;
+    _happinessRemainderMs = 0;
     _lastMode = PetMode::Work;
     _workMessageIndex = 0;
     _napMessageIndex = 0;
@@ -115,7 +119,7 @@ void PetBehavior::begin(uint32_t now)
     const MessageProfile &profile = PROFILES[_personalityId];
     _baseMessage = profile.work[0];
     _lastBaseMessage = nullptr;
-    _state = {PetMood::Focused, _baseMessage, 80};
+    _state = {PetMood::Focused, _baseMessage, 80, 70};
     _initialized = true;
 }
 
@@ -147,12 +151,16 @@ void PetBehavior::update(PetMode mode, uint32_t now, int8_t hour, bool quietHour
     {
         // Charge elapsed time to the mode that was active during that interval.
         updateEnergy(_lastMode, now);
+        updateHappiness(_lastMode, now);
         // Fractional time from one mode must not leak into another mode's rate.
         _energyRemainderMs = 0;
         _lastEnergyTickAt = now;
+        _happinessRemainderMs = 0;
+        _lastHappinessTickAt = now;
     }
 
     updateEnergy(mode, now);
+    updateHappiness(mode, now);
     updateMood(mode);
     const bool messageDue =
         static_cast<uint32_t>(now - _lastMessageAt) >= Config::PET_MESSAGE_INTERVAL_MS;
@@ -232,6 +240,38 @@ void PetBehavior::updateEnergy(PetMode mode, uint32_t now)
     if ((_state.energy == 0 && delta < 0) ||
         (_state.energy == 100 && delta > 0))
         _energyRemainderMs = 0;
+}
+
+void PetBehavior::updateHappiness(PetMode mode, uint32_t now)
+{
+    const uint32_t elapsed = static_cast<uint32_t>(now - _lastHappinessTickAt);
+    _lastHappinessTickAt = now;
+    uint32_t stepMs = 60000UL;
+    int8_t delta = 0;
+    if (mode == PetMode::Work) { stepMs = 300000UL; delta = -1; }
+    else if (mode == PetMode::Play) { stepMs = 60000UL; delta = 2; }
+    else if (mode == PetMode::Nap) { stepMs = 90000UL; delta = 1; }
+    if (delta == 0) { _happinessRemainderMs = 0; return; }
+    const uint64_t accumulatedMs = static_cast<uint64_t>(_happinessRemainderMs) + elapsed;
+    const uint64_t steps = accumulatedMs / stepMs;
+    _happinessRemainderMs = static_cast<uint32_t>(accumulatedMs % stepMs);
+    if (delta < 0)
+        _state.happiness = steps >= _state.happiness ? 0 : static_cast<uint8_t>(_state.happiness - steps);
+    else {
+        const uint8_t missing = static_cast<uint8_t>(100 - _state.happiness);
+        const uint64_t gain = steps * static_cast<uint8_t>(delta);
+        _state.happiness = gain >= missing ? 100 : static_cast<uint8_t>(_state.happiness + gain);
+    }
+    if ((_state.happiness == 0 && delta < 0) || (_state.happiness == 100 && delta > 0)) _happinessRemainderMs = 0;
+}
+
+bool PetBehavior::restoreHappiness(uint8_t happiness, uint32_t now)
+{
+    if (happiness > 100) return false;
+    _state.happiness = happiness;
+    _lastHappinessTickAt = now;
+    _happinessRemainderMs = 0;
+    return true;
 }
 
 void PetBehavior::updateMood(PetMode mode)
@@ -367,6 +407,9 @@ void PetBehavior::interact(PetMode mode, uint32_t now, uint8_t bond, PetInteract
 {
     _interactionActive = true;
     _interactionUntil = now + 6000UL;
+    const uint8_t happinessGain = interaction == PetInteraction::Playful ? 12 : (interaction == PetInteraction::Affection ? 8 : 5);
+    const uint16_t nextHappiness = static_cast<uint16_t>(_state.happiness) + happinessGain;
+    _state.happiness = nextHappiness > 100U ? 100U : static_cast<uint8_t>(nextHappiness);
 
     // Typed actions provide visibly different responses without changing the
     // existing energy model or adding flash writes for every interaction.

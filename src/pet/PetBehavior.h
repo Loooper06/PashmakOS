@@ -52,6 +52,7 @@ private:
     bool _eventActive;
     bool _interactionActive;
     uint32_t _interactionUntil;
+    const char *_interactionMessage;
     bool _initialized;
 
     void selectMessage(PetMode mode, uint32_t now, int8_t hour);

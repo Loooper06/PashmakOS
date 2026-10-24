@@ -185,7 +185,6 @@ PetRenderer::PetRenderer()
       _lastDogRightEarX(0),
       _lastDogMoving(false),
       _lastDogBlinking(false),
-      _lastMessage(nullptr),
       _messageInitialized(false)
 {
 }

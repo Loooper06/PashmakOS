@@ -21,7 +21,7 @@ namespace
                 case '\\': json += F("\\\\"); break;
                 case '\b': json += F("\\b"); break;
                 case '\f': json += F("\\f"); break;
-                case '\n': json += F("\\n"); break;
+                case '\n': json += F("\n"); break;
                 case '\r': json += F("\\r"); break;
                 case '\t': json += F("\\t"); break;
                 default:
@@ -769,7 +769,7 @@ void PashmakApp::handleSerialCommands()
                 for (uint8_t i = 0; i < _dailyHistoryCount; ++i)
                 {
                     const DailyStats &day = _dailyHistory[i];
-                    Serial.printf("%ld,%lu,%lu,%lu,%u\\n",
+                    Serial.printf("%ld,%lu,%lu,%lu,%u\n",
                                   static_cast<long>(day.dateKey),
                                   static_cast<unsigned long>(day.workMs),
                                   static_cast<unsigned long>(day.playMs),
@@ -785,7 +785,7 @@ void PashmakApp::handleSerialCommands()
                 for (uint8_t i = 0; i < _monthlyHistoryCount; ++i)
                 {
                     const MonthlyStats &month = _monthlyHistory[i];
-                    Serial.printf("%ld,%llu,%llu,%llu,%lu\\n",
+                    Serial.printf("%ld,%llu,%llu,%llu,%lu\n",
                                   static_cast<long>(month.monthKey),
                                   static_cast<unsigned long long>(month.workMs),
                                   static_cast<unsigned long long>(month.playMs),

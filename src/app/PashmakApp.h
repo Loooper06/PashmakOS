@@ -102,6 +102,12 @@ private:
         TimerSettings settings{};
     };
 
+    struct QuietHoursStorage
+    {
+        uint32_t version = 1;
+        QuietHoursSettings settings{};
+    };
+
     struct PetProfileStorage
     {
         uint32_t version = 1;
@@ -168,10 +174,11 @@ private:
 
     void setMode(PetMode mode, uint32_t now);
     void updateAutomaticMode(uint32_t now);
-    void updateRtcReminder(uint32_t now);
+    void updateRtcReminder(uint32_t now, bool quietHours);
     void handleSerialCommands();
     void persistStats(uint32_t now, bool force = false);
     void loadTimerSettings();
+    void loadQuietHoursSettings();
     bool isQuietHour(int8_t hour) const;
     void loadPetProfiles();
     void persistPetProfiles(uint32_t now);

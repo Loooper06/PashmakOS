@@ -4,6 +4,7 @@
 #include <Preferences.h>
 #include "RtcService.h"
 #include "../core/PetState.h"
+#include "../core/AchievementProgress.h"
 #include "../display/Display.h"
 #include "../pet/PetRenderer.h"
 #include "../pet/PetBehavior.h"
@@ -171,6 +172,9 @@ private:
     uint8_t _petProfileEnergy[PET_COUNT] = {80, 80, 80};
     uint8_t _petProfileHappiness[PET_COUNT] = {70, 70, 70};
     uint8_t _petBond[PET_COUNT] = {0, 0, 0};
+    AchievementProgress::Storage _achievementProgress{};
+    AchievementProgress::Storage _savedAchievementProgress{};
+    uint32_t _lastAchievementPersistAt = 0;
     uint32_t _lastInteractionAt[PET_COUNT]{};
     bool _hasInteracted[PET_COUNT]{};
     uint32_t _attentionEffectStartedAt = 0;
@@ -209,6 +213,9 @@ private:
     void loadReminderSettings();
     bool isQuietHour(int8_t hour) const;
     void loadPetProfiles();
+    void loadAchievementProgress();
+    void persistAchievementProgress(uint32_t now, bool force = false);
+    uint8_t consecutiveWorkDays() const;
     void persistPetProfiles(uint32_t now);
     void loadDailyHistory();
     void syncDailyHistory(uint32_t now);

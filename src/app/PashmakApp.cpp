@@ -66,6 +66,9 @@ bool PashmakApp::interactWithActivePet(uint32_t now, PetInteraction interaction)
     }
 
     _behaviors[petId].interact(_mode, now, _petBond[petId], interaction);
+    const uint32_t newlyUnlocked = AchievementProgress::recordInteraction(_achievementProgress, petId, _petBond[petId]);
+    persistAchievementProgress(now, newlyUnlocked != 0);
+    if (newlyUnlocked != 0) Serial.printf("[ACHIEVEMENT] Pet %u unlocked mask 0x%08lX.\\n", petId, static_cast<unsigned long>(newlyUnlocked));
     Serial.printf("[BOND] Pet %u interaction; bond=%u/100.\n", petId, _petBond[petId]);
     return true;
 }
@@ -243,7 +246,8 @@ String PashmakApp::statisticsToJson(uint8_t recentDays) const
     {
         const PetBehaviorState &profile = _behaviors[i].state();
         pets[i] = StatsJson::Pet{
-            i, profile.energy, profile.happiness, _petBond[i], petNames[i], moodName(profile.mood), profile.message};
+            i, profile.energy, profile.happiness, _petBond[i], petNames[i], moodName(profile.mood), profile.message,
+            _achievementProgress.interactions[i], _achievementProgress.petMasks[i]};
     }
 
     const PetBehaviorState &active = _behaviors[_activePetId].state();
@@ -286,13 +290,15 @@ String PashmakApp::statisticsToJson(uint8_t recentDays) const
         _activePetId,
         pets,
         PET_COUNT,
-        StatsJson::Pet{_activePetId, active.energy, active.happiness, _petBond[_activePetId], nullptr, moodName(active.mood), active.message},
+        StatsJson::Pet{_activePetId, active.energy, active.happiness, _petBond[_activePetId], nullptr, moodName(active.mood), active.message,
+            _achievementProgress.interactions[_activePetId], _achievementProgress.petMasks[_activePetId]},
         totals,
         recentView,
         daily,
         _dailyHistoryCount,
         monthly,
-        _monthlyHistoryCount};
+        _monthlyHistoryCount,
+        _achievementProgress.globalMask};
 
     String json;
     json.reserve(180 + static_cast<size_t>(_dailyHistoryCount) * 100 +
@@ -314,6 +320,7 @@ void PashmakApp::begin()
     _modeStartedAt = now;
     _lastStatsPersistAt = now;
     _lastPetProfilePersistAt = now;
+    _lastAchievementPersistAt = now;
 
     _statsReady = _statsPreferences.begin("petstats", false);
     if (_statsReady)
@@ -342,6 +349,7 @@ void PashmakApp::begin()
     loadQuietHoursSettings();
     loadReminderSettings();
     loadPetProfiles();
+    loadAchievementProgress();
     for (uint8_t i = 0; i < PET_COUNT; ++i)
     {
         _behaviors[i].begin(now);
@@ -501,6 +509,43 @@ void PashmakApp::loadReminderSettings()
     _reminderSettings = stored.settings;
     Serial.printf("[REMINDER] Loaded water=%u min, movement=%u min.\n",
                   _reminderSettings.waterMinutes, _reminderSettings.movementMinutes);
+}
+
+void PashmakApp::loadAchievementProgress()
+{
+    _achievementProgress = AchievementProgress::Storage{};
+    if (_statsReady && _statsPreferences.getBytesLength("achieve") == sizeof(AchievementProgress::Storage))
+    {
+        AchievementProgress::Storage stored{};
+        if (_statsPreferences.getBytes("achieve", &stored, sizeof(stored)) == sizeof(stored) &&
+            AchievementProgress::isValid(stored))
+        {
+            _achievementProgress = stored;
+            Serial.println("[ACHIEVEMENT] Persistent achievement progress loaded.");
+        }
+        else
+        {
+            Serial.println("[ACHIEVEMENT] Invalid saved progress; using safe defaults.");
+        }
+    }
+    _savedAchievementProgress = _achievementProgress;
+}
+
+void PashmakApp::persistAchievementProgress(uint32_t now, bool force)
+{
+    if (!_statsReady || AchievementProgress::equals(_achievementProgress, _savedAchievementProgress))
+        return;
+    constexpr uint32_t ACHIEVEMENT_PERSIST_INTERVAL_MS = 60000UL;
+    if (!force && static_cast<uint32_t>(now - _lastAchievementPersistAt) < ACHIEVEMENT_PERSIST_INTERVAL_MS)
+        return;
+    if (_statsPreferences.putBytes("achieve", &_achievementProgress, sizeof(_achievementProgress)) != sizeof(_achievementProgress))
+    {
+        Serial.println("[ACHIEVEMENT] Failed to persist progression; will retry.");
+        return;
+    }
+    _savedAchievementProgress = _achievementProgress;
+    _lastAchievementPersistAt = now;
+    Serial.println("[ACHIEVEMENT] Progress saved.");
 }
 
 void PashmakApp::loadPetProfiles()
@@ -732,14 +777,53 @@ void PashmakApp::recordDailyElapsed(uint32_t elapsedMs)
 
 void PashmakApp::recordCompletedWorkSession()
 {
-    if (_currentDailyIndex < 0 ||
-        _currentDailyIndex >= static_cast<int8_t>(_dailyHistoryCount))
-        return;
+    uint32_t newlyUnlocked = AchievementProgress::recordFocusSessions(_achievementProgress, _completedWorkSessions);
+    if (_currentDailyIndex >= 0 &&
+        _currentDailyIndex < static_cast<int8_t>(_dailyHistoryCount))
+    {
+        DailyStats &day = _dailyHistory[_currentDailyIndex];
+        if (day.completedWorkSessions < UINT16_MAX)
+            ++day.completedWorkSessions;
+        persistDailyHistory(millis(), true);
+        newlyUnlocked |= AchievementProgress::recordConsecutiveDays(_achievementProgress, consecutiveWorkDays());
+    }
+    persistAchievementProgress(millis(), newlyUnlocked != 0);
+}
 
-    DailyStats &day = _dailyHistory[_currentDailyIndex];
-    if (day.completedWorkSessions < UINT16_MAX)
-        ++day.completedWorkSessions;
-    persistDailyHistory(millis(), true);
+uint8_t PashmakApp::consecutiveWorkDays() const
+{
+    if (_dailyHistoryCount == 0 || _currentDailyIndex < 0 ||
+        _currentDailyIndex >= static_cast<int8_t>(_dailyHistoryCount))
+        return 0;
+
+    uint8_t streak = 0;
+    int32_t newerDateKey = 0;
+    for (int16_t i = _currentDailyIndex; i >= 0; --i)
+    {
+        const DailyStats &record = _dailyHistory[i];
+        if (record.completedWorkSessions == 0)
+            break;
+        if (newerDateKey != 0)
+        {
+            const int32_t year = record.dateKey / 10000;
+            const int32_t month = (record.dateKey / 100) % 100;
+            const int32_t day = record.dateKey % 100;
+            int32_t expectedNextDate = 0;
+            if (day < HistoryDate::daysInMonth(year, month))
+                expectedNextDate = year * 10000 + month * 100 + day + 1;
+            else if (month < 12)
+                expectedNextDate = year * 10000 + (month + 1) * 100 + 1;
+            else if (year < 2099)
+                expectedNextDate = (year + 1) * 10000 + 101;
+            if (expectedNextDate != newerDateKey)
+                break;
+        }
+        ++streak;
+        newerDateKey = record.dateKey;
+        if (streak == UINT8_MAX)
+            break;
+    }
+    return streak;
 }
 
 void PashmakApp::persistDailyHistory(uint32_t now, bool force)
@@ -1071,6 +1155,7 @@ void PashmakApp::update()
     for (uint8_t i = 0; i < PET_COUNT; ++i)
         _behaviors[i].update(_mode, now, currentHour, quietHours);
     persistPetProfiles(now);
+    persistAchievementProgress(now);
     updateRtcReminder(now, quietHours);
     if (quietHours)
         _reminderMessage = nullptr;

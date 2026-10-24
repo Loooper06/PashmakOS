@@ -22,6 +22,8 @@ namespace StatsJson
         const char *name;
         const char *mood;
         const char *message;
+        uint16_t interactions = 0;
+        uint32_t achievementMask = 0;
     };
 
     struct Recent
@@ -61,6 +63,7 @@ namespace StatsJson
         uint8_t dailyCount;
         const MonthlyRecord *monthlyHistory;
         uint8_t monthlyCount;
+        uint32_t globalAchievementMask = 0;
     };
 
     template <typename StringLike>
@@ -124,6 +127,10 @@ namespace StatsJson
         appendUnsigned(json, pet.happiness);
         json += ",\"bond\":";
         appendUnsigned(json, pet.bond);
+        json += ",\"interactions\":";
+        appendUnsigned(json, pet.interactions);
+        json += ",\"achievementMask\":";
+        appendUnsigned(json, pet.achievementMask);
         json += ",\"mood\":";
         appendJsonString(json, pet.mood);
         json += ",\"message\":";
@@ -134,7 +141,7 @@ namespace StatsJson
     template <typename StringLike>
     void appendStatisticsJson(StringLike &json, const Payload &payload)
     {
-        json += "{\"version\":2,\"activePetId\":";
+        json += "{\"version\":3,\"activePetId\":";
         appendUnsigned(json, payload.activePetId);
         json += ",\"pets\":[";
         for (uint8_t i = 0; i < payload.petCount; ++i)
@@ -144,7 +151,9 @@ namespace StatsJson
             appendPet(json, payload.pets[i], true);
         }
 
-        json += "],\"pet\":";
+        json += "],\"globalAchievementMask\":";
+        appendUnsigned(json, payload.globalAchievementMask);
+        json += ",\"pet\":";
         appendPet(json, payload.activePet, false);
         json += ",\"totals\":{";
         appendCounterFields(json, payload.totals);

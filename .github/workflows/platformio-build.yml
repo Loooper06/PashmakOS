@@ -9,7 +9,7 @@ on:
 
 # Avoid spending runner time on superseded commits from the same branch/PR.
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  group: ${{ github.workflow }}-${{ github.event.pull_request.head.ref || github.ref_name }}
   cancel-in-progress: true
 
 permissions:

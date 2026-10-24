@@ -36,8 +36,9 @@ Progress update (2026-10-24): the repeated time-aware-message case is fixed on `
 Acceptance: no blocking delays, energy stays 0–100, no event spam, stable timing over millis() rollover.
 
 ## Phase 3 — TFT experience without renderer regressions
+Progress update (2026-10-24): mood-specific facial expressions are implemented using existing `PetMood` input; the renderer API and layout are unchanged. Physical TFT timing/flicker validation remains pending.
 1. Preserve the current renderer API/layout unless a task explicitly requires a fix.
-2. Make pet changes and mood/message changes coherent using existing renderer inputs.
+2. [x] Make mood changes visible through distinct focused, curious, sleepy/tired, excited, and exhausted facial cues using existing renderer inputs.
 3. Verify RTC reminders expire and return to the current pet message.
 4. Measure frame timing and check flicker with Wi-Fi enabled.
 5. Keep display/network work non-blocking.

@@ -28,7 +28,7 @@ public:
 
     void begin(uint32_t now);
     bool restoreEnergy(uint8_t energy, uint32_t now);
-    void update(PetMode mode, uint32_t now, int8_t hour = -1);
+    void update(PetMode mode, uint32_t now, int8_t hour = -1, bool quietHours = false);
     void interact(PetMode mode, uint32_t now, uint8_t bond);
 
     const PetBehaviorState &state() const;
@@ -58,5 +58,5 @@ private:
     void selectMessage(PetMode mode, uint32_t now, int8_t hour);
     void updateEnergy(PetMode mode, uint32_t now);
     void updateMood(PetMode mode);
-    void updateSpontaneousEvent(PetMode mode, uint32_t now);
+    void updateSpontaneousEvent(PetMode mode, uint32_t now, bool quietHours);
 };

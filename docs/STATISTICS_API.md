@@ -67,6 +67,16 @@ Example shape (values are illustrative):
 - The current schema is versioned so a future dashboard can detect incompatible changes.
 
 
+## Timer settings API
+
+The local dashboard exposes a separate timer configuration API; it does not change the statistics payload schema.
+
+- `GET /api/timer-settings`: returns `workMinutes`, `playMinutes`, `napMinutes`, and `workCyclesBeforeLongRest`.
+- `POST /api/timer-settings`: accepts the same four form fields as URL-encoded values and applies them immediately.
+- Valid ranges: work 1–180 minutes, play 1–60 minutes, long rest 1–120 minutes, and 1–8 work sessions before a long rest.
+- Settings are stored as a versioned Preferences blob in the existing `petstats` namespace. Invalid or incompatible saved settings fall back to defaults (25/2/5 minutes and 3 work sessions).
+- Invalid or missing values return HTTP 400. A storage failure returns HTTP 500; an unavailable app returns HTTP 503.
+
 ## CSV export
 
 The `daily_csv` and `monthly_csv` commands print header rows and comma-separated numeric records. Copy only the content between the matching begin/end markers into a `.csv` file. The `dateKey` format is `YYYYMMDD`; `monthKey` is `YYYYMM`. Durations are milliseconds.

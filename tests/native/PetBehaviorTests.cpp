@@ -133,6 +133,36 @@ static void testTimeAwareMessages()
     assert(strcmp(mochi.state().message, pixel.state().message) != 0);
 }
 
+static void testTimeAwareMessageDoesNotRepeat()
+{
+    PetBehavior pet(0);
+    pet.update(PetMode::Work, 0, 8);
+    const std::string first = pet.state().message;
+    assert(first.find("morning") != std::string::npos);
+
+    // The message interval expires while the RTC hour is unchanged. The
+    // behavior engine should fall back to the personality pool, not repeat
+    // the same time-aware line.
+    pet.update(PetMode::Work, 45000UL, 8);
+    assert(std::string(pet.state().message) != first);
+}
+
+static void testSpontaneousEventsStayQuietDuringNap()
+{
+    PetBehavior pet(1);
+    pet.begin(0);
+    pet.update(PetMode::Nap, 90000UL);
+    const std::string napMessage = pet.state().message;
+    assert(napMessage == "A cozy little pause.");
+
+    // The overdue event is deferred during Nap, then becomes eligible only
+    // after its newly scheduled interval has elapsed in an active mode.
+    pet.update(PetMode::Work, 179999UL);
+    assert(std::string(pet.state().message) != "Just checking in, friend.");
+    pet.update(PetMode::Work, 180000UL);
+    assert(std::string(pet.state().message) == "Just checking in, friend.");
+}
+
 static void testEventExpiryAcrossMillisRollover()
 {
     const uint32_t start = UINT32_MAX - 20000UL;
@@ -281,6 +311,8 @@ int main()
     testPersonalityProfiles();
     testSpontaneousMessageExpires();
     testTimeAwareMessages();
+    testTimeAwareMessageDoesNotRepeat();
+    testSpontaneousEventsStayQuietDuringNap();
     testEventExpiryAcrossMillisRollover();
     testInvalidPersonalityFallsBackSafely();
     puts("PetBehavior native tests: PASS");

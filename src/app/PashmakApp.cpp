@@ -83,119 +83,82 @@ PashmakApp::StatsSummary PashmakApp::summarizeMonth(uint16_t year, uint8_t month
 String PashmakApp::statisticsToJson(uint8_t recentDays) const
 {
     const StatsSummary recent = summarizeRecentDays(recentDays);
+    const auto moodName = [](PetMood mood) -> const char *
+    {
+        switch (mood)
+        {
+        case PetMood::Happy: return "happy";
+        case PetMood::Focused: return "focused";
+        case PetMood::Sleepy: return "sleepy";
+        case PetMood::Curious: return "curious";
+        case PetMood::Excited: return "excited";
+        case PetMood::Tired: return "tired";
+        case PetMood::Exhausted: return "exhausted";
+        default: return "curious";
+        }
+    };
+
+    static const char *petNames[] = {"Pashmak", "Mochi", "Pixel"};
+    StatsJson::Pet pets[PET_COUNT]{};
+    for (uint8_t i = 0; i < PET_COUNT; ++i)
+    {
+        const PetBehaviorState &profile = _behaviors[i].state();
+        pets[i] = StatsJson::Pet{
+            i, profile.energy, petNames[i], moodName(profile.mood), profile.message};
+    }
+
+    const PetBehaviorState &active = _behaviors[_activePetId].state();
+    const StatsJson::Counters totals{
+        _workMs, _playMs, _napMs, _completedWorkSessions};
+    const StatsJson::Recent recentView{
+        recentDays,
+        recent.daysIncluded,
+        StatsJson::Counters{
+            recent.workMs,
+            recent.playMs,
+            recent.napMs,
+            recent.completedWorkSessions}};
+
+    StatsJson::DailyRecord daily[DAILY_HISTORY_DAYS]{};
+    for (uint8_t i = 0; i < _dailyHistoryCount; ++i)
+    {
+        const DailyStats &record = _dailyHistory[i];
+        daily[i] = StatsJson::DailyRecord{
+            record.dateKey,
+            record.workMs,
+            record.playMs,
+            record.napMs,
+            record.completedWorkSessions};
+    }
+
+    StatsJson::MonthlyRecord monthly[MONTHLY_HISTORY_MONTHS]{};
+    for (uint8_t i = 0; i < _monthlyHistoryCount; ++i)
+    {
+        const MonthlyStats &record = _monthlyHistory[i];
+        monthly[i] = StatsJson::MonthlyRecord{
+            record.monthKey,
+            record.workMs,
+            record.playMs,
+            record.napMs,
+            record.completedWorkSessions};
+    }
+
+    const StatsJson::Payload payload{
+        _activePetId,
+        pets,
+        PET_COUNT,
+        StatsJson::Pet{_activePetId, active.energy, nullptr, moodName(active.mood), active.message},
+        totals,
+        recentView,
+        daily,
+        _dailyHistoryCount,
+        monthly,
+        _monthlyHistoryCount};
 
     String json;
     json.reserve(180 + static_cast<size_t>(_dailyHistoryCount) * 100 +
                  static_cast<size_t>(_monthlyHistoryCount) * 140);
-
-    const PetBehaviorState &pet = _behaviors[_activePetId].state();
-    const char *mood = "curious";
-    switch (pet.mood)
-    {
-    case PetMood::Happy: mood = "happy"; break;
-    case PetMood::Focused: mood = "focused"; break;
-    case PetMood::Sleepy: mood = "sleepy"; break;
-    case PetMood::Curious: mood = "curious"; break;
-    case PetMood::Excited: mood = "excited"; break;
-    case PetMood::Tired: mood = "tired"; break;
-    case PetMood::Exhausted: mood = "exhausted"; break;
-    }
-
-    json += F("{\"version\":1,\"activePetId\":");
-    json += String(_activePetId);
-    json += F(",\"pets\":[");
-    const char *petNames[] = {"Pashmak", "Mochi", "Pixel"};
-    for (uint8_t i = 0; i < 3; ++i)
-    {
-        if (i > 0) json += ',';
-        const PetBehaviorState &profile = _behaviors[i].state();
-        const char *profileMood = "curious";
-        switch (profile.mood)
-        {
-        case PetMood::Happy: profileMood = "happy"; break;
-        case PetMood::Focused: profileMood = "focused"; break;
-        case PetMood::Sleepy: profileMood = "sleepy"; break;
-        case PetMood::Curious: profileMood = "curious"; break;
-        case PetMood::Excited: profileMood = "excited"; break;
-        case PetMood::Tired: profileMood = "tired"; break;
-        case PetMood::Exhausted: profileMood = "exhausted"; break;
-        }
-        json += F("{\"id\":"); json += String(i);
-        json += F(",\"name\":"); appendJsonString(json, petNames[i]);
-        json += F(",\"energy\":"); json += String(profile.energy);
-        json += F(",\"mood\":"); appendJsonString(json, profileMood);
-        json += F(",\"message\":");
-        appendJsonString(json, profile.message);
-        json += '}';
-    }
-    json += F("],\"pet\":{\"energy\":");
-    json += String(pet.energy);
-    json += F(",\"mood\":");
-    appendJsonString(json, mood);
-    json += F(",\"message\":");
-    appendJsonString(json, pet.message);
-    json += F("},\"totals\":{\"workMs\":");
-    json += String(static_cast<unsigned long long>(_workMs));
-    json += F(",\"playMs\":");
-    json += String(static_cast<unsigned long long>(_playMs));
-    json += F(",\"napMs\":");
-    json += String(static_cast<unsigned long long>(_napMs));
-    json += F(",\"completedWorkSessions\":");
-    json += String(static_cast<unsigned long>(_completedWorkSessions));
-    json += F("},\"recent\":{\"requestedDays\":");
-    json += String(recentDays);
-    json += F(",\"daysIncluded\":");
-    json += String(recent.daysIncluded);
-    json += F(",\"workMs\":");
-    json += String(static_cast<unsigned long long>(recent.workMs));
-    json += F(",\"playMs\":");
-    json += String(static_cast<unsigned long long>(recent.playMs));
-    json += F(",\"napMs\":");
-    json += String(static_cast<unsigned long long>(recent.napMs));
-    json += F(",\"completedWorkSessions\":");
-    json += String(static_cast<unsigned long>(recent.completedWorkSessions));
-    json += F("},\"dailyHistory\":[");
-
-    for (uint8_t i = 0; i < _dailyHistoryCount; ++i)
-    {
-        if (i > 0)
-            json += ',';
-
-        const DailyStats &day = _dailyHistory[i];
-        json += F("{\"dateKey\":");
-        json += String(static_cast<long>(day.dateKey));
-        json += F(",\"workMs\":");
-        json += String(static_cast<unsigned long>(day.workMs));
-        json += F(",\"playMs\":");
-        json += String(static_cast<unsigned long>(day.playMs));
-        json += F(",\"napMs\":");
-        json += String(static_cast<unsigned long>(day.napMs));
-        json += F(",\"completedWorkSessions\":");
-        json += String(day.completedWorkSessions);
-        json += '}';
-    }
-
-    json += F("],\"monthlyHistory\":[");
-    for (uint8_t i = 0; i < _monthlyHistoryCount; ++i)
-    {
-        if (i > 0)
-            json += ',';
-
-        const MonthlyStats &month = _monthlyHistory[i];
-        json += F("{\"monthKey\":");
-        json += String(static_cast<long>(month.monthKey));
-        json += F(",\"workMs\":");
-        json += String(static_cast<unsigned long long>(month.workMs));
-        json += F(",\"playMs\":");
-        json += String(static_cast<unsigned long long>(month.playMs));
-        json += F(",\"napMs\":");
-        json += String(static_cast<unsigned long long>(month.napMs));
-        json += F(",\"completedWorkSessions\":");
-        json += String(static_cast<unsigned long>(month.completedWorkSessions));
-        json += '}';
-    }
-
-    json += F("]}");
+    StatsJson::appendStatisticsJson(json, payload);
     return json;
 }
 

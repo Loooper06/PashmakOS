@@ -823,6 +823,88 @@ void WebDashboard::handleWifiSettingsPost()
         Serial.printf("[WEB] Wi-Fi settings updated; SSID: %s\n", ssid.c_str());
 }
 
+void WebDashboard::handleOtaUpload()
+{
+    HTTPUpload &upload = _server.upload();
+
+    switch (upload.status)
+    {
+    case UPLOAD_FILE_START:
+        _otaUploadStarted = false;
+        _otaUploadFailed = false;
+        _otaUploadBytes = 0;
+        if (!upload.filename.endsWith(".bin"))
+        {
+            _otaUploadFailed = true;
+            return;
+        }
+        if (!Update.begin(UPDATE_SIZE_UNKNOWN))
+        {
+            _otaUploadFailed = true;
+            return;
+        }
+        _otaUploadStarted = true;
+        break;
+
+    case UPLOAD_FILE_WRITE:
+        if (!_otaUploadStarted || _otaUploadFailed)
+            return;
+        if (Update.write(upload.buf, upload.currentSize) != upload.currentSize)
+        {
+            _otaUploadFailed = true;
+            Update.abort();
+            return;
+        }
+        _otaUploadBytes += upload.currentSize;
+        break;
+
+    case UPLOAD_FILE_END:
+        if (!_otaUploadStarted || _otaUploadFailed)
+        {
+            _otaUploadFailed = true;
+            if (_otaUploadStarted)
+                Update.abort();
+            return;
+        }
+        if (!Update.end(true))
+        {
+            _otaUploadFailed = true;
+            return;
+        }
+        _otaUploadBytes = upload.totalSize;
+        break;
+
+    case UPLOAD_FILE_ABORTED:
+        _otaUploadFailed = true;
+        if (_otaUploadStarted)
+            Update.abort();
+        break;
+
+    default:
+        break;
+    }
+}
+
+void WebDashboard::handleOtaComplete()
+{
+    if (!_otaUploadStarted || _otaUploadFailed || _otaUploadBytes == 0)
+    {
+        _server.sendHeader("Cache-Control", "no-store");
+        _server.send(400, "application/json; charset=utf-8",
+                     "{\"ok\":false,\"error\":\"Firmware update failed. Check the .bin image and available OTA partition, then retry.\"}");
+        _otaUploadStarted = false;
+        _otaUploadFailed = false;
+        _otaUploadBytes = 0;
+        return;
+    }
+
+    _server.sendHeader("Cache-Control", "no-store");
+    _server.send(200, "application/json; charset=utf-8",
+                 "{\"ok\":true,\"message\":\"Firmware verified. Device is restarting.\"}");
+    delay(800);
+    ESP.restart();
+}
+
 void WebDashboard::handleNotFound()
 {
     _server.send(404, "text/plain; charset=utf-8", "Not found");

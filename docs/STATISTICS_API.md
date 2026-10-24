@@ -115,3 +115,8 @@ The `daily_csv` and `monthly_csv` commands print header rows and comma-separated
 - Quiet hours are persisted in the `petstats` Preferences namespace using a separate versioned blob; this does not alter the timer-settings or statistics schema. Invalid or incompatible saved settings fall back to enabled 21:00–09:00 quiet hours.
 - Quiet hours suppress spontaneous pet messages and RTC reminders, including clearing an already visible spontaneous event. Ranges that cross midnight are supported (for example, 21 to 9). With quiet hours disabled, the existing RTC daytime restriction is not applied.
 - Invalid requests return HTTP 400, persistence failures return HTTP 500, and an unavailable app returns HTTP 503. RTC-dependent behavior requires a working DS3231.
+
+
+## System diagnostics API
+
+`GET /api/diagnostics` returns a non-persistent, read-only snapshot of runtime health. The response includes uptime in seconds, current/minimum free heap, largest allocatable heap block, free PSRAM, connected access-point clients, CPU frequency in MHz, and the ESP-IDF reset-reason code. Responses use `Cache-Control: no-store`. These values are live measurements; they are not a historical log and may change between requests. Reset-reason codes follow the ESP-IDF `esp_reset_reason()` enum for the target framework version.

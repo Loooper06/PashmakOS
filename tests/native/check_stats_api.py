@@ -5,7 +5,7 @@ from pathlib import Path
 root = Path(__file__).resolve().parents[2]
 source = (root / "src" / "app" / "PashmakApp.cpp").read_text(encoding="utf-8")
 start = source.find("String PashmakApp::statisticsToJson(")
-end = source.find("\\nvoid PashmakApp::begin()", start)
+end = source.find("\nvoid PashmakApp::begin()", start)
 if start < 0 or end < 0:
     raise SystemExit("statisticsToJson() implementation not found")
 

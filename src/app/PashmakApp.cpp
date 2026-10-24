@@ -326,11 +326,17 @@ void PashmakApp::persistPetProfiles(uint32_t now)
     PetProfileStorage stored{};
     stored.version = 1;
     stored.count = PET_COUNT;
+    bool changed = false;
     for (uint8_t i = 0; i < PET_COUNT; ++i)
     {
         stored.petIds[i] = i;
         stored.energy[i] = _behaviors[i].state().energy;
+        changed = changed || stored.energy[i] != _petProfileEnergy[i];
     }
+
+    // Avoid flash writes when every saved energy value is unchanged.
+    if (!changed)
+        return;
 
     if (_statsPreferences.putBytes("petProfile", &stored, sizeof(stored)) != sizeof(stored))
     {

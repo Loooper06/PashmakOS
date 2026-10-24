@@ -66,7 +66,7 @@ bool PashmakApp::setTimerSettings(const TimerSettings &settings)
     }
 
     _timerSettings = settings;
-    Serial.printf("[TIMER] Settings saved: work=%u min, play=%u min, nap=%u min, long-rest every %u work sessions.\\n",
+    Serial.printf("[TIMER] Settings saved: work=%u min, play=%u min, nap=%u min, long-rest every %u work sessions.\n",
                   _timerSettings.workMinutes, _timerSettings.playMinutes,
                   _timerSettings.napMinutes, _timerSettings.workCyclesBeforeLongRest);
     return true;
@@ -334,7 +334,7 @@ void PashmakApp::loadTimerSettings()
     }
 
     _timerSettings = stored.settings;
-    Serial.printf("[TIMER] Loaded settings: work=%u min, play=%u min, nap=%u min, long-rest every %u work sessions.\\n",
+    Serial.printf("[TIMER] Loaded settings: work=%u min, play=%u min, nap=%u min, long-rest every %u work sessions.\n",
                   _timerSettings.workMinutes, _timerSettings.playMinutes,
                   _timerSettings.napMinutes, _timerSettings.workCyclesBeforeLongRest);
 }

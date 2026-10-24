@@ -1,5 +1,7 @@
 # PashmakOS
 
+**Version:** 1.0.0 — see [CHANGELOG.md](CHANGELOG.md) for release notes.
+
 A local-first ESP32 desk companion with automatic work/play/nap cycles, three pet personalities, an ILI9341 TFT interface, DS3231 RTC reminders, and a local Wi-Fi statistics dashboard.
 
 ## Current capabilities
@@ -55,9 +57,9 @@ Open the serial monitor at **115200 baud**. Supported commands are documented in
 
 ## Hardware validation and release status
 
-CI verifies compilation and automated host-side checks; it cannot verify actual TFT behavior, RTC accuracy, Wi-Fi recovery, or persistence after physical power interruption. Run and record the checks in [Hardware smoke test checklist](docs/HARDWARE_SMOKE_TEST.md) before calling a physical build release-ready.
+The v1.0.0 release notes are recorded in [CHANGELOG.md](CHANGELOG.md), and the project version is tracked in [VERSION](VERSION). The firmware build and automated host-side checks passed in GitHub Actions. The project owner also reported that all checks in the [hardware smoke-test checklist](docs/HARDWARE_SMOKE_TEST.md) passed. CI alone cannot verify physical TFT behavior, RTC accuracy, Wi-Fi recovery, or persistence after power interruption.
 
-The project roadmap tracks implemented work, pending hardware checks, and future enhancements in [ROADMAP.md](ROADMAP.md). Do not treat a passing CI run as proof that physical-device checks have passed.
+See [ROADMAP.md](ROADMAP.md) for remaining enhancements and performance measurements. Change the default access-point password before sharing or deploying the device.
 
 ## Data and privacy
 

@@ -61,3 +61,6 @@ jobs:
 
       - name: Check embedded dashboard JavaScript
         run: python3 tests/native/check_dashboard_js.py
+
+      - name: Check statistics JSON API contract
+        run: python3 tests/native/check_stats_api.py

@@ -134,6 +134,38 @@ static void testTimeAwareMessages()
     assert(strcmp(mochi.state().message, pixel.state().message) != 0);
 }
 
+
+static void testTimeAwareMessagesRespectModeAndQuietHours()
+{
+    PetBehavior work(0);
+    PetBehavior play(0);
+    PetBehavior nap(0);
+    PetBehavior quiet(0);
+    work.begin(0);
+    play.begin(0);
+    nap.begin(0);
+    quiet.begin(0);
+
+    work.update(PetMode::Work, 0, 8, false);
+    play.update(PetMode::Play, 0, 8, false);
+    nap.update(PetMode::Nap, 0, 8, false);
+    quiet.update(PetMode::Work, 0, 8, true);
+
+    assert(strstr(work.state().message, "morning") != nullptr);
+    assert(strstr(play.state().message, "morning") != nullptr);
+    assert(strcmp(work.state().message, play.state().message) != 0);
+    assert(strcmp(nap.state().message, "Time for a Proper Break.") == 0);
+    assert(strcmp(quiet.state().message, "Let's Focus, Engineer!") == 0);
+}
+
+static void testQuietHoursDoNotShowLateTimeAwareLines()
+{
+    PetBehavior quiet(2);
+    quiet.begin(0);
+    quiet.update(PetMode::Work, 45000UL, 22, true);
+    assert(strcmp(quiet.state().message, "Task mode: ON.") == 0);
+}
+
 static void testTimeAwareMessageDoesNotRepeat()
 {
     PetBehavior pet(0);
@@ -465,6 +497,8 @@ int main()
     testPersonalityProfiles();
     testSpontaneousMessageExpires();
     testTimeAwareMessages();
+    testTimeAwareMessagesRespectModeAndQuietHours();
+    testQuietHoursDoNotShowLateTimeAwareLines();
     testTimeAwareMessageDoesNotRepeat();
     testLowEnergyWarningsAreNotReplacedByRepeatFallback();
     testSpontaneousEventsStayQuietDuringNap();

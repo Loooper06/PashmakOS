@@ -5,6 +5,7 @@ All notable changes to PashmakOS are documented here.
 ## [Unreleased]
 
 ### Added
+- Improve narrow-screen dashboard layout: responsive header actions, full-width pet cards, settings controls, and status panels; keep action buttons touch-friendly.
 - Show each pet's bond tier and progress directly in the dashboard pet picker.
 - Add a per-pet energy progress bar and mood summary to the dashboard picker, alongside bond progression and accessible state details.
 

@@ -11,6 +11,21 @@ match = re.search(r"<script>\s*(.*?)\s*</script>", source, flags=re.DOTALL)
 if not match:
     raise SystemExit("Dashboard script block not found in WebDashboard.cpp")
 
+style_match = re.search(r"<style>\s*(.*?)\s*</style>", source, flags=re.DOTALL)
+if not style_match:
+    raise SystemExit("Dashboard style block not found in WebDashboard.cpp")
+
+required_css_fragments = (
+    "@media(max-width:600px)",
+    "header>div:last-child{display:grid",
+    '.grid>article[style*="grid-column:span 2"]{grid-column:1/-1!important}',
+    "button{min-height:44px}",
+    "@media(max-width:380px)",
+)
+for fragment in required_css_fragments:
+    if fragment not in style_match.group(1):
+        raise SystemExit(f"Dashboard responsive CSS check failed: missing {fragment!r}")
+
 required_fragments = (
     r"if(/^[\s\u0000-\u001f]*[=+@-]/.test(text))",
     r"join('\r\n')",

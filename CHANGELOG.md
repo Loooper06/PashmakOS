@@ -12,6 +12,7 @@ First consolidated stable candidate after firmware integration, automated CI val
 - DS3231 RTC service and scheduled reminders, including Persian RTL text rendering.
 - Local Wi-Fi dashboard for pet status, energy, mood, lifetime counters, activity, and daily/monthly history.
 - Configurable daily focus-session goal with progress feedback, completion status, and browser-local persistence.
+- Dashboard achievement badges for focus-session milestones, daily goal completion, and balanced activity.
 - CSV export and serial statistics/diagnostic commands.
 - Preferences/NVS persistence for counters and bounded history.
 - Native tests for behavior timing, calendar validation, statistics aggregation, and JSON serialization.

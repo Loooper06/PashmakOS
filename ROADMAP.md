@@ -93,3 +93,32 @@ Acceptance: repeatable tests, passing CI, clear setup docs, no unverified claims
 - After each commit, inspect source/diff, check CI, and list remaining physical ESP32 tests.
 - Do not casually change the renderer or pin assignments.
 - Update this roadmap only when a phase completes or priorities materially change.
+
+---
+
+## Roadmap for the next product features
+
+This sequence supplements the existing engineering roadmap above. Each feature phase gets its own branch and pull request. A phase is marked complete only after both CI jobs pass, the user confirms the physical ESP32 test, and the PR is merged.
+
+| Feature phase | Scope | Status |
+|---:|---|---|
+| 1 | Distinct personalities: voice plus per-pet energy dynamics | In progress |
+| 2 | Direct interaction with the pet | Planned |
+| 3 | Pet needs: energy, happiness, and bond model | Planned |
+| 4 | Achievements and persistent progression | Planned |
+| 5 | Complete Pomodoro flow and work/rest cycle controls | Planned |
+| 6 | Persistent settings through the dashboard | Planned |
+| 7 | Activity statistics and history improvements | Planned |
+| 8 | Day/night behavior using the RTC | Planned |
+| 9 | Dashboard health and network recovery improvements | Planned |
+| 10 | Customizable themes and accessories | Planned |
+| 11 | Stability and recovery regression suite | Planned |
+
+### Feature phase 1 — acceptance criteria
+
+- [ ] Pashmak, Mochi, and Pixel differ in energy consumption and recovery, not only in their messages.
+- [ ] Energy remains within 0–100 for long delays and all supported modes.
+- [ ] Mode switches and millis() rollover remain safe.
+- [ ] Native behavior/dashboard CI and ESP32 firmware build both pass.
+- [ ] User confirms the physical ESP32/TFT behavior.
+- [ ] After confirmation, this phase is marked complete and its PR is merged.

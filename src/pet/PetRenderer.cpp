@@ -374,8 +374,8 @@ void PetRenderer::drawDog(Display &d, PetMode mode, uint32_t frame, uint8_t petI
         else
         {
             // A soft upper lid makes low-energy moods visibly drowsy.
-            d.fillEllipse(cx - 17 + pose.gazeX, cy - 6, 9, 4, fur);
-            d.fillEllipse(cx + 17 + pose.gazeX, cy - 6, 9, 4, fur);
+            d.fillEllipse(cx - 17 + pose.gazeX, cy - 3, 9, 5, fur);
+            d.fillEllipse(cx + 17 + pose.gazeX, cy - 3, 9, 5, fur);
         }
         if (happyMood && !pose.moving)
         {
@@ -464,7 +464,19 @@ void PetRenderer::drawDog(Display &d, PetMode mode, uint32_t frame, uint8_t petI
         d.drawLine(205, 106, 211, 106, WHITE);
     }
 
-    if (sleeping)
+    if (sleepyEyes && !attentionActive)
+    {
+        // Low-energy moods get a small, floating sleep cue. Its four-step
+        // rise animation is frame-driven and uses only fixed-size drawing.
+        const uint8_t sleepPhase = static_cast<uint8_t>((frame / 8U) % 4U);
+        const int8_t rise = sleepPhase == 0U ? 0
+                          : sleepPhase == 1U ? -2
+                          : sleepPhase == 2U ? -4 : -2;
+        d.drawText("z", 210, 65 + rise, 1, WHITE);
+        d.drawText("Z", 225, 50 + rise, 2, WHITE);
+        d.fillCircle(202, 57 + rise, 2, STAGE_ACCENT);
+    }
+    else if (sleeping)
     {
         d.drawText("Z", 207, 65, 2, WHITE);
         d.drawText("z", 224, 51, 1, WHITE);
@@ -539,7 +551,9 @@ void PetRenderer::draw(Display &d, PetMode mode, uint32_t frame, uint8_t petId, 
         pose.leftEarX != _lastDogLeftEarX ||
         pose.rightEarX != _lastDogRightEarX ||
         attentionActive != _lastAttentionActive ||
-        (attentionActive && attentionPhase != _lastAttentionPhase);
+        (attentionActive && attentionPhase != _lastAttentionPhase) ||
+        ((mood == PetMood::Sleepy || mood == PetMood::Tired || mood == PetMood::Exhausted) &&
+         static_cast<uint8_t>((frame / 8U) % 4U) != _lastSleepEffectPhase);
 
     if (!dogChanged)
         return;
@@ -561,5 +575,6 @@ void PetRenderer::draw(Display &d, PetMode mode, uint32_t frame, uint8_t petId, 
     _lastDogRightEarX = pose.rightEarX;
     _lastAttentionActive = attentionActive;
     _lastAttentionPhase = attentionPhase;
+    _lastSleepEffectPhase = static_cast<uint8_t>((frame / 8U) % 4U);
     _dogInitialized = true;
 }

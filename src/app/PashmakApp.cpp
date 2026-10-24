@@ -206,8 +206,17 @@ bool PashmakApp::controlTimer(TimerCommand command, uint32_t now)
         if (_timerPaused)
             return true;
         {
-            const uint32_t duration = durationFor(_mode);
-            _pausedRemainingMs = PomodoroTimer::remainingAtPause(now, _modeStartedAt, duration);
+            uint32_t duration = durationFor(_mode);
+            uint32_t remaining = PomodoroTimer::remainingAtPause(now, _modeStartedAt, duration);
+            if (remaining == 0)
+            {
+                // If the deadline passed just before this request was handled,
+                // finish that phase first instead of freezing the timer at 00:00.
+                updateAutomaticMode(now);
+                duration = durationFor(_mode);
+                remaining = duration;
+            }
+            _pausedRemainingMs = remaining > duration ? duration : remaining;
             _timerPaused = true;
             _lastWorkTick = now;
             Serial.printf("[TIMER] Paused with %lu ms remaining.\n",
@@ -449,6 +458,12 @@ void PashmakApp::begin()
     }
 
     loadTimerSettings();
+    // A reboot must not silently consume a focus session. Start from a full,
+    // paused work phase and require an explicit dashboard Start / Resume action.
+    _mode = PetMode::Work;
+    _modeStartedAt = now;
+    _timerPaused = true;
+    _pausedRemainingMs = static_cast<uint32_t>(_timerSettings.workMinutes) * 60000UL;
     loadQuietHoursSettings();
     loadReminderSettings();
     loadPetProfiles();

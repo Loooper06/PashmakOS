@@ -54,6 +54,7 @@ public:
     bool setActivePet(uint8_t petId);
     bool interactWithActivePet(uint32_t now);
     uint8_t activePetId() const;
+    uint8_t petBond(uint8_t petId) const;
     TimerSettings timerSettings() const;
     bool setTimerSettings(const TimerSettings &settings);
     uint8_t dailyHistoryCount() const;

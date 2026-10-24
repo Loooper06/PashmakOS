@@ -86,6 +86,14 @@ footer{margin-top:18px;color:var(--muted);font-size:.82rem}
 <article class="insight-card"><div class="label">Sessions completed</div><div id="insight-sessions" class="insight-value">—</div><div class="insight-caption">Across the same period</div></article>
 </div>
 </section>
+<section class="card section" aria-labelledby="goal-streak-heading">
+<h2 id="goal-streak-heading">Daily goal streak</h2>
+<div class="goal-layout">
+<div><div id="goal-streak-count" class="metric">— days</div><div id="goal-streak-status" class="goal-status" role="status" aria-live="polite">Waiting for activity data…</div></div>
+<div class="insight-card" style="min-width:150px"><div class="label">Daily target</div><div id="goal-streak-target" class="insight-value">4 sessions</div><div class="insight-caption">Uses your configured daily goal</div></div>
+</div>
+<p class="muted">Counts consecutive retained calendar days, ending at the latest recorded day, that met your session target. Up to 14 days are available.</p>
+</section>
 <section class="card section" aria-labelledby="achievements-heading"><h2 id="achievements-heading">Achievements</h2><p id="achievement-summary" class="muted">Achievements unlock as you build your focus habit.</p><div id="achievement-grid" class="achievement-grid" aria-live="polite"></div></section>
 <section class="card section"><h2>Recent activity</h2><div class="pills"><button data-days="1">Today / latest day</button><button data-days="7">7 days</button><button data-days="14">14 days</button></div>
 <div class="grid">
@@ -111,6 +119,32 @@ function saveDailyGoal(){const value=Number($('daily-goal-target').value);if(!Nu
 function downloadCsv(filename,headers,records){const quote=value=>{let text=String(value??'');if(/^[\s\u0000-\u001f]*[=+@-]/.test(text))text="'"+text;return '"'+text.replace(/"/g,'""')+'"'};const csv=[headers,...records].map(record=>record.map(quote).join(',')).join('\r\n');const blob=new Blob(['\ufeff',csv],{type:'text/csv;charset=utf-8;'});const url=URL.createObjectURL(blob);const link=document.createElement('a');link.href=url;link.download=filename;document.body.appendChild(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),1000)}
 function row(values){const tr=document.createElement('tr');values.forEach(v=>{const td=document.createElement('td');td.textContent=v;tr.appendChild(td)});return tr}
 const petProfiles={0:{emoji:'🐶',tag:'Classic companion',color:'#c6a7ff',tint:'#4b3b67'},1:{emoji:'🐾',tag:'Soft & cozy',color:'#8fe0d0',tint:'#244d4b'},2:{emoji:'✨',tag:'Pixel buddy',color:'#ffbf86',tint:'#5b4030'}};
+function renderGoalStreak(data){
+ const records=Array.isArray(data.dailyHistory)?data.dailyHistory:[];
+ const goal=dailySessionGoal;
+ let streak=0;
+ let previousDay=null;
+ for(let i=records.length-1;i>=0;i--){
+  const record=records[i];
+  const key=String(record.dateKey);
+  const date=new Date(Date.UTC(Number(key.slice(0,4)),Number(key.slice(4,6))-1,Number(key.slice(6,8))));
+  const day=date.getTime();
+  if(previousDay!==null&&previousDay-day!==86400000)break;
+  if(Number(record.completedWorkSessions||0)<goal)break;
+  streak++;
+  previousDay=day;
+ }
+ metric('goal-streak-count',streak+' day'+(streak===1?'':'s'));
+ metric('goal-streak-target',goal+' session'+(goal===1?'':'s'));
+ const latest=records.length?records[records.length-1]:null;
+ if(!latest){
+  $('goal-streak-status').textContent='No daily history recorded yet.';
+ }else if(streak>0){
+  $('goal-streak-status').textContent='Goal met on '+streak+' consecutive recorded day'+(streak===1?'':'s')+', ending '+dateLabel(latest.dateKey)+'.';
+ }else{
+  $('goal-streak-status').textContent='The latest recorded day has not met the '+goal+'-session target yet.';
+ }
+}
 function renderFocusInsights(data){
  const records=(Array.isArray(data.dailyHistory)?data.dailyHistory:[]).slice(-7);
  const totalWork=records.reduce((sum,d)=>sum+Number(d.workMs||0),0);
@@ -124,7 +158,7 @@ function renderFocusInsights(data){
  $('insight-sessions').textContent=records.length?totalSessions.toLocaleString():'—';
  $('focus-insights-summary').textContent=records.length?'Based on '+records.length+' latest retained day(s). Insights are calculated locally from device history.': 'No daily history is available yet. Insights will appear after activity is recorded.';
 }
-function render(data){snapshot=data;renderDailyGoal(data);renderAchievements(data);renderFocusInsights(data);const pets=Array.isArray(data.pets)?data.pets:[];const picker=$('pet-picker');picker.replaceChildren();pets.forEach(p=>{const id=Number(p.id),profile=petProfiles[id]||{emoji:'🐾',tag:'Companion',color:'#b9a0ff',tint:'#39314d'},active=Number(p.id)===Number(data.activePetId);const b=document.createElement('button');b.type='button';b.className='pet-option';b.style.setProperty('--pet-color',profile.color);b.style.setProperty('--pet-tint',profile.tint);b.setAttribute('aria-pressed',String(active));b.setAttribute('aria-label','Select '+p.name+(active?', currently active':''));const avatar=document.createElement('span');avatar.className='pet-avatar';avatar.setAttribute('aria-hidden','true');avatar.textContent=profile.emoji;const copy=document.createElement('span');copy.className='pet-option-copy';const name=document.createElement('span');name.className='pet-option-name';name.textContent=p.name;const tag=document.createElement('span');tag.className='pet-option-meta';tag.textContent=profile.tag;copy.append(name,tag);const state=document.createElement('span');state.className='pet-selected';state.textContent=active?'ACTIVE':'SELECT';b.append(avatar,copy,state);b.addEventListener('click',()=>selectPet(id));picker.appendChild(b)});const active=pets.find(p=>Number(p.id)===Number(data.activePetId));$('pet-heading').textContent='Pet status'+(active?' · '+active.name:'');const pet=data.pet||{};const energy=Math.max(0,Math.min(100,Number(pet.energy||0)));metric('pet-energy',energy+'%');metric('pet-mood',String(pet.mood||'unknown').replace(/\b\w/g,ch=>ch.toUpperCase()));metric('pet-message',pet.message||'No message yet.');$('pet-energy-bar').style.width=energy+'%';const bond=Math.max(0,Math.min(100,Number(pet.bond||0)));metric('pet-bond',bond+' / 100');$('pet-bond-fill').style.width=bond+'%';$('pet-bond-progress').setAttribute('aria-valuenow',String(bond));const t=data.totals||{};metric('total-work',duration(t.workMs));metric('total-play',duration(t.playMs));metric('total-nap',duration(t.napMs));metric('total-sessions',Number(t.completedWorkSessions||0).toLocaleString());
+function render(data){snapshot=data;renderDailyGoal(data);renderGoalStreak(data);renderAchievements(data);renderFocusInsights(data);const pets=Array.isArray(data.pets)?data.pets:[];const picker=$('pet-picker');picker.replaceChildren();pets.forEach(p=>{const id=Number(p.id),profile=petProfiles[id]||{emoji:'🐾',tag:'Companion',color:'#b9a0ff',tint:'#39314d'},active=Number(p.id)===Number(data.activePetId);const b=document.createElement('button');b.type='button';b.className='pet-option';b.style.setProperty('--pet-color',profile.color);b.style.setProperty('--pet-tint',profile.tint);b.setAttribute('aria-pressed',String(active));b.setAttribute('aria-label','Select '+p.name+(active?', currently active':''));const avatar=document.createElement('span');avatar.className='pet-avatar';avatar.setAttribute('aria-hidden','true');avatar.textContent=profile.emoji;const copy=document.createElement('span');copy.className='pet-option-copy';const name=document.createElement('span');name.className='pet-option-name';name.textContent=p.name;const tag=document.createElement('span');tag.className='pet-option-meta';tag.textContent=profile.tag;copy.append(name,tag);const state=document.createElement('span');state.className='pet-selected';state.textContent=active?'ACTIVE':'SELECT';b.append(avatar,copy,state);b.addEventListener('click',()=>selectPet(id));picker.appendChild(b)});const active=pets.find(p=>Number(p.id)===Number(data.activePetId));$('pet-heading').textContent='Pet status'+(active?' · '+active.name:'');const pet=data.pet||{};const energy=Math.max(0,Math.min(100,Number(pet.energy||0)));metric('pet-energy',energy+'%');metric('pet-mood',String(pet.mood||'unknown').replace(/\b\w/g,ch=>ch.toUpperCase()));metric('pet-message',pet.message||'No message yet.');$('pet-energy-bar').style.width=energy+'%';const bond=Math.max(0,Math.min(100,Number(pet.bond||0)));metric('pet-bond',bond+' / 100');$('pet-bond-fill').style.width=bond+'%';$('pet-bond-progress').setAttribute('aria-valuenow',String(bond));const t=data.totals||{};metric('total-work',duration(t.workMs));metric('total-play',duration(t.playMs));metric('total-nap',duration(t.napMs));metric('total-sessions',Number(t.completedWorkSessions||0).toLocaleString());
 const days=(data.dailyHistory||[]).slice(-selectedDays);const recent=days.reduce((a,d)=>{a.workMs+=Number(d.workMs||0);a.playMs+=Number(d.playMs||0);a.napMs+=Number(d.napMs||0);a.completedWorkSessions+=Number(d.completedWorkSessions||0);return a},{workMs:0,playMs:0,napMs:0,completedWorkSessions:0});
 metric('recent-work',duration(recent.workMs));metric('recent-play',duration(recent.playMs));metric('recent-nap',duration(recent.napMs));metric('recent-sessions',recent.completedWorkSessions.toLocaleString());$('recent-note').textContent='Showing '+days.length+' retained day(s).';
 const trend=$('activity-trend');trend.replaceChildren();const maxActivity=Math.max(1,...days.map(d=>Math.max(Number(d.workMs||0),Number(d.playMs||0),Number(d.napMs||0))));if(!days.length){const empty=document.createElement('div');empty.className='chart-empty';empty.textContent='No activity recorded for this period yet.';trend.appendChild(empty)}else{days.forEach(d=>{const item=document.createElement('div');item.className='trend-row';const date=document.createElement('div');date.className='trend-date';date.textContent=dateLabel(d.dateKey);const bars=document.createElement('div');bars.className='trend-bars';[['workMs','trend-work','Work'],['playMs','trend-play','Play'],['napMs','trend-nap','Nap']].forEach(([key,cls,label])=>{const track=document.createElement('div');track.className='trend-track';track.title=label+': '+duration(d[key]);track.setAttribute('aria-label',label+': '+duration(d[key]));const fill=document.createElement('div');fill.className='trend-fill '+cls;fill.style.width=Math.max(0,Math.min(100,Number(d[key]||0)/maxActivity*100))+'%';track.appendChild(fill);bars.appendChild(track)});item.append(date,bars);trend.appendChild(item)})}

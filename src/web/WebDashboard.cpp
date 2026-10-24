@@ -75,7 +75,7 @@ if(!daily.children.length)daily.appendChild(row(['No daily records yet','—','�
 const monthly=$('monthly');monthly.replaceChildren();(data.monthlyHistory||[]).slice().reverse().forEach(m=>monthly.appendChild(row([monthLabel(m.monthKey),duration(m.workMs),duration(m.playMs),duration(m.napMs),m.completedWorkSessions])));
 if(!monthly.children.length)monthly.appendChild(row(['No monthly records yet','—','—','—','—']));
 $('connection').textContent='Connected · updated '+new Date().toLocaleTimeString();lastUpdatedAt=Date.now();$('export-daily').disabled=!(data.dailyHistory||[]).length;$('export-monthly').disabled=!(data.monthlyHistory||[]).length;}
-function isCounter(value){return Number.isFinite(Number(value))&&Number(value)>=0}
+function isCounter(value){return value!==null&&value!==undefined&&value!==''&&Number.isFinite(Number(value))&&Number(value)>=0}
 function isRecord(record,key){return !!record&&Number.isInteger(Number(record[key]))&&Number(record[key])>0&&isCounter(record.workMs)&&isCounter(record.playMs)&&isCounter(record.napMs)&&isCounter(record.completedWorkSessions)}
 function isValidStats(data){
  if(!data||typeof data!=='object'||data.version!==1)return false;

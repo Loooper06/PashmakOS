@@ -107,13 +107,13 @@ void PetBehavior::begin(uint32_t now)
     _initialized = true;
 }
 
-void PetBehavior::update(PetMode mode, uint32_t now)
+void PetBehavior::update(PetMode mode, uint32_t now, int8_t hour)
 {
     if (!_initialized)
     {
         begin(now);
         _lastMode = mode;
-        selectMessage(mode, now);
+        selectMessage(mode, now, hour);
         updateMood(mode);
         return;
     }
@@ -209,11 +209,14 @@ void PetBehavior::updateMood(PetMode mode)
     }
 }
 
-void PetBehavior::selectMessage(PetMode mode, uint32_t now)
+void PetBehavior::selectMessage(PetMode mode, uint32_t now, int8_t hour)
 {
     (void)now;
 
     const MessageProfile &profile = PROFILES[_personalityId];
+    // Add occasional time-aware lines without replacing each pet's personality.
+    const bool timeMessage = hour >= 0 && hour <= 23 &&
+                             (_workMessageIndex + _napMessageIndex + _playMessageIndex) % 3 == 0;
     if (_state.energy <= 10)
     {
         _baseMessage = "I need a longer rest.";
@@ -221,6 +224,33 @@ void PetBehavior::selectMessage(PetMode mode, uint32_t now)
     else if (_state.energy <= 30)
     {
         _baseMessage = "I'm getting tired.";
+    }
+    else if (timeMessage && hour >= 6 && hour < 11)
+    {
+        switch (_personalityId)
+        {
+        case 1: _baseMessage = "Good morning. Take it gently."; break;
+        case 2: _baseMessage = "Boot sequence: good morning!"; break;
+        default: _baseMessage = "Good morning, Engineer!"; break;
+        }
+    }
+    else if (timeMessage && hour >= 21)
+    {
+        switch (_personalityId)
+        {
+        case 1: _baseMessage = "It's late. Be kind to yourself."; break;
+        case 2: _baseMessage = "Night mode recommended."; break;
+        default: _baseMessage = "Late session? Remember to rest."; break;
+        }
+    }
+    else if (timeMessage && hour >= 12 && hour < 14)
+    {
+        switch (_personalityId)
+        {
+        case 1: _baseMessage = "A calm midday pause is welcome."; break;
+        case 2: _baseMessage = "Midday checkpoint."; break;
+        default: _baseMessage = "A little midday reset helps."; break;
+        }
     }
     else
     {

@@ -262,7 +262,11 @@ void PetRenderer::drawDog(Display &d, PetMode mode, uint32_t frame, uint8_t petI
     const bool sleepyEyes = mood == PetMood::Sleepy || mood == PetMood::Tired || mood == PetMood::Exhausted;
     const bool happyMood = mood == PetMood::Happy || mood == PetMood::Excited;
 
-    const DogPose pose = getDogPose(mode, frame);
+    DogPose pose = getDogPose(mode, frame);
+    const uint8_t moodEffectPhase = static_cast<uint8_t>((frame / 6U) % 4U);
+    const bool happyBounce = happyMood && !pose.moving && !attentionActive;
+    if (happyBounce && (moodEffectPhase == 1U || moodEffectPhase == 2U))
+        pose.bob = static_cast<int8_t>(pose.bob - 3);
 
     const int16_t cx = 160;
     d.setDogPosition(pose.travelX, 0);
@@ -454,6 +458,31 @@ void PetRenderer::drawDog(Display &d, PetMode mode, uint32_t frame, uint8_t petI
         }
     }
 
+    if (mood == PetMood::Curious && !attentionActive)
+    {
+        // Curious pets briefly show motion marks above the ears.
+        const int8_t lift = moodEffectPhase == 1U ? -2 : 0;
+        d.drawLine(126, 51 + lift, 121, 45 + lift, WHITE);
+        d.drawLine(194, 45 + lift, 199, 51 + lift, WHITE);
+        d.fillCircle(160, 42 + lift, 2, STAGE_ACCENT);
+    }
+    else if (happyMood && !pose.moving && !attentionActive)
+    {
+        // A small pair of sparkles reinforces the happy bounce.
+        const int8_t sparkleY = (moodEffectPhase == 1U || moodEffectPhase == 2U) ? -3 : 0;
+        d.drawLine(105, 91 + sparkleY, 105, 99 + sparkleY, WHITE);
+        d.drawLine(101, 95 + sparkleY, 109, 95 + sparkleY, WHITE);
+        d.drawLine(215, 91 - sparkleY, 215, 99 - sparkleY, WHITE);
+        d.drawLine(211, 95 - sparkleY, 219, 95 - sparkleY, WHITE);
+    }
+    else if (mood == PetMood::Exhausted && !attentionActive)
+    {
+        // A tiny tear on the cheek makes critical low energy read as sadness.
+        const int8_t tearOffset = (moodEffectPhase == 1U || moodEffectPhase == 2U) ? 2 : 0;
+        d.fillCircle(111, cy + 8 + tearOffset, 2, STAGE_ACCENT);
+        d.fillTriangle(109, cy + 8 + tearOffset, 113, cy + 8 + tearOffset, 111, cy + 13 + tearOffset, STAGE_ACCENT);
+    }
+
     if (playing)
     {
         d.fillCircle(111, 113, 2, cream);
@@ -534,7 +563,15 @@ void PetRenderer::draw(Display &d, PetMode mode, uint32_t frame, uint8_t petId, 
 
     drawMessage(d, message);
 
-    const DogPose pose = getDogPose(mode, frame);
+    DogPose pose = getDogPose(mode, frame);
+    const uint8_t moodEffectPhase = static_cast<uint8_t>((frame / 6U) % 4U);
+    const bool happyBounce = (mood == PetMood::Happy || mood == PetMood::Excited) &&
+                             !pose.moving && !attentionActive;
+    if (happyBounce && (moodEffectPhase == 1U || moodEffectPhase == 2U))
+        pose.bob = static_cast<int8_t>(pose.bob - 3);
+    const bool moodEffectActive =
+        mood == PetMood::Happy || mood == PetMood::Excited ||
+        mood == PetMood::Curious || mood == PetMood::Exhausted;
     const bool dogChanged =
         !_dogInitialized ||
         petId != _lastDogPetId ||
@@ -553,7 +590,8 @@ void PetRenderer::draw(Display &d, PetMode mode, uint32_t frame, uint8_t petId, 
         attentionActive != _lastAttentionActive ||
         (attentionActive && attentionPhase != _lastAttentionPhase) ||
         ((mood == PetMood::Sleepy || mood == PetMood::Tired || mood == PetMood::Exhausted) &&
-         static_cast<uint8_t>((frame / 8U) % 4U) != _lastSleepEffectPhase);
+         static_cast<uint8_t>((frame / 8U) % 4U) != _lastSleepEffectPhase) ||
+        (moodEffectActive && moodEffectPhase != _lastMoodEffectPhase);
 
     if (!dogChanged)
         return;
@@ -576,5 +614,6 @@ void PetRenderer::draw(Display &d, PetMode mode, uint32_t frame, uint8_t petId, 
     _lastAttentionActive = attentionActive;
     _lastAttentionPhase = attentionPhase;
     _lastSleepEffectPhase = static_cast<uint8_t>((frame / 8U) % 4U);
+    _lastMoodEffectPhase = moodEffectPhase;
     _dogInitialized = true;
 }

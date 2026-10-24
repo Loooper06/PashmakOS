@@ -1,5 +1,6 @@
 #include "../../src/pet/PetBehavior.h"
 #include "../../src/core/JsonEscape.h"
+#include "../../src/core/HistoryDate.h"
 #include <string>
 #include <assert.h>
 #include <stdio.h>
@@ -160,6 +161,7 @@ static void testInvalidPersonalityFallsBackSafely()
 int main()
 {
     testJsonStringEscaping();
+    testHistoryDateValidation();
     testEnergyBoundsAndRates();
     testMillisRollover();
     testPersonalityProfiles();

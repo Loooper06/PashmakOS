@@ -36,7 +36,7 @@ bool PashmakApp::setActivePet(uint8_t petId)
     return true;
 }
 
-bool PashmakApp::interactWithActivePet(uint32_t now)
+bool PashmakApp::interactWithActivePet(uint32_t now, PetInteraction interaction)
 {
     if (_activePetId >= PET_COUNT)
         return false;
@@ -65,7 +65,7 @@ bool PashmakApp::interactWithActivePet(uint32_t now)
             Serial.printf("[BOND] Failed to persist bond for pet %u.\n", petId);
     }
 
-    _behaviors[petId].interact(_mode, now, _petBond[petId]);
+    _behaviors[petId].interact(_mode, now, _petBond[petId], interaction);
     Serial.printf("[BOND] Pet %u interaction; bond=%u/100.\n", petId, _petBond[petId]);
     return true;
 }

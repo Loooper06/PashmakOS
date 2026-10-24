@@ -133,3 +133,14 @@ This sequence supplements the existing engineering roadmap above. Each feature p
 - [x] ESP32 firmware build and native behavior/dashboard CI passed for PR #45.
 - [x] User confirmed successful physical ESP32/TFT validation.
 - [x] Implementation PR #45 merged; phase completed.
+
+### Feature phase 3 — pet needs: energy, happiness, and bond
+
+- [x] Keep energy, happiness, and bond as separate 0–100 values with distinct meanings.
+- [x] Happiness decreases slowly during Work, recovers during Play and Nap, and increases on affection/playful/comfort interactions.
+- [x] Persist happiness with per-pet profiles using a version-2 record; legacy version-1 energy records remain readable and receive a safe happiness default.
+- [x] Expose happiness in the version-2 statistics API and render active-pet and per-pet dashboard meters.
+- [x] Native tests cover happiness rates, bounds, interaction gains, and API serialization; dashboard contract checks cover validation, rendering, and persistence migration.
+- [ ] ESP32 firmware build and native/dashboard CI pass for the implementation PR.
+- [ ] User confirms happiness changes, interaction gains, and persistence after reboot on physical ESP32/TFT.
+- [ ] Implementation PR merged; phase completed.

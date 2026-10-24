@@ -14,3 +14,10 @@ trap 'rm -f "$BIN" "$ACH_BIN"' EXIT
   "$ROOT/tests/native/AchievementProgressTests.cpp" \
   -o "$ACH_BIN"
 "$ACH_BIN"
+
+TIMER_BIN="$(mktemp)"
+trap 'rm -f "$BIN" "$ACH_BIN" "$TIMER_BIN"' EXIT
+"${CXX:-c++}" -std=c++17 -Wall -Wextra -Werror \
+  "$ROOT/tests/native/PomodoroTimerTests.cpp" \
+  -o "$TIMER_BIN"
+"$TIMER_BIN"

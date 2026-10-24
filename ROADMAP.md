@@ -106,8 +106,8 @@ This sequence supplements the existing engineering roadmap above. Each feature p
 | 2 | Direct interaction with the pet | Completed (PR #45) |
 | 3 | Pet needs: energy, happiness, and bond model | Completed (PR #47) |
 | 4 | Achievements and persistent progression | Completed (PR #48) |
-| 5 | Complete Pomodoro flow and work/rest cycle controls | In progress (PR pending) |
-| 6 | Persistent settings through the dashboard | Planned |
+| 5 | Complete Pomodoro flow and work/rest cycle controls | Completed (PR #49) |
+| 6 | Persistent settings through the dashboard | In progress (PR pending) |
 | 7 | Activity statistics and history improvements | Planned |
 | 8 | Day/night behavior using the RTC | Planned |
 | 9 | Dashboard health and network recovery improvements | Planned |
@@ -169,4 +169,17 @@ This sequence supplements the existing engineering roadmap above. Each feature p
 - [ ] Add native tests for phase transitions, pause/resume elapsed-time accounting, reset/skip behavior, rollover, cycle-to-long-break logic, and duplicate completion; add dashboard contract tests for action validation and timer rendering.
 - [ ] ESP32 firmware build and native/dashboard CI pass for the implementation PR.
 - [ ] User confirms start/pause/resume/skip/reset, countdown accuracy, cycle transitions, and persisted settings on physical ESP32/TFT.
+- [ ] Implementation PR merged; phase completed.
+
+
+### Feature phase 6 — persistent settings through the dashboard
+
+- [ ] Identify dashboard settings that should survive page reloads and device reboot; keep defaults and validation explicit.
+- [ ] Persist supported settings on-device using versioned Preferences records, bounded storage writes, and safe defaults for missing or invalid data.
+- [ ] Expose settings through validated dashboard API endpoints; reject unsupported keys, malformed values, and out-of-range values.
+- [ ] Reflect persisted settings in the dashboard after reload and keep UI controls synchronized with the device's authoritative values.
+- [ ] Avoid secrets in responses and preserve local-first operation without cloud dependencies.
+- [ ] Native tests cover validation, defaults, serialization, and persistence-related contracts; dashboard contract tests cover endpoints and UI wiring.
+- [ ] ESP32 firmware build and native/dashboard CI pass for the implementation PR.
+- [ ] User confirms settings survive dashboard reload and device reboot on physical ESP32/TFT.
 - [ ] Implementation PR merged; phase completed.

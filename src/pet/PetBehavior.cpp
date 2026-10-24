@@ -363,10 +363,38 @@ void PetBehavior::selectMessage(PetMode mode, uint32_t now, int8_t hour, bool qu
         _state.message = _baseMessage;
 }
 
-void PetBehavior::interact(PetMode mode, uint32_t now, uint8_t bond)
+void PetBehavior::interact(PetMode mode, uint32_t now, uint8_t bond, PetInteraction interaction)
 {
     _interactionActive = true;
     _interactionUntil = now + 6000UL;
+
+    // Typed actions provide visibly different responses without changing the
+    // existing energy model or adding flash writes for every interaction.
+    if (interaction == PetInteraction::Playful)
+    {
+        switch (_personalityId)
+        {
+        case 1: _interactionMessage = "A tiny game? Count me in!"; break;
+        case 2: _interactionMessage = "Mini-game initialized!"; break;
+        default: _interactionMessage = "Let's play together!"; break;
+        }
+        _state.message = _interactionMessage;
+        _state.mood = _state.energy <= 10 ? PetMood::Tired : PetMood::Excited;
+        return;
+    }
+
+    if (interaction == PetInteraction::Comfort)
+    {
+        switch (_personalityId)
+        {
+        case 1: _interactionMessage = "I'm here with you, friend."; break;
+        case 2: _interactionMessage = "Calm mode engaged."; break;
+        default: _interactionMessage = "A little comfort, just for you."; break;
+        }
+        _state.message = _interactionMessage;
+        _state.mood = mode == PetMode::Nap ? PetMood::Sleepy : PetMood::Happy;
+        return;
+    }
 
     if (mode == PetMode::Nap)
     {

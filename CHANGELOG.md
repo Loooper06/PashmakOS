@@ -43,6 +43,6 @@ First consolidated stable candidate after firmware integration, automated CI val
 ### Release notes
 - Target hardware: ESP32-WROOM-32, ILI9341 320×240 TFT, DS3231 RTC.
 - The default local access-point password is a development credential. Change it in `src/web/WebDashboard.cpp` before sharing or deploying the device.
-- This release record reflects the user's report that the physical hardware smoke-test checklist passed. CI results independently confirm successful firmware compilation and automated host-side checks.
+- This release record reflects the user's report that the hardware smoke tests performed for the build passed. Additional timing measurements and follow-up scenarios remain tracked in `ROADMAP.md` and `docs/HARDWARE_SMOKE_TEST.md`. CI independently confirms successful firmware compilation and automated host-side checks.
 - Firmware build success does not replace validation on other board revisions, displays, RTC modules, or wiring configurations.
 
